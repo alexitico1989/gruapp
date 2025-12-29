@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pago Recibido</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background-color: #f5f5f5;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+    }
+    .header {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      padding: 40px 20px;
+      text-align: center;
+    }
+    .logo {
+      font-size: 36px;
+      font-weight: bold;
+      color: #ffffff;
+      margin-bottom: 10px;
+    }
+    .header-subtitle {
+      color: #ffffff;
+      opacity: 0.9;
+      font-size: 14px;
+    }
+    .content {
+      padding: 40px 30px;
+    }
+    .greeting {
+      font-size: 24px;
+      font-weight: 600;
+      color: #1e3a5f;
+      margin-bottom: 20px;
+    }
+    .message {
+      font-size: 16px;
+      color: #555;
+      margin-bottom: 25px;
+      line-height: 1.8;
+    }
+    .payment-box {
+      background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+      border-radius: 12px;
+      padding: 30px;
+      text-align: center;
+      margin: 30px 0;
+      border: 2px solid #10b981;
+    }
+    .money-icon {
+      font-size: 64px;
+      margin-bottom: 15px;
+    }
+    .amount {
+      font-size: 42px;
+      font-weight: bold;
+      color: #059669;
+      margin-bottom: 10px;
+    }
+    .payment-label {
+      font-size: 14px;
+      color: #065f46;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+    }
+    .details-box {
+      background-color: #f8f9fa;
+      border-radius: 8px;
+      padding: 25px;
+      margin: 25px 0;
+    }
+    .detail-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .detail-item:last-child {
+      border-bottom: none;
+    }
+    .detail-label {
+      font-size: 14px;
+      color: #666;
+    }
+    .detail-value {
+      font-size: 14px;
+      color: #333;
+      font-weight: 600;
+    }
+    .highlight-box {
+      background-color: #fff5f0;
+      border-left: 4px solid #ff7a3d;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 25px 0;
+    }
+    .highlight-text {
+      font-size: 14px;
+      color: #666;
+    }
+    .footer {
+      background-color: #f8f9fa;
+      padding: 30px;
+      text-align: center;
+      border-top: 1px solid #e0e0e0;
+    }
+    .footer-text {
+      font-size: 13px;
+      color: #777;
+      margin-bottom: 10px;
+    }
+    .divider {
+      height: 1px;
+      background-color: #e0e0e0;
+      margin: 30px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">💰 Pago Recibido</div>
+      <div class="header-subtitle">GruApp Chile</div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+      <div class="greeting">¡Hola {{nombre}}! 👋</div>
+      
+      <div class="message">
+        ¡Buenas noticias! Has recibido un pago por tu servicio completado.
+      </div>
+
+      <!-- Payment Box -->
+      <div class="payment-box">
+        <div class="money-icon">💵</div>
+        <div class="amount">${{monto}}</div>
+        <div class="payment-label">Pago recibido</div>
+      </div>
+
+      <!-- Service Details -->
+      <div class="details-box">
+        <div class="detail-item">
+          <div class="detail-label">📄 Servicio #</div>
+          <div class="detail-value">{{servicioId}}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">👤 Cliente</div>
+          <div class="detail-value">{{nombreCliente}}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">💰 Monto</div>
+          <div class="detail-value">${{monto}}</div>
+        </div>
+      </div>
+
+      <div class="highlight-box">
+        <div class="highlight-text">
+          💡 <strong>Tip:</strong> Revisa tu panel de gruero para ver tus ganancias del día y de la semana.
+        </div>
+      </div>
+
+      <div class="message">
+        El dinero está disponible en tu cuenta. Gracias por brindar un excelente servicio y por ser parte de GruApp Chile.
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="message" style="text-align: center; font-size: 18px; color: #1e3a5f; font-weight: 600;">
+        ¡Sigue así! 🚛💪
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div class="footer-text">
+        <strong>El equipo de GruApp Chile</strong>
+      </div>
+      <div class="footer-text">
+        contacto@gruappchile.cl
+      </div>
+      <div class="footer-text" style="margin-top: 20px; font-size: 12px;">
+        © {{year}} GruApp Chile. Todos los derechos reservados.
+      </div>
+    </div>
+  </div>
+</body>
+</html>

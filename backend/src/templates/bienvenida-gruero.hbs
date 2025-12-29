@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bienvenido a GruApp</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background-color: #f5f5f5;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a8f 100%);
+      padding: 40px 20px;
+      text-align: center;
+    }
+    .logo {
+      font-size: 36px;
+      font-weight: bold;
+      color: #ffffff;
+      margin-bottom: 10px;
+    }
+    .header-subtitle {
+      color: #ffffff;
+      opacity: 0.9;
+      font-size: 14px;
+    }
+    .content {
+      padding: 40px 30px;
+    }
+    .greeting {
+      font-size: 24px;
+      font-weight: 600;
+      color: #1e3a5f;
+      margin-bottom: 20px;
+    }
+    .message {
+      font-size: 16px;
+      color: #555;
+      margin-bottom: 25px;
+      line-height: 1.8;
+    }
+    .features {
+      background-color: #f8f9fa;
+      border-radius: 8px;
+      padding: 25px;
+      margin: 30px 0;
+    }
+    .features h3 {
+      font-size: 18px;
+      color: #1e3a5f;
+      margin-bottom: 15px;
+      margin-top: 0;
+    }
+    .feature-item {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 15px;
+    }
+    .feature-icon {
+      font-size: 20px;
+      margin-right: 12px;
+      flex-shrink: 0;
+    }
+    .feature-text {
+      font-size: 15px;
+      color: #555;
+    }
+    .cta-button {
+      display: inline-block;
+      background-color: #ff7a3d;
+      color: #ffffff;
+      padding: 14px 32px;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 16px;
+      margin: 20px 0;
+    }
+    .footer {
+      background-color: #f8f9fa;
+      padding: 30px;
+      text-align: center;
+      border-top: 1px solid #e0e0e0;
+    }
+    .footer-text {
+      font-size: 13px;
+      color: #777;
+      margin-bottom: 10px;
+    }
+    .social-links {
+      margin-top: 15px;
+    }
+    .divider {
+      height: 1px;
+      background-color: #e0e0e0;
+      margin: 30px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">🚛 GruApp Chile</div>
+      <div class="header-subtitle">Tu plataforma de servicios de grúa</div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+      <div class="greeting">¡Hola {{nombre}}! 👋</div>
+      
+      <div class="message">
+        ¡Bienvenido a <strong>GruApp Chile</strong>! Estamos emocionados de tenerte como parte de nuestra red de grueros profesionales.
+      </div>
+
+      <div class="message">
+        Tu cuenta ha sido creada exitosamente y está <strong>pendiente de aprobación</strong> por nuestro equipo. Una vez aprobada, recibirás una notificación y podrás comenzar a recibir solicitudes de servicio.
+      </div>
+
+      <!-- Features -->
+      <div class="features">
+        <h3>Una vez aprobado, podrás:</h3>
+        
+        <div class="feature-item">
+          <div class="feature-icon">✅</div>
+          <div class="feature-text">Recibir solicitudes de servicio en tiempo real</div>
+        </div>
+        
+        <div class="feature-item">
+          <div class="feature-icon">📍</div>
+          <div class="feature-text">Ver servicios disponibles en el mapa</div>
+        </div>
+        
+        <div class="feature-item">
+          <div class="feature-icon">🔄</div>
+          <div class="feature-text">Gestionar tu disponibilidad fácilmente</div>
+        </div>
+        
+        <div class="feature-item">
+          <div class="feature-icon">💰</div>
+          <div class="feature-text">Ganar dinero con cada servicio completado</div>
+        </div>
+        
+        <div class="feature-item">
+          <div class="feature-icon">⭐</div>
+          <div class="feature-text">Recibir calificaciones de clientes satisfechos</div>
+        </div>
+      </div>
+
+      <div class="message">
+        Mientras tanto, asegúrate de tener toda tu documentación en orden y tu perfil completo.
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="message" style="text-align: center; font-size: 18px; color: #1e3a5f; font-weight: 600;">
+        ¡Nos vemos en la carretera! 🚛
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div class="footer-text">
+        <strong>El equipo de GruApp Chile</strong>
+      </div>
+      <div class="footer-text">
+        contacto@gruappchile.cl
+      </div>
+      <div class="footer-text" style="margin-top: 20px; font-size: 12px;">
+        © {{year}} GruApp Chile. Todos los derechos reservados.
+      </div>
+    </div>
+  </div>
+</body>
+</html>

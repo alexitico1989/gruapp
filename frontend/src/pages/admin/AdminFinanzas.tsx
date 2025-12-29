@@ -1,0 +1,523 @@
+import { useEffect, useState } from 'react';
+import axios from 'axios';
+import { toast } from 'react-hot-toast';
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
+import {
+  exportTransaccionesCSV,
+  exportMetricasCSV,
+  exportGruerosCSV,
+  exportVehiculosCSV,
+  exportIngresosDiariosCSV,
+  exportReporteCompleto,
+} from '../../utils/exportUtils';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+interface Metricas {
+  ingresosTotal: number;
+  facturacionTotal: number;
+  pagoGruerosTotal: number;
+  ingresosMesActual: number;
+  facturacionMesActual: number;
+  pagoGruerosMesActual: number;
+  ingresosMesAnterior: number;
+  cambioMensual: number;
+  serviciosCompletadosMes: number;
+  serviciosTotalesMes: number;
+  tasaConversion: number;
+  comisionPromedio: number;
+  proyeccionMensual: number;
+}
+
+interface IngresoDiario {
+  fecha: string;
+  comisionPlataforma: number;
+  facturacion: number;
+  pagoGrueros: number;
+  servicios: number;
+}
+
+interface FinanzasGruero {
+  grueroId: string;
+  nombre: string;
+  patente: string;
+  marca: string;
+  modelo: string;
+  serviciosCompletados: number;
+  totalGanado: number;
+  comisionGenerada: number;
+  facturacionTotal: number;
+  promedioServicio: number;
+}
+
+interface FinanzasVehiculo {
+  tipoVehiculo: string;
+  servicios: number;
+  comisionTotal: number;
+  facturacionTotal: number;
+  pagoGruerosTotal: number;
+  comisionPromedio: number;
+  facturacionPromedio: number;
+}
+
+interface Transaccion {
+  id: string;
+  tipoVehiculo: string;
+  distanciaKm: number;
+  totalCliente: number;
+  totalGruero: number;
+  comisionPlataforma: number;
+  comisionMP: number;
+  completadoAt: string;
+  mpPaymentId: string | null;
+  cliente: {
+    user: {
+      nombre: string;
+      apellido: string;
+    };
+  };
+  gruero: {
+    user: {
+      nombre: string;
+      apellido: string;
+    };
+    patente: string;
+  } | null;
+}
+
+const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+
+export default function AdminFinanzas() {
+  const [metricas, setMetricas] = useState<Metricas | null>(null);
+  const [ingresosDiarios, setIngresosDiarios] = useState<IngresoDiario[]>([]);
+  const [finanzasGrueros, setFinanzasGrueros] = useState<FinanzasGruero[]>([]);
+  const [finanzasVehiculos, setFinanzasVehiculos] = useState<FinanzasVehiculo[]>([]);
+  const [transacciones, setTransacciones] = useState<Transaccion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [diasGrafico, setDiasGrafico] = useState(30);
+
+  useEffect(() => {
+    fetchAllData();
+  }, [diasGrafico]);
+
+  const fetchAllData = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('adminToken');
+      const headers = { Authorization: `Bearer ${token}` };
+
+      const [metricasRes, ingresosRes, gruerosRes, vehiculosRes, transaccionesRes] =
+        await Promise.all([
+          axios.get(`${API_URL}/admin/finanzas/metricas`, { headers }),
+          axios.get(`${API_URL}/admin/finanzas/ingresos-diarios?dias=${diasGrafico}`, { headers }),
+          axios.get(`${API_URL}/admin/finanzas/por-gruero?limit=10`, { headers }),
+          axios.get(`${API_URL}/admin/finanzas/por-vehiculo`, { headers }),
+          axios.get(`${API_URL}/admin/finanzas/transacciones?limit=20`, { headers }),
+        ]);
+
+      if (metricasRes.data.success) setMetricas(metricasRes.data.data);
+      if (ingresosRes.data.success) setIngresosDiarios(ingresosRes.data.data);
+      if (gruerosRes.data.success) setFinanzasGrueros(gruerosRes.data.data);
+      if (vehiculosRes.data.success) setFinanzasVehiculos(vehiculosRes.data.data);
+      if (transaccionesRes.data.success) setTransacciones(transaccionesRes.data.data);
+    } catch (error) {
+      console.error('Error al cargar datos financieros:', error);
+      toast.error('Error al cargar datos financieros');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('es-CL', {
+      style: 'currency',
+      currency: 'CLP',
+      minimumFractionDigits: 0,
+    }).format(value);
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-CL', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando datos financieros...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!metricas) return null;
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard Financiero</h1>
+          <p className="text-gray-600 mt-1">Métricas e ingresos de la plataforma</p>
+        </div>
+        
+        {/* Botones de Exportación */}
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => {
+              if (!metricas) {
+                toast.error('No hay datos para exportar');
+                return;
+              }
+              exportReporteCompleto({
+                metricas,
+                transacciones,
+                grueros: finanzasGrueros,
+                vehiculos: finanzasVehiculos,
+                ingresosDiarios,
+              });
+              toast.success('Exportando reporte completo...');
+            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center space-x-2"
+          >
+            <span>📊</span>
+            <span>Exportar Todo</span>
+          </button>
+          
+          <div className="relative group">
+            <button className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">
+              ⋮ Más
+            </button>
+            <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 hidden group-hover:block z-10">
+              <button
+                onClick={() => {
+                  if (!metricas) return;
+                  exportMetricasCSV(metricas);
+                  toast.success('Métricas exportadas');
+                }}
+                className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700 rounded-t-lg"
+              >
+                📈 Exportar Métricas
+              </button>
+              <button
+                onClick={() => {
+                  if (transacciones.length === 0) {
+                    toast.error('No hay transacciones');
+                    return;
+                  }
+                  exportTransaccionesCSV(transacciones);
+                  toast.success('Transacciones exportadas');
+                }}
+                className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700"
+              >
+                💳 Exportar Transacciones
+              </button>
+              <button
+                onClick={() => {
+                  if (finanzasGrueros.length === 0) {
+                    toast.error('No hay datos de grueros');
+                    return;
+                  }
+                  exportGruerosCSV(finanzasGrueros);
+                  toast.success('Top Grueros exportado');
+                }}
+                className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700"
+              >
+                👥 Exportar Top Grueros
+              </button>
+              <button
+                onClick={() => {
+                  if (finanzasVehiculos.length === 0) {
+                    toast.error('No hay datos de vehículos');
+                    return;
+                  }
+                  exportVehiculosCSV(finanzasVehiculos);
+                  toast.success('Ingresos por Vehículo exportados');
+                }}
+                className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700"
+              >
+                🚗 Exportar por Vehículo
+              </button>
+              <button
+                onClick={() => {
+                  if (ingresosDiarios.length === 0) {
+                    toast.error('No hay datos de ingresos diarios');
+                    return;
+                  }
+                  exportIngresosDiariosCSV(ingresosDiarios);
+                  toast.success('Ingresos Diarios exportados');
+                }}
+                className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700 rounded-b-lg"
+              >
+                📅 Exportar Ingresos Diarios
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Métricas Principales */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm text-gray-600 font-medium">Ingresos Totales</p>
+            <span className="text-2xl">💰</span>
+          </div>
+          <p className="text-3xl font-bold text-gray-900">
+            {formatCurrency(metricas.ingresosTotal)}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">Comisión acumulada</p>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm text-gray-600 font-medium">Este Mes</p>
+            <span className="text-2xl">📈</span>
+          </div>
+          <p className="text-3xl font-bold text-green-600">
+            {formatCurrency(metricas.ingresosMesActual)}
+          </p>
+          <div className="flex items-center mt-1">
+            <span
+              className={`text-xs font-medium ${
+                metricas.cambioMensual >= 0 ? 'text-green-600' : 'text-red-600'
+              }`}
+            >
+              {metricas.cambioMensual >= 0 ? '↑' : '↓'} {Math.abs(metricas.cambioMensual)}%
+            </span>
+            <span className="text-xs text-gray-500 ml-2">vs mes anterior</span>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm text-gray-600 font-medium">Servicios Completados</p>
+            <span className="text-2xl">✅</span>
+          </div>
+          <p className="text-3xl font-bold text-blue-600">{metricas.serviciosCompletadosMes}</p>
+          <p className="text-xs text-gray-500 mt-1">
+            Tasa de conversión: {metricas.tasaConversion}%
+          </p>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm text-gray-600 font-medium">Comisión Promedio</p>
+            <span className="text-2xl">💵</span>
+          </div>
+          <p className="text-3xl font-bold text-purple-600">
+            {formatCurrency(metricas.comisionPromedio)}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">Por servicio</p>
+        </div>
+      </div>
+
+      {/* Proyección Mensual */}
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200 p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-blue-800 font-medium">Proyección Fin de Mes</p>
+            <p className="text-4xl font-bold text-blue-900 mt-2">
+              {formatCurrency(metricas.proyeccionMensual)}
+            </p>
+            <p className="text-sm text-blue-700 mt-1">
+              Basado en el rendimiento actual del mes
+            </p>
+          </div>
+          <span className="text-6xl">🎯</span>
+        </div>
+      </div>
+
+      {/* Gráfico de Ingresos Diarios */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-gray-900">Ingresos por Día</h2>
+          <select
+            value={diasGrafico}
+            onChange={(e) => setDiasGrafico(parseInt(e.target.value))}
+            className="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="7">Últimos 7 días</option>
+            <option value="30">Últimos 30 días</option>
+            <option value="60">Últimos 60 días</option>
+            <option value="90">Últimos 90 días</option>
+          </select>
+        </div>
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={ingresosDiarios}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis
+              dataKey="fecha"
+              tickFormatter={(value) => {
+                const date = new Date(value);
+                return `${date.getDate()}/${date.getMonth() + 1}`;
+              }}
+            />
+            <YAxis tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} />
+            <Tooltip
+              formatter={(value: number) => formatCurrency(value)}
+              labelFormatter={(label) => formatDate(label)}
+            />
+            <Legend />
+            <Line
+              type="monotone"
+              dataKey="comisionPlataforma"
+              stroke="#3B82F6"
+              name="Comisión Plataforma"
+              strokeWidth={2}
+            />
+            <Line
+              type="monotone"
+              dataKey="facturacion"
+              stroke="#10B981"
+              name="Facturación Total"
+              strokeWidth={2}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Gráficos en Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Top 10 Grueros */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-6">Top 10 Grueros</h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={finanzasGrueros.slice(0, 10)}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="nombre" angle={-45} textAnchor="end" height={100} />
+              <YAxis tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} />
+              <Tooltip formatter={(value: number) => formatCurrency(value)} />
+              <Legend />
+              <Bar dataKey="comisionGenerada" fill="#3B82F6" name="Comisión Generada" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Ingresos por Tipo de Vehículo */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-6">Ingresos por Tipo de Vehículo</h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={finanzasVehiculos}
+                dataKey="comisionTotal"
+                nameKey="tipoVehiculo"
+                cx="50%"
+                cy="50%"
+                outerRadius={100}
+                label={({ tipoVehiculo, percent }) =>
+                  `${tipoVehiculo} (${(percent * 100).toFixed(0)}%)`
+                }
+              >
+                {finanzasVehiculos.map((_, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip formatter={(value: number) => formatCurrency(value)} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Tabla de Transacciones Recientes */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="text-xl font-bold text-gray-900">Transacciones Recientes</h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Fecha
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Cliente
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Gruero
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Vehículo
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Total Cliente
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Pago Gruero
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Comisión
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {transacciones.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                    No hay transacciones registradas
+                  </td>
+                </tr>
+              ) : (
+                transacciones.map((transaccion) => (
+                  <tr key={transaccion.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {formatDate(transaccion.completadoAt)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {transaccion.cliente.user.nombre} {transaccion.cliente.user.apellido}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {transaccion.gruero ? (
+                        <>
+                          {transaccion.gruero.user.nombre} {transaccion.gruero.user.apellido}
+                          <br />
+                          <span className="text-xs text-gray-500">{transaccion.gruero.patente}</span>
+                        </>
+                      ) : (
+                        'N/A'
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      {transaccion.tipoVehiculo}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {formatCurrency(transaccion.totalCliente)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {formatCurrency(transaccion.totalGruero)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
+                      {formatCurrency(transaccion.comisionPlataforma)}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
