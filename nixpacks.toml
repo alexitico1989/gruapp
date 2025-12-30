@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["nodejs_20"]
+nixPkgs = ["nodejs-22_x"]
 
 [phases.install]
 cmds = [
@@ -12,8 +12,8 @@ cmds = [
   "cd frontend && npm run build",
   "mkdir -p backend/public",
   "cp -r frontend/dist/* backend/public/",
-  "cd backend && ./node_modules/.bin/prisma generate && npm run build"
+  "cd backend && npx prisma generate && npm run build"
 ]
 
 [start]
-cmd = "cd backend && chmod +x start.sh && ./start.sh"
+cmd = "cd backend && npx prisma migrate deploy && npm start"
