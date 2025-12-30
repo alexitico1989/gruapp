@@ -7,10 +7,10 @@
     "dev": "nodemon src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "db:migrate": "prisma migrate dev",
-    "db:studio": "prisma studio",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate deploy"
+    "db:migrate": "node node_modules/.bin/prisma migrate dev",
+    "db:studio": "node node_modules/.bin/prisma studio",
+    "prisma:generate": "node node_modules/.bin/prisma generate",
+    "prisma:migrate": "node node_modules/.bin/prisma migrate deploy"
   },
   "engines": {
     "node": ">=18.0.0"
