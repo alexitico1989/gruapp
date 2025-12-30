@@ -3,6 +3,7 @@ import cors from 'cors';
 import path from 'path';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
+import serveStatic from 'serve-static';
 import { config } from './config';
 import routes from './routes';
 import notificacionRoutes from './routes/notificacion.routes';
@@ -20,7 +21,7 @@ const httpServer = createServer(app);
 // Configurar Socket.IO
 const io = new SocketIOServer(httpServer, {
   cors: {
-    origin: [config.cors.frontendUrl, config.cors.adminUrl],
+    origin: '*',
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -33,7 +34,7 @@ app.set('io', io);
 // Middlewares
 app.use(
   cors({
-    origin: [config.cors.frontendUrl, config.cors.adminUrl],
+    origin: '*',
     credentials: true,
   })
 );
@@ -56,24 +57,22 @@ app.use('/api/reclamos', reclamoRoutes);
 app.use('/api/cliente', clienteRoutes);
 app.use('/api/pagos', pagoRoutes);
 
-// Ruta raíz
-app.get('/', (req, res) => {
-  res.json({
-    success: true,
-    message: 'API de Grúas Chile',
-    version: '1.0.0',
-    endpoints: {
-      auth: '/api/auth',
-      servicios: '/api/servicios',
-      gruero: '/api/gruero',
-      calificaciones: '/api/calificaciones',
-      notificaciones: '/api/notificaciones',
-      reclamos: '/api/reclamos',
-      cliente: '/api/cliente',
-      pagos: '/api/pagos',
-      health: '/api/health',
-    },
-  });
+// Servir frontend estático (DESPUÉS de las rutas API)
+const publicPath = path.join(__dirname, '../public');
+app.use(serveStatic(publicPath));
+
+// Ruta catch-all para SPA (debe ir al final)
+app.get('*', (req, res) => {
+  // Si la ruta empieza con /api, devolver 404
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({
+      success: false,
+      message: 'Endpoint no encontrado',
+    });
+  }
+  
+  // Para cualquier otra ruta, servir index.html (SPA)
+  res.sendFile(path.join(publicPath, 'index.html'));
 });
 
 // Manejo de errores (debe ir al final)
@@ -95,6 +94,7 @@ httpServer.listen(PORT, () => {
   console.log(`🚀 API: http://localhost:${PORT}`);
   console.log(`📡 Socket.IO: http://localhost:${PORT}${config.socketPath}`);
   console.log(`📁 Uploads: http://localhost:${PORT}/uploads`);
+  console.log(`🌐 Frontend: http://localhost:${PORT}`);
   console.log('===========================================');
 });
 
