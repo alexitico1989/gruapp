@@ -72,7 +72,7 @@ app.get('*', (req, res) => {
   }
   
   // Para cualquier otra ruta, servir index.html (SPA)
-  res.sendFile(path.join(publicPath, 'index.html'));
+  return res.sendFile(path.join(publicPath, 'index.html'));
 });
 
 // Manejo de errores (debe ir al final)
