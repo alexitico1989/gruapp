@@ -12,8 +12,8 @@ cmds = [
   "cd frontend && npm run build",
   "mkdir -p backend/public",
   "cp -r frontend/dist/* backend/public/",
-  "cd backend && npm run prisma:generate && npm run build"
+  "cd backend && node node_modules/prisma/build/index.js generate && npm run build"
 ]
 
 [start]
-cmd = "cd backend && npm run prisma:migrate && npm start"
+cmd = "cd backend && node node_modules/prisma/build/index.js migrate deploy && npm start"
