@@ -31,6 +31,8 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         localStorage.removeItem('token');
         set({ user: null, token: null, isAuthenticated: false });
+        // Redirección inmediata a landing
+        window.location.href = '/';
       },
       updateUser: (userData) =>
         set((state) => ({

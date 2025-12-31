@@ -8,14 +8,22 @@ import Login from './pages/Login';
 import RegisterCliente from './pages/RegisterCliente';
 import RegisterGruero from './pages/RegisterGruero';
 
+// Pages - Públicas
+import Servicios from './pages/Servicios';
+import Conductores from './pages/Conductores';
+import Empresas from './pages/Empresas';
+import Tarifas from './pages/Tarifas';
+import Terminos from './pages/Terminos';
+import Privacidad from './pages/Privacidad';
+import Ayuda from './pages/Ayuda';
+
 // Pages - Cliente
 import ClienteDashboard from './pages/cliente/ClienteDashboard';
 import MisServicios from './pages/cliente/MisServicios';
 import MisReclamos from './pages/cliente/MisReclamos';
 import Perfil from './pages/cliente/Perfil';
 import Pagos from './pages/cliente/Pagos';
-import Ayuda from './pages/cliente/Ayuda';
-//import DetalleServicio from './pages/cliente/DetalleServicio';
+import AyudaCliente from './pages/cliente/Ayuda';
 
 // Pages - Gruero
 import GrueroDashboard from './pages/gruero/GrueroDashboard';
@@ -73,9 +81,32 @@ function App() {
               : <Navigate to="/gruero/dashboard" replace />
             : <Landing />
         } />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register/cliente" element={<RegisterCliente />} />
-        <Route path="/register/gruero" element={<RegisterGruero />} />
+        <Route path="/login" element={
+          isAuthenticated 
+            ? user?.role === 'CLIENTE'
+              ? <Navigate to="/cliente/dashboard" replace />
+              : <Navigate to="/gruero/dashboard" replace />
+            : <Login />
+        } />
+        <Route path="/register/cliente" element={
+          isAuthenticated
+            ? <Navigate to="/cliente/dashboard" replace />
+            : <RegisterCliente />
+        } />
+        <Route path="/register/gruero" element={
+          isAuthenticated
+            ? <Navigate to="/gruero/dashboard" replace />
+            : <RegisterGruero />
+        } />
+
+        {/* Páginas Públicas */}
+        <Route path="/servicios" element={<Servicios />} />
+        <Route path="/conductores" element={<Conductores />} />
+        <Route path="/empresas" element={<Empresas />} />
+        <Route path="/tarifas" element={<Tarifas />} />
+        <Route path="/terminos" element={<Terminos />} />
+        <Route path="/privacidad" element={<Privacidad />} />
+        <Route path="/ayuda" element={<Ayuda />} />
 
         {/* Cliente Routes */}
         <Route
@@ -122,20 +153,10 @@ function App() {
           path="/cliente/ayuda"
           element={
             <ProtectedRoute allowedRole="CLIENTE">
-              <Ayuda />
+              <AyudaCliente />
             </ProtectedRoute>
           }
         />
-        {/* TEMPORALMENTE DESHABILITADO
-        <Route
-          path="/cliente/servicio/:id"
-          element={
-            <ProtectedRoute allowedRole="CLIENTE">
-              <DetalleServicio />
-            </ProtectedRoute>
-          }
-        />
-        */}
 
         {/* Gruero Routes */}
         <Route
