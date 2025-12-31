@@ -93,7 +93,7 @@ class EmailService {
   }): Promise<boolean> {
     return this.sendEmail({
       to: gruero.email,
-      subject: '¡Bienvenido a GruApp Chile! 🚛',
+      subject: '¡Bienvenido a GruApp Chile!',
       template: 'bienvenida-gruero',
       context: {
         nombre: gruero.nombre,
@@ -113,7 +113,7 @@ class EmailService {
   }): Promise<boolean> {
     return this.sendEmail({
       to: cliente.email,
-      subject: '¡Bienvenido a GruApp Chile! 🎉',
+      subject: '¡Bienvenido a GruApp Chile!',
       template: 'bienvenida-cliente',
       context: {
         nombre: cliente.nombre,
@@ -176,7 +176,7 @@ class EmailService {
 
     return this.sendEmail({
       to: cliente.email,
-      subject: `Comprobante de pago - Servicio #${cliente.servicioId.slice(0, 8)} 💳`,
+      subject: `Comprobante de pago - Servicio #${cliente.servicioId.slice(0, 8)}`,
       template: 'pago-confirmado',
       context: {
         nombre: cliente.nombre,
@@ -205,7 +205,7 @@ class EmailService {
   }): Promise<boolean> {
     return this.sendEmail({
       to: gruero.email,
-      subject: `¡Has recibido un pago de $${gruero.monto.toLocaleString('es-CL')}! 💰`,
+      subject: `¡Has recibido un pago de $${gruero.monto.toLocaleString('es-CL')}!`,
       template: 'pago-recibido',
       context: {
         nombre: gruero.nombre,
