@@ -1,41 +1,27 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import fs from 'fs';
 import path from 'path';
 import handlebars from 'handlebars';
 
-// Configuración del transportador de email
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: parseInt(process.env.EMAIL_PORT || '587'),
-  secure: process.env.EMAIL_SECURE === 'true', // false para puerto 587
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-  tls: {
-    rejectUnauthorized: false, // Para desarrollo
-  },
-  connectionTimeout: 5000,   // 5 segundos
-  greetingTimeout: 5000,     // 5 segundos
-  socketTimeout: 10000,      // 10 segundos
-});
+// Configuración de Resend
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Verificar conexión al iniciar
-transporter.verify((error, success) => {
-  if (error) {
-    console.error('❌ Error en configuración de email:', error);
-    console.error('❌ Verifica las credenciales SMTP en .env');
-  } else {
-    console.log('✅ Servidor de email listo para enviar mensajes');
-  }
-});
+// Verificar configuración al iniciar
+if (!process.env.RESEND_API_KEY) {
+  console.error('❌ RESEND_API_KEY no configurada en .env');
+} else {
+  console.log('✅ Resend configurado correctamente');
+}
 
 interface EmailOptions {
   to: string;
   subject: string;
   template: string;
   context: any;
-  attachments?: any[];
+  attachments?: Array<{
+    filename: string;
+    content: Buffer;
+  }>;
 }
 
 class EmailService {
@@ -63,28 +49,35 @@ class EmailService {
     try {
       const html = this.loadTemplate(options.template, options.context);
 
-      const mailOptions = {
-        from: process.env.EMAIL_FROM,
-        to: options.to,
-        subject: options.subject,
-        html,
-        attachments: options.attachments || [],
-      };
+      // Preparar attachments para Resend
+      const attachments = options.attachments?.map(att => ({
+        filename: att.filename,
+        content: att.content,
+      }));
 
       console.log(`📧 Enviando email a: ${options.to}`);
       console.log(`📝 Asunto: ${options.subject}`);
 
-      const info = await transporter.sendMail(mailOptions);
+      const { data, error } = await resend.emails.send({
+        from: process.env.EMAIL_FROM || 'GruApp Chile <onboarding@resend.dev>',
+        to: options.to,
+        subject: options.subject,
+        html,
+        attachments,
+      });
 
-      console.log('✅ Email enviado:', info.messageId);
+      if (error) {
+        console.error('❌ Error al enviar email:', error);
+        return false;
+      }
+
+      console.log('✅ Email enviado:', data?.id);
       return true;
     } catch (error: any) {
       console.error('❌ Error al enviar email:', error);
       console.error('❌ Detalles del error:', {
         message: error.message,
-        code: error.code,
-        command: error.command,
-        response: error.response,
+        name: error.name,
       });
       return false;
     }
@@ -178,7 +171,6 @@ class EmailService {
       attachments.push({
         filename: `Comprobante-${cliente.servicioId.slice(0, 8)}.pdf`,
         content: cliente.pdfBuffer,
-        contentType: 'application/pdf',
       });
     }
 

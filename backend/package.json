@@ -4,14 +4,14 @@
   "description": "API Backend para sistema de grúas estilo Uber - Chile",
   "main": "dist/server.js",
   "scripts": {
-  "dev": "nodemon src/server.ts",
-  "build": "tsc",
-  "start": "node dist/server.js",
-  "db:migrate": "prisma migrate dev",
-  "db:studio": "prisma studio",
-  "prisma:generate": "prisma generate",
-  "prisma:migrate": "prisma migrate deploy"
-},
+    "dev": "nodemon src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate deploy"
+  },
   "engines": {
     "node": ">=18.0.0"
   },
@@ -39,6 +39,7 @@
     "nodemailer": "^7.0.12",
     "pdfkit": "^0.17.2",
     "prisma": "^5.7.0",
+    "resend": "^6.6.0",
     "serve-static": "^1.15.0",
     "socket.io": "^4.6.0"
   },
