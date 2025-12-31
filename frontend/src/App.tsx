@@ -11,7 +11,6 @@ import RegisterGruero from './pages/RegisterGruero';
 // Pages - Públicas
 import Servicios from './pages/Servicios';
 import Conductores from './pages/Conductores';
-import Empresas from './pages/Empresas';
 import Tarifas from './pages/Tarifas';
 import Terminos from './pages/Terminos';
 import Privacidad from './pages/Privacidad';
@@ -102,7 +101,6 @@ function App() {
         {/* Páginas Públicas */}
         <Route path="/servicios" element={<Servicios />} />
         <Route path="/conductores" element={<Conductores />} />
-        <Route path="/empresas" element={<Empresas />} />
         <Route path="/tarifas" element={<Tarifas />} />
         <Route path="/terminos" element={<Terminos />} />
         <Route path="/privacidad" element={<Privacidad />} />

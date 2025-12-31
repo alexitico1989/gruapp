@@ -3,43 +3,45 @@ import { GiTowTruck } from 'react-icons/gi';
 
 export default function Header() {
   return (
-    <header className="bg-[#1e3a5f] shadow-md sticky top-0 z-50">
-      <div className="max-w-[1400px] mx-auto px-8">
-        <div className="flex justify-between items-center" style={{ height: '60px' }}>
-          <Link to="/" className="flex items-center space-x-2 cursor-pointer hover:opacity-90 transition-opacity">
-            <GiTowTruck className="h-7 w-7 text-white" />
-            <span className="text-[22px] font-bold tracking-tight">
-              <span className="text-white">Gru</span>
-              <span className="text-[#ff7a3d]">App</span>
+    <header className="bg-[#1e3a5f] sticky top-0 z-50 shadow-lg">
+      <div className="max-w-[1300px] mx-auto px-8 py-4">
+        <div className="flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2 group">
+            <GiTowTruck className="text-[#ff7a3d] text-4xl group-hover:scale-110 transition-transform" />
+            <span className="text-white text-2xl font-bold">
+              Gru<span className="text-[#ff7a3d]">App</span>
             </span>
           </Link>
 
-          <nav className="hidden lg:flex items-center space-x-8">
-            <Link to="/servicios" className="text-white text-[15px] hover:text-[#ff7a3d] transition-colors">
+          <nav className="hidden md:flex items-center gap-8">
+            <Link to="/" className="text-white hover:text-[#ff7a3d] transition-colors font-medium">
+              Inicio
+            </Link>
+            <Link to="/servicios" className="text-white hover:text-[#ff7a3d] transition-colors font-medium">
               Servicios
             </Link>
-            <Link to="/conductores" className="text-white text-[15px] hover:text-[#ff7a3d] transition-colors">
+            <Link to="/conductores" className="text-white hover:text-[#ff7a3d] transition-colors font-medium">
               Para Conductores
             </Link>
-            <Link to="/empresas" className="text-white text-[15px] hover:text-[#ff7a3d] transition-colors">
-              Empresas
-            </Link>
-            <Link to="/tarifas" className="text-white text-[15px] hover:text-[#ff7a3d] transition-colors">
+            <Link to="/tarifas" className="text-white hover:text-[#ff7a3d] transition-colors font-medium">
               Tarifas
             </Link>
-            <Link 
-              to="/login" 
-              className="bg-[#2d4a6f] text-white px-5 py-2 rounded-md hover:bg-[#3d5a7f] transition-colors text-[14px]"
+          </nav>
+
+          <div className="flex items-center gap-4">
+            <Link
+              to="/login"
+              className="text-white hover:text-[#ff7a3d] transition-colors font-medium"
             >
               Iniciar Sesión
             </Link>
-            <Link 
-              to="/register/cliente" 
-              className="bg-[#ff7a3d] text-white px-5 py-2 rounded-md hover:bg-[#ff8c52] transition-colors text-[14px] font-semibold"
+            <Link
+              to="/register/cliente"
+              className="bg-[#ff7a3d] text-white px-6 py-2 rounded-lg hover:bg-[#ff8c52] transition-all font-semibold"
             >
               Regístrate
             </Link>
-          </nav>
+          </div>
         </div>
       </div>
     </header>
