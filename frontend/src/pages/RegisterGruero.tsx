@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, Mail, Lock, Phone, FileText, Truck, Camera, Upload, ChevronRight, ChevronLeft, CheckCircle, Loader2 } from 'lucide-react';
-import { GiTowTruck } from 'react-icons/gi';
 import { useAuthStore } from '../store/authStore';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
 import { rutValidator } from '../utils/rutValidator';
@@ -290,43 +291,29 @@ export default function RegisterGruero() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-[#1e3a5f] shadow-md">
-        <div className="max-w-[1400px] mx-auto px-8">
-          <div className="flex justify-between items-center" style={{ height: '60px' }}>
-            <Link to="/" className="flex items-center space-x-2 cursor-pointer hover:opacity-90 transition-opacity">
-              <GiTowTruck className="h-7 w-7 text-white" />
-              <span className="text-[22px] font-bold tracking-tight">
-                <span className="text-white">Gru</span>
-                <span className="text-[#ff7a3d]">App</span>
-              </span>
-            </Link>
-            <Link to="/" className="text-white text-[14px] hover:text-[#ff7a3d] transition-colors">
-              Volver al inicio
-            </Link>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <Header />
 
-      <div className="bg-white border-b border-gray-200 py-6">
-        <div className="max-w-3xl mx-auto px-6">
+      {/* Progress Bar - RESPONSIVE */}
+      <div className="bg-white border-b border-gray-200 py-4 md:py-6">
+        <div className="max-w-3xl mx-auto px-4 md:px-6">
           <div className="flex items-center justify-between">
             {[1, 2, 3].map((step) => (
               <div key={step} className="flex items-center flex-1">
-                <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold ${
+                <div className={`flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full font-bold text-sm md:text-base ${
                   currentStep >= step ? 'bg-[#ff7a3d] text-white' : 'bg-gray-200 text-gray-500'
                 }`}>
-                  {currentStep > step ? <CheckCircle className="h-6 w-6" /> : step}
+                  {currentStep > step ? <CheckCircle className="h-5 w-5 md:h-6 md:w-6" /> : step}
                 </div>
-                <div className="ml-3 flex-1">
-                  <p className={`text-sm font-semibold ${currentStep >= step ? 'text-[#1e3a5f]' : 'text-gray-400'}`}>
+                <div className="ml-2 md:ml-3 flex-1 hidden sm:block">
+                  <p className={`text-xs md:text-sm font-semibold ${currentStep >= step ? 'text-[#1e3a5f]' : 'text-gray-400'}`}>
                     {step === 1 && 'Datos Personales'}
                     {step === 2 && 'Datos del Vehículo'}
                     {step === 3 && 'Fotos y Documentos'}
                   </p>
                 </div>
                 {step < 3 && (
-                  <ChevronRight className={`h-5 w-5 mx-4 ${currentStep > step ? 'text-[#ff7a3d]' : 'text-gray-300'}`} />
+                  <ChevronRight className={`h-4 w-4 md:h-5 md:w-5 mx-2 md:mx-4 ${currentStep > step ? 'text-[#ff7a3d]' : 'text-gray-300'}`} />
                 )}
               </div>
             ))}
@@ -334,15 +321,17 @@ export default function RegisterGruero() {
         </div>
       </div>
 
-      <div className="py-8">
-        <div className="max-w-2xl mx-auto px-6">
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+      {/* Form Container */}
+      <div className="flex-1 py-6 md:py-8">
+        <div className="max-w-2xl mx-auto px-4 md:px-6">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 md:p-8">
             
+            {/* STEP 1: Datos Personales */}
             {currentStep === 1 && (
-              <div className="space-y-5">
-                <h2 className="text-2xl font-bold text-[#1e3a5f] mb-6">Datos Personales</h2>
+              <div className="space-y-4 md:space-y-5">
+                <h2 className="text-xl md:text-2xl font-bold text-[#1e3a5f] mb-4 md:mb-6">Datos Personales</h2>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
                   <div>
                     <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">Nombre</label>
                     <div className="relative">
@@ -352,7 +341,7 @@ export default function RegisterGruero() {
                         name="nombre"
                         value={formData.nombre}
                         onChange={handleInputChange}
-                        className="input pl-11 w-full"
+                        className="w-full pl-11 pr-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
                         placeholder="Juan"
                       />
                     </div>
@@ -368,7 +357,7 @@ export default function RegisterGruero() {
                         name="apellido"
                         value={formData.apellido}
                         onChange={handleInputChange}
-                        className="input pl-11 w-full"
+                        className="w-full pl-11 pr-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
                         placeholder="Pérez"
                       />
                     </div>
@@ -385,7 +374,7 @@ export default function RegisterGruero() {
                       name="rut"
                       value={formData.rut}
                       onChange={handleInputChange}
-                      className="input pl-11 w-full"
+                      className="w-full pl-11 pr-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
                       placeholder="12.345.678-9"
                       maxLength={12}
                     />
@@ -402,7 +391,7 @@ export default function RegisterGruero() {
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      className="input pl-11 w-full"
+                      className="w-full pl-11 pr-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
                       placeholder="tu@email.com"
                     />
                   </div>
@@ -418,14 +407,14 @@ export default function RegisterGruero() {
                       name="telefono"
                       value={formData.telefono}
                       onChange={handleInputChange}
-                      className="input pl-11 w-full"
+                      className="w-full pl-11 pr-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
                       placeholder="912345678"
                     />
                   </div>
                   {errors.telefono && <p className="text-red-500 text-sm mt-1">{errors.telefono}</p>}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
                   <div>
                     <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">Contraseña</label>
                     <div className="relative">
@@ -435,7 +424,7 @@ export default function RegisterGruero() {
                         name="password"
                         value={formData.password}
                         onChange={handleInputChange}
-                        className="input pl-11 w-full"
+                        className="w-full pl-11 pr-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
                         placeholder="••••••••"
                       />
                     </div>
@@ -451,7 +440,7 @@ export default function RegisterGruero() {
                         name="confirmPassword"
                         value={formData.confirmPassword}
                         onChange={handleInputChange}
-                        className="input pl-11 w-full"
+                        className="w-full pl-11 pr-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
                         placeholder="••••••••"
                       />
                     </div>
@@ -461,11 +450,12 @@ export default function RegisterGruero() {
               </div>
             )}
 
+            {/* STEP 2: Datos del Vehículo */}
             {currentStep === 2 && (
-              <div className="space-y-5">
-                <h2 className="text-2xl font-bold text-[#1e3a5f] mb-6">Datos del Vehículo (Grúa)</h2>
+              <div className="space-y-4 md:space-y-5">
+                <h2 className="text-xl md:text-2xl font-bold text-[#1e3a5f] mb-4 md:mb-6">Datos del Vehículo (Grúa)</h2>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
                   <div>
                     <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">Patente</label>
                     <input
@@ -473,7 +463,7 @@ export default function RegisterGruero() {
                       name="patente"
                       value={formData.patente}
                       onChange={handleInputChange}
-                      className="input w-full uppercase"
+                      className="w-full px-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base uppercase"
                       placeholder="AA1234 o ABCD12"
                       maxLength={6}
                     />
@@ -486,7 +476,7 @@ export default function RegisterGruero() {
                       name="marca"
                       value={formData.marca}
                       onChange={handleInputChange}
-                      className="input w-full"
+                      className="w-full px-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
                     >
                       <option value="">Seleccionar marca</option>
                       {MARCAS_GRUA.map(marca => (
@@ -497,7 +487,7 @@ export default function RegisterGruero() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
                   <div>
                     <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">Modelo</label>
                     <input
@@ -505,7 +495,7 @@ export default function RegisterGruero() {
                       name="modelo"
                       value={formData.modelo}
                       onChange={handleInputChange}
-                      className="input w-full"
+                      className="w-full px-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
                       placeholder="Ej: Actros 2546"
                     />
                     {errors.modelo && <p className="text-red-500 text-sm mt-1">{errors.modelo}</p>}
@@ -518,7 +508,7 @@ export default function RegisterGruero() {
                       name="anio"
                       value={formData.anio}
                       onChange={handleInputChange}
-                      className="input w-full"
+                      className="w-full px-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
                       placeholder="2020"
                       min="1990"
                       max={new Date().getFullYear() + 1}
@@ -527,14 +517,14 @@ export default function RegisterGruero() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
                   <div>
                     <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">Tipo de Grúa</label>
                     <select
                       name="tipoGrua"
                       value={formData.tipoGrua}
                       onChange={handleInputChange}
-                      className="input w-full"
+                      className="w-full px-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
                     >
                       {TIPOS_GRUA.map(tipo => (
                         <option key={tipo.value} value={tipo.value}>{tipo.label}</option>
@@ -548,7 +538,7 @@ export default function RegisterGruero() {
                       name="capacidadToneladas"
                       value={formData.capacidadToneladas}
                       onChange={handleInputChange}
-                      className="input w-full"
+                      className="w-full px-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
                     >
                       {CAPACIDADES_TONELADAS.map(cap => (
                         <option key={cap.value} value={cap.value}>{cap.label}</option>
@@ -579,11 +569,12 @@ export default function RegisterGruero() {
               </div>
             )}
 
+            {/* STEP 3: Fotos y Documentos */}
             {currentStep === 3 && (
-              <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-[#1e3a5f] mb-6">Fotos y Documentos</h2>
+              <div className="space-y-5 md:space-y-6">
+                <h2 className="text-xl md:text-2xl font-bold text-[#1e3a5f] mb-4 md:mb-6">Fotos y Documentos</h2>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
                   <div>
                     <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">
                       Foto del Gruero <span className="text-red-500">*</span>
@@ -605,7 +596,7 @@ export default function RegisterGruero() {
                         </div>
                       ) : (
                         <label className="cursor-pointer">
-                          <Camera className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                          <Camera className="h-10 w-10 md:h-12 md:w-12 text-gray-400 mx-auto mb-2" />
                           <p className="text-sm text-gray-600">Click para subir foto</p>
                           <input
                             type="file"
@@ -640,7 +631,7 @@ export default function RegisterGruero() {
                         </div>
                       ) : (
                         <label className="cursor-pointer">
-                          <Truck className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                          <Truck className="h-10 w-10 md:h-12 md:w-12 text-gray-400 mx-auto mb-2" />
                           <p className="text-sm text-gray-600">Click para subir foto</p>
                           <input
                             type="file"
@@ -656,17 +647,18 @@ export default function RegisterGruero() {
                 </div>
 
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-[#1e3a5f]">Documentos Requeridos</h3>
+                  <h3 className="text-base md:text-lg font-semibold text-[#1e3a5f]">Documentos Requeridos</h3>
                   
+                  {/* Licencia de Conducir */}
                   <div className="border border-gray-200 rounded-lg p-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
                           Licencia de Conducir <span className="text-red-500">*</span>
                         </label>
-                        <label className="flex items-center justify-center px-4 py-2 bg-white border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                        <label className="flex items-center justify-center px-4 py-2 bg-white border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 text-sm md:text-base">
                           <Upload className="h-5 w-5 text-gray-400 mr-2" />
-                          <span className="text-sm text-gray-600">
+                          <span className="text-sm text-gray-600 truncate">
                             {formData.licenciaConducir ? formData.licenciaConducir.name : 'Subir archivo'}
                           </span>
                           <input
@@ -687,13 +679,14 @@ export default function RegisterGruero() {
                           name="licenciaVencimiento"
                           value={formData.licenciaVencimiento}
                           onChange={handleInputChange}
-                          className="input w-full"
+                          className="w-full px-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
                         />
                         {errors.licenciaVencimiento && <p className="text-red-500 text-xs mt-1">{errors.licenciaVencimiento}</p>}
                       </div>
                     </div>
                   </div>
 
+                  {/* Seguro SOAP */}
                   <div className="border border-gray-200 rounded-lg p-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
@@ -702,7 +695,7 @@ export default function RegisterGruero() {
                         </label>
                         <label className="flex items-center justify-center px-4 py-2 bg-white border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
                           <Upload className="h-5 w-5 text-gray-400 mr-2" />
-                          <span className="text-sm text-gray-600">
+                          <span className="text-sm text-gray-600 truncate">
                             {formData.seguroVigente ? formData.seguroVigente.name : 'Subir archivo'}
                           </span>
                           <input
@@ -723,13 +716,14 @@ export default function RegisterGruero() {
                           name="seguroVencimiento"
                           value={formData.seguroVencimiento}
                           onChange={handleInputChange}
-                          className="input w-full"
+                          className="w-full px-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
                         />
                         {errors.seguroVencimiento && <p className="text-red-500 text-xs mt-1">{errors.seguroVencimiento}</p>}
                       </div>
                     </div>
                   </div>
 
+                  {/* Revisión Técnica */}
                   <div className="border border-gray-200 rounded-lg p-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
@@ -738,7 +732,7 @@ export default function RegisterGruero() {
                         </label>
                         <label className="flex items-center justify-center px-4 py-2 bg-white border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
                           <Upload className="h-5 w-5 text-gray-400 mr-2" />
-                          <span className="text-sm text-gray-600">
+                          <span className="text-sm text-gray-600 truncate">
                             {formData.revisionTecnica ? formData.revisionTecnica.name : 'Subir archivo'}
                           </span>
                           <input
@@ -759,13 +753,14 @@ export default function RegisterGruero() {
                           name="revisionVencimiento"
                           value={formData.revisionVencimiento}
                           onChange={handleInputChange}
-                          className="input w-full"
+                          className="w-full px-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
                         />
                         {errors.revisionVencimiento && <p className="text-red-500 text-xs mt-1">{errors.revisionVencimiento}</p>}
                       </div>
                     </div>
                   </div>
 
+                  {/* Permiso de Circulación */}
                   <div className="border border-gray-200 rounded-lg p-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
@@ -774,7 +769,7 @@ export default function RegisterGruero() {
                         </label>
                         <label className="flex items-center justify-center px-4 py-2 bg-white border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
                           <Upload className="h-5 w-5 text-gray-400 mr-2" />
-                          <span className="text-sm text-gray-600">
+                          <span className="text-sm text-gray-600 truncate">
                             {formData.permisoCirculacion ? formData.permisoCirculacion.name : 'Subir archivo'}
                           </span>
                           <input
@@ -795,7 +790,7 @@ export default function RegisterGruero() {
                           name="permisoVencimiento"
                           value={formData.permisoVencimiento}
                           onChange={handleInputChange}
-                          className="input w-full"
+                          className="w-full px-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
                         />
                         {errors.permisoVencimiento && <p className="text-red-500 text-xs mt-1">{errors.permisoVencimiento}</p>}
                       </div>
@@ -805,14 +800,15 @@ export default function RegisterGruero() {
               </div>
             )}
 
-            <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
+            {/* Navigation Buttons */}
+            <div className="flex justify-between mt-6 md:mt-8 pt-6 border-t border-gray-200">
               {currentStep > 1 && (
                 <button
                   type="button"
                   onClick={handleBack}
-                  className="flex items-center px-6 py-3 border-2 border-[#1e3a5f] text-[#1e3a5f] rounded-lg hover:bg-[#1e3a5f] hover:text-white transition-colors font-semibold"
+                  className="flex items-center px-5 py-2.5 md:px-6 md:py-3 border-2 border-[#1e3a5f] text-[#1e3a5f] rounded-lg hover:bg-[#1e3a5f] hover:text-white transition-colors font-semibold text-sm md:text-base"
                 >
-                  <ChevronLeft className="h-5 w-5 mr-2" />
+                  <ChevronLeft className="h-4 w-4 md:h-5 md:w-5 mr-1 md:mr-2" />
                   Anterior
                 </button>
               )}
@@ -821,26 +817,26 @@ export default function RegisterGruero() {
                 <button
                   type="button"
                   onClick={handleNext}
-                  className="ml-auto flex items-center px-6 py-3 bg-[#ff7a3d] text-white rounded-lg hover:bg-[#ff8c52] transition-colors font-semibold"
+                  className="ml-auto flex items-center px-5 py-2.5 md:px-6 md:py-3 bg-[#ff7a3d] text-white rounded-lg hover:bg-[#ff8c52] transition-colors font-semibold text-sm md:text-base"
                 >
                   Siguiente
-                  <ChevronRight className="h-5 w-5 ml-2" />
+                  <ChevronRight className="h-4 w-4 md:h-5 md:w-5 ml-1 md:ml-2" />
                 </button>
               ) : (
                 <button
                   type="button"
                   onClick={handleSubmit}
                   disabled={loading}
-                  className="ml-auto flex items-center px-8 py-3 bg-[#ff7a3d] text-white rounded-lg hover:bg-[#ff8c52] transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="ml-auto flex items-center px-6 py-2.5 md:px-8 md:py-3 bg-[#ff7a3d] text-white rounded-lg hover:bg-[#ff8c52] transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
                 >
                   {loading ? (
                     <>
-                      <Loader2 className="animate-spin h-5 w-5 mr-2" />
+                      <Loader2 className="animate-spin h-4 w-4 md:h-5 md:w-5 mr-2" />
                       Registrando...
                     </>
                   ) : (
                     <>
-                      <CheckCircle className="h-5 w-5 mr-2" />
+                      <CheckCircle className="h-4 w-4 md:h-5 md:w-5 mr-2" />
                       Completar Registro
                     </>
                   )}
@@ -849,8 +845,9 @@ export default function RegisterGruero() {
             </div>
           </div>
 
+          {/* Login Link */}
           <div className="text-center mt-6">
-            <p className="text-gray-600">
+            <p className="text-sm md:text-base text-gray-600">
               ¿Ya tienes cuenta?{' '}
               <Link to="/login" className="text-[#ff7a3d] font-semibold hover:underline">
                 Iniciar Sesión
@@ -860,15 +857,7 @@ export default function RegisterGruero() {
         </div>
       </div>
 
-      <footer className="bg-white py-8 border-t border-gray-100 mt-12">
-        <div className="max-w-[1300px] mx-auto px-8 text-center">
-          <p className="text-gray-400 text-sm">
-            <span className="text-[#1e3a5f] font-bold">Gru</span>
-            <span className="text-[#ff7a3d] font-bold">App</span>
-          </p>
-          <p className="text-gray-400 text-xs mt-1">© 2025 GruApp. Todos los derechos reservados.</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

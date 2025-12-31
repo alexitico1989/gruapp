@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { User, Mail, Lock, Phone, Loader2 } from 'lucide-react';
-import { GiTowTruck } from 'react-icons/gi';
 import { useAuthStore } from '../store/authStore';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
 
@@ -51,42 +52,26 @@ export default function RegisterCliente() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="bg-[#1e3a5f] shadow-md">
-        <div className="max-w-[1400px] mx-auto px-8">
-          <div className="flex justify-between items-center" style={{ height: '60px' }}>
-            <Link to="/" className="flex items-center space-x-2 cursor-pointer hover:opacity-90 transition-opacity">
-              <GiTowTruck className="h-7 w-7 text-white" />
-              <span className="text-[22px] font-bold tracking-tight">
-                <span className="text-white">Gru</span>
-                <span className="text-[#ff7a3d]">App</span>
-              </span>
-            </Link>
-
-            <Link to="/" className="text-white text-[14px] hover:text-[#ff7a3d] transition-colors">
-              Volver al inicio
-            </Link>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-white flex flex-col">
+      <Header />
 
       {/* Register Form */}
-      <section className="py-16">
-        <div className="max-w-md mx-auto px-6">
+      <section className="flex-1 py-10 md:py-16">
+        <div className="max-w-md mx-auto px-4 md:px-6">
           {/* Title */}
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-[#1e3a5f] mb-3">
+          <div className="text-center mb-6 md:mb-8">
+            <h1 className="text-3xl md:text-4xl font-bold text-[#1e3a5f] mb-2 md:mb-3">
               Registro de Cliente
             </h1>
-            <p className="text-gray-600 text-lg">
+            <p className="text-gray-600 text-base md:text-lg">
               Crea tu cuenta y solicita grúas al instante
             </p>
           </div>
 
           {/* Form Card */}
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 md:p-8">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 md:space-y-5">
+              
               {/* Nombre */}
               <div>
                 <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">
@@ -103,7 +88,7 @@ export default function RegisterCliente() {
                         message: 'Mínimo 2 caracteres',
                       },
                     })}
-                    className="input pl-11 w-full"
+                    className="w-full pl-11 pr-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
                     placeholder="Luis"
                   />
                 </div>
@@ -128,7 +113,7 @@ export default function RegisterCliente() {
                         message: 'Mínimo 2 caracteres',
                       },
                     })}
-                    className="input pl-11 w-full"
+                    className="w-full pl-11 pr-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
                     placeholder="Monardes"
                   />
                 </div>
@@ -153,7 +138,7 @@ export default function RegisterCliente() {
                         message: 'Email inválido',
                       },
                     })}
-                    className="input pl-11 w-full"
+                    className="w-full pl-11 pr-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
                     placeholder="tu@email.com"
                   />
                 </div>
@@ -178,7 +163,7 @@ export default function RegisterCliente() {
                         message: 'Teléfono inválido (8-15 dígitos)',
                       },
                     })}
-                    className="input pl-11 w-full"
+                    className="w-full pl-11 pr-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
                     placeholder="+56912345678"
                   />
                 </div>
@@ -203,7 +188,7 @@ export default function RegisterCliente() {
                         message: 'Mínimo 6 caracteres',
                       },
                     })}
-                    className="input pl-11 w-full"
+                    className="w-full pl-11 pr-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
                     placeholder="••••••••"
                   />
                 </div>
@@ -226,7 +211,7 @@ export default function RegisterCliente() {
                       validate: (value) =>
                         value === password || 'Las contraseñas no coinciden',
                     })}
-                    className="input pl-11 w-full"
+                    className="w-full pl-11 pr-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
                     placeholder="••••••••"
                   />
                 </div>
@@ -239,7 +224,7 @@ export default function RegisterCliente() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[#ff7a3d] text-white rounded-lg hover:bg-[#ff8c52] transition-all shadow-lg hover:shadow-xl font-semibold px-6 py-4 text-lg disabled:opacity-50 disabled:cursor-not-allowed mt-6"
+                className="w-full bg-[#ff7a3d] text-white rounded-lg hover:bg-[#ff8c52] transition-all shadow-lg hover:shadow-xl font-semibold px-6 py-3.5 md:py-4 text-base md:text-lg disabled:opacity-50 disabled:cursor-not-allowed mt-2"
               >
                 {loading ? (
                   <span className="flex items-center justify-center">
@@ -265,7 +250,7 @@ export default function RegisterCliente() {
             {/* Login Link */}
             <Link
               to="/login"
-              className="block w-full text-center bg-white text-[#1e3a5f] rounded-lg border-2 border-[#1e3a5f] hover:bg-[#1e3a5f] hover:text-white transition-all font-semibold px-6 py-3"
+              className="block w-full text-center bg-white text-[#1e3a5f] rounded-lg border-2 border-[#1e3a5f] hover:bg-[#1e3a5f] hover:text-white transition-all font-semibold px-6 py-3 text-sm md:text-base"
             >
               Iniciar Sesión
             </Link>
@@ -273,7 +258,7 @@ export default function RegisterCliente() {
 
           {/* Gruero Link */}
           <div className="text-center mt-6">
-            <p className="text-gray-600">
+            <p className="text-sm md:text-base text-gray-600">
               ¿Eres conductor de grúa?{' '}
               <Link to="/register/gruero" className="text-[#ff7a3d] font-semibold hover:underline">
                 Regístrate como Gruero
@@ -283,16 +268,7 @@ export default function RegisterCliente() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-white py-8 border-t border-gray-100">
-        <div className="max-w-[1300px] mx-auto px-8 text-center">
-          <p className="text-gray-400 text-sm">
-            <span className="text-[#1e3a5f] font-bold">Gru</span>
-            <span className="text-[#ff7a3d] font-bold">App</span>
-          </p>
-          <p className="text-gray-400 text-xs mt-1">© 2025 GruApp. Todos los derechos reservados.</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
