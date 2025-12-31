@@ -36,7 +36,7 @@ export default function Tarifas() {
                     <span className="text-lg font-semibold text-[#1e3a5f]">Tarifa Base</span>
                     <span className="text-2xl font-bold text-[#ff7a3d]">${tarifaBase.toLocaleString('es-CL')}</span>
                   </div>
-                  <p className="text-gray-600 text-sm">Incluye los primeros kilómetros de servicio</p>
+                  <p className="text-gray-600 text-sm">Tarifa base a pagar por solicitar servicio</p>
                 </div>
 
                 <div className="border-t border-gray-200 pt-6">
