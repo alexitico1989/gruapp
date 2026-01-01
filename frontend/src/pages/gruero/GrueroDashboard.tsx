@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import { Icon } from 'leaflet';
-import { Navigation, MapPin, CheckCircle, XCircle, Clock, DollarSign, Phone, Loader2 } from 'lucide-react';
+import { Navigation, MapPin, CheckCircle, XCircle, Clock, DollarSign, Phone, Loader2, Menu, X } from 'lucide-react';
 import { GiTowTruck } from 'react-icons/gi';
 import Layout from '../../components/Layout';
 import { useAuthStore } from '../../store/authStore';
@@ -10,9 +10,9 @@ import io, { Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
 import 'leaflet/dist/leaflet.css';
 
-// Icono de grúa personalizado usando el mismo diseño del logo (camión de grúa naranja)
+// Icono personalizado de grúa
 const grueroIcon = new Icon({
-  iconUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSIjZmY3YTNkIj48cGF0aCBkPSJNMjAgOGgtM1Y0SDN2NWgybC0uMDEgNi4wMWMtMS4yMi4wMy0yLjE4IDEuMDYtMi4xOCAyLjI4QzIuODEgMTguNyAzLjgxIDE5LjcgNSAxOS43YzEuMTkgMCAxLjQ5LTEuMDEgMS40OS0yLjQxIDAtMS4yMi0uOTUtMi4yNi0yLjE3LTIuMjlWOWgxMXY3Ljk5Yy0xLjIyLjAyLTIuMTggMS4wNi0yLjE4IDIuMjggMCAxLjM5IDEuMDEgMi40MSAxLjE5IDIuNDEgMS4xOSAwIDIuMTktLjk5IDIuMTktMi4zOSAwLTEuMjItLjk1LTIuMjYtMi4xNy0yLjI5VjloM2MxLjEgMCAyLS45IDItMlY4ek0xMSA2aDJsLjAxIDEuOTlIOWwuMDEtMnoiLz48L3N2Zz4=',
+  iconUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSIjMTBiOTgxIj48cGF0aCBkPSJNMjAgOGgtM1Y0SDN2NWgybC0uMDEgNi4wMWMtMS4yMi4wMy0yLjE4IDEuMDYtMi4xOCAyLjI4QzIuODEgMTguNyAzLjgxIDE5LjcgNSAxOS43YzEuMTkgMCAxLjQ5LTEuMDEgMS40OS0yLjQxIDAtMS4yMi0uOTUtMi4yNi0yLjE3LTIuMjlWOWgxMXY3Ljk5Yy0xLjIyLjAyLTIuMTggMS4wNi0yLjE4IDIuMjggMCAxLjM5IDEuMDEgMi40MSAxLjE5IDIuNDEgMS4xOSAwIDIuMTktLjk5IDIuMTktMi4zOSAwLTEuMjItLjk1LTIuMjYtMi4xNy0yLjI5VjloM2MxLjEgMCAyLS45IDItMlY4ek0xMSA2aDJsLjAxIDEuOTlIOWwuMDEtMnoiLz48L3N2Zz4=',
   iconSize: [40, 40],
   iconAnchor: [20, 40],
   popupAnchor: [0, -40],
@@ -78,6 +78,7 @@ export default function GrueroDashboard() {
   const [grueroId, setGrueroId] = useState<string | null>(null);
   const [rastreoActivo, setRastreoActivo] = useState(false);
   const [perfilCargado, setPerfilCargado] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const socketRef = useRef<Socket | null>(null);
   const watchIdRef = useRef<number | null>(null);
@@ -119,12 +120,7 @@ export default function GrueroDashboard() {
             setUbicacionActual([grueroData.latitud, grueroData.longitud]);
           }
 
-          // Solo mostrar toast de bienvenida si acaba de iniciar sesión
-          const justLoggedIn = sessionStorage.getItem('justLoggedIn');
-          if (justLoggedIn === 'true') {
-            toast.success(`Bienvenido ${grueroData.user.nombre}!`);
-            sessionStorage.removeItem('justLoggedIn'); // Limpiar el flag
-          }
+          toast.success(`Bienvenido ${grueroData.user.nombre}!`);
         }
       } catch (error: any) {
         console.error('❌ Error obteniendo perfil gruero:', error);
@@ -389,6 +385,7 @@ export default function GrueroDashboard() {
 
         cargarServicioActivo();
         cargarServiciosPendientes();
+        setSidebarOpen(false);
       }
     } catch (error: any) {
       console.error('Error al aceptar servicio:', error);
@@ -496,191 +493,234 @@ export default function GrueroDashboard() {
 
   return (
     <Layout>
-      <div className="flex flex-col h-[calc(100vh-64px)]">
-        {/* Panel Superior - Info del Gruero (Compacto) */}
-        <div className="bg-white border-b border-gray-200 overflow-x-auto">
-          <div className="p-3 md:p-4">
-            {/* Contenedor horizontal con scroll */}
-            <div className="flex gap-3 md:gap-4 min-w-max">
-              {/* Estado de Disponibilidad */}
-              <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2d5a8f] rounded-lg p-3 text-white min-w-[200px]">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold text-sm">Estado</span>
-                  <button
-                    onClick={toggleDisponibilidad}
-                    disabled={loading || !grueroId}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 ${
-                      disponible ? 'bg-green-500' : 'bg-gray-400'
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        disponible ? 'translate-x-6' : 'translate-x-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-                <div className="flex items-center text-sm">
-                  {disponible ? (
-                    <>
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      <span>Disponible</span>
-                    </>
-                  ) : (
-                    <>
-                      <XCircle className="h-4 w-4 mr-2" />
-                      <span>Offline</span>
-                    </>
-                  )}
-                </div>
-              </div>
+      <div className="flex h-[calc(100vh-64px)] relative">
+        {/* Botón Hamburguesa Móvil */}
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="lg:hidden fixed top-20 left-4 z-[1001] bg-[#1e3a5f] text-white p-3 rounded-full shadow-lg"
+        >
+          {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+        </button>
 
-              {/* Rastreo GPS */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 min-w-[200px]">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-semibold text-blue-900 text-sm">Rastreo GPS</span>
-                  <div
-                    className={`h-3 w-3 rounded-full ${
-                      rastreoActivo ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
+        {/* Overlay para cerrar sidebar en móvil */}
+        {sidebarOpen && (
+          <div
+            className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-[999]"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
+        {/* Sidebar */}
+        <div
+          className={`
+            fixed lg:relative
+            top-0 left-0 h-full
+            w-80 max-w-[85vw]
+            bg-white border-r border-gray-200
+            overflow-y-auto
+            transform transition-transform duration-300 ease-in-out
+            z-[1000]
+            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          `}
+        >
+          <div className="p-4 md:p-6">
+            <h2 className="text-lg md:text-xl font-bold text-[#1e3a5f] mb-4">Dashboard Gruero</h2>
+
+            {/* Estado de Disponibilidad */}
+            <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2d5a8f] rounded-lg p-4 mb-4 md:mb-6 text-white">
+              <div className="flex items-center justify-between mb-3">
+                <span className="font-semibold text-sm md:text-base">Estado</span>
+                <button
+                  onClick={toggleDisponibilidad}
+                  disabled={loading || !grueroId}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 ${
+                    disponible ? 'bg-green-500' : 'bg-gray-400'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      disponible ? 'translate-x-6' : 'translate-x-1'
                     }`}
                   />
-                </div>
-                <p className="text-xs text-blue-700">
-                  {rastreoActivo ? 'Activo' : 'Inactivo'}
-                </p>
+                </button>
               </div>
-
-              {/* Estadísticas */}
-              {estadisticas && (
-                <>
-                  <div className="bg-green-50 p-3 rounded-lg min-w-[120px]">
-                    <p className="text-xs text-gray-600">Completados</p>
-                    <p className="text-xl font-bold text-green-600">{estadisticas.serviciosCompletados}</p>
-                  </div>
-                  <div className="bg-blue-50 p-3 rounded-lg min-w-[100px]">
-                    <p className="text-xs text-gray-600">Activos</p>
-                    <p className="text-xl font-bold text-blue-600">{estadisticas.serviciosActivos}</p>
-                  </div>
-                  <div className="bg-purple-50 p-3 rounded-lg min-w-[100px]">
-                    <p className="text-xs text-gray-600">Hoy</p>
-                    <p className="text-lg font-bold text-purple-600">
-                      ${(estadisticas.gananciasHoy / 1000).toFixed(0)}k
-                    </p>
-                  </div>
-                  <div className="bg-orange-50 p-3 rounded-lg min-w-[100px]">
-                    <p className="text-xs text-gray-600">Semana</p>
-                    <p className="text-lg font-bold text-orange-600">
-                      ${(estadisticas.gananciasSemana / 1000).toFixed(0)}k
-                    </p>
-                  </div>
-                </>
-              )}
-
-              {/* Servicio Activo */}
-              {servicioActivo && (
-                <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-3 min-w-[300px] max-w-[400px]">
-                  <h3 className="font-bold text-orange-900 mb-2 text-sm">Servicio Activo</h3>
-                  <div className="space-y-1 text-xs">
-                    <div>
-                      <span className="font-semibold">Cliente:</span>{' '}
-                      {servicioActivo.cliente.user.nombre} {servicioActivo.cliente.user.apellido}
-                    </div>
-                    <div>
-                      <span className="font-semibold">Distancia:</span> {servicioActivo.distanciaKm} km
-                    </div>
-                    <div className="text-sm font-bold text-orange-600">
-                      ${servicioActivo.totalGruero.toLocaleString('es-CL')}
-                    </div>
-                    
-                    {/* Botones de Estado - Compactos */}
-                    <div className="flex gap-2 mt-2">
-                      {servicioActivo.status === 'ACEPTADO' && (
-                        <button
-                          onClick={() => actualizarEstadoServicio('EN_CAMINO')}
-                          className="flex-1 bg-blue-500 text-white rounded-lg py-1.5 text-xs font-semibold"
-                        >
-                          🚗 En Camino
-                        </button>
-                      )}
-                      {servicioActivo.status === 'EN_CAMINO' && (
-                        <button
-                          onClick={() => actualizarEstadoServicio('EN_SITIO')}
-                          className="flex-1 bg-purple-500 text-white rounded-lg py-1.5 text-xs font-semibold"
-                        >
-                          📍 En Sitio
-                        </button>
-                      )}
-                      {servicioActivo.status === 'EN_SITIO' && (
-                        <button
-                          onClick={() => actualizarEstadoServicio('COMPLETADO')}
-                          className="flex-1 bg-green-500 text-white rounded-lg py-1.5 text-xs font-semibold"
-                        >
-                          ✅ Completar
-                        </button>
-                      )}
-                      
-                      <a 
-                        href={`tel:${servicioActivo.cliente.user.telefono}`}
-                        className="bg-orange-600 text-white rounded-lg px-3 py-1.5 text-xs font-semibold flex items-center"
-                      >
-                        <Phone className="h-3 w-3" />
-                      </a>
-                      
-                      <button 
-                        onClick={cancelarServicio}
-                        className="bg-red-500 text-white rounded-lg px-3 py-1.5 text-xs font-semibold"
-                      >
-                        ❌
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Servicios Disponibles */}
-              {disponible && !servicioActivo && serviciosPendientes.length > 0 && (
-                <div className="flex gap-3">
-                  {serviciosPendientes.map((servicio) => (
-                    <div
-                      key={servicio.id}
-                      className="border-2 border-gray-200 rounded-lg p-3 hover:border-[#ff7a3d] transition-colors min-w-[250px]"
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="text-xs">
-                          <p className="font-semibold">
-                            {servicio.cliente.user.nombre} {servicio.cliente.user.apellido}
-                          </p>
-                          <p className="text-gray-600">{servicio.distanciaKm} km</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-base font-bold text-green-600">
-                            ${(servicio.totalGruero / 1000).toFixed(0)}k
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => aceptarServicio(servicio.id)}
-                        disabled={loading}
-                        className="w-full bg-[#ff7a3d] text-white rounded-lg py-2 text-xs font-semibold disabled:opacity-50"
-                      >
-                        {loading ? <Loader2 className="animate-spin h-4 w-4 mx-auto" /> : 'Aceptar'}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {disponible && !servicioActivo && serviciosPendientes.length === 0 && (
-                <div className="text-center p-3 bg-gray-50 rounded-lg min-w-[200px]">
-                  <Clock className="h-8 w-8 text-gray-400 mx-auto mb-1" />
-                  <p className="text-xs text-gray-600">Sin servicios</p>
-                </div>
-              )}
+              <div className="flex items-center text-sm md:text-base">
+                {disponible ? (
+                  <>
+                    <CheckCircle className="h-4 w-4 md:h-5 md:w-5 mr-2" />
+                    <span>Disponible</span>
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="h-4 w-4 md:h-5 md:w-5 mr-2" />
+                    <span>Fuera de línea</span>
+                  </>
+                )}
+              </div>
             </div>
+
+            {/* Rastreo GPS */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 md:p-4 mb-4 md:mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-semibold text-blue-900 text-sm md:text-base">Rastreo GPS</span>
+                <div
+                  className={`h-3 w-3 rounded-full ${
+                    rastreoActivo ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
+                  }`}
+                />
+              </div>
+              <p className="text-xs text-blue-700 mb-3">
+                {rastreoActivo
+                  ? 'Tu ubicación se actualiza automáticamente'
+                  : 'Activa tu disponibilidad para iniciar rastreo'}
+              </p>
+              <div className="text-xs text-blue-600">
+                📍 Lat: {ubicacionActual[0].toFixed(4)}, Lng: {ubicacionActual[1].toFixed(4)}
+              </div>
+            </div>
+
+            {/* Estadísticas */}
+            {estadisticas && (
+              <div className="grid grid-cols-2 gap-2 md:gap-3 mb-4 md:mb-6">
+                <div className="bg-green-50 p-2 md:p-3 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-1">Completados</p>
+                  <p className="text-xl md:text-2xl font-bold text-green-600">{estadisticas.serviciosCompletados}</p>
+                </div>
+                <div className="bg-blue-50 p-2 md:p-3 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-1">Activos</p>
+                  <p className="text-xl md:text-2xl font-bold text-blue-600">{estadisticas.serviciosActivos}</p>
+                </div>
+                <div className="bg-purple-50 p-2 md:p-3 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-1">Hoy</p>
+                  <p className="text-base md:text-lg font-bold text-purple-600">
+                    ${(estadisticas.gananciasHoy / 1000).toFixed(0)}k
+                  </p>
+                </div>
+                <div className="bg-orange-50 p-2 md:p-3 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-1">Semana</p>
+                  <p className="text-base md:text-lg font-bold text-orange-600">
+                    ${(estadisticas.gananciasSemana / 1000).toFixed(0)}k
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Servicio Activo */}
+            {servicioActivo && (
+              <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-3 md:p-4 mb-4 md:mb-6">
+                <h3 className="font-bold text-orange-900 mb-3 text-sm md:text-base">Servicio Activo</h3>
+                <div className="space-y-2 text-xs md:text-sm">
+                  <div>
+                    <span className="font-semibold">Cliente:</span>{' '}
+                    {servicioActivo.cliente.user.nombre} {servicioActivo.cliente.user.apellido}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Origen:</span>{' '}
+                    <span className="text-xs">{servicioActivo.origenDireccion}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold">Destino:</span>{' '}
+                    <span className="text-xs">{servicioActivo.destinoDireccion}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold">Distancia:</span> {servicioActivo.distanciaKm} km
+                  </div>
+                  <div className="text-base md:text-lg font-bold text-orange-600">
+                    Ganancia: ${servicioActivo.totalGruero.toLocaleString('es-CL')}
+                  </div>
+                  
+                  {/* Botones de Estado */}
+                  <div className="flex flex-col gap-2 mt-4">
+                    {servicioActivo.status === 'ACEPTADO' && (
+                      <button
+                        onClick={() => actualizarEstadoServicio('EN_CAMINO')}
+                        className="w-full bg-blue-500 text-white rounded-lg py-2.5 text-sm font-semibold"
+                      >
+                        🚗 En Camino
+                      </button>
+                    )}
+                    {servicioActivo.status === 'EN_CAMINO' && (
+                      <button
+                        onClick={() => actualizarEstadoServicio('EN_SITIO')}
+                        className="w-full bg-purple-500 text-white rounded-lg py-2.5 text-sm font-semibold"
+                      >
+                        📍 Llegué al Sitio
+                      </button>
+                    )}
+                    {servicioActivo.status === 'EN_SITIO' && (
+                      <button
+                        onClick={() => actualizarEstadoServicio('COMPLETADO')}
+                        className="w-full bg-green-500 text-white rounded-lg py-2.5 text-sm font-semibold"
+                      >
+                        ✅ Completar Servicio
+                      </button>
+                    )}
+                    
+                    <a 
+                      href={`tel:${servicioActivo.cliente.user.telefono}`}
+                      className="w-full bg-orange-600 text-white rounded-lg py-2.5 text-center text-sm font-semibold flex items-center justify-center"
+                    >
+                      <Phone className="inline h-4 w-4 mr-2" />
+                      Llamar Cliente
+                    </a>
+                    
+                    <button 
+                      onClick={cancelarServicio}
+                      className="w-full bg-red-500 text-white rounded-lg py-2.5 text-sm font-semibold"
+                    >
+                      ❌ Cancelar Servicio
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Servicios Disponibles */}
+            {disponible && !servicioActivo && (
+              <div>
+                <h3 className="font-bold text-[#1e3a5f] mb-3 text-sm md:text-base">Servicios Disponibles</h3>
+                {serviciosPendientes.length === 0 ? (
+                  <div className="text-center p-4 bg-gray-50 rounded-lg">
+                    <Clock className="h-10 w-10 md:h-12 md:w-12 text-gray-400 mx-auto mb-2" />
+                    <p className="text-xs md:text-sm text-gray-600">No hay servicios pendientes</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {serviciosPendientes.map((servicio) => (
+                      <div
+                        key={servicio.id}
+                        className="border-2 border-gray-200 rounded-lg p-3 hover:border-[#ff7a3d] transition-colors"
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="text-xs md:text-sm">
+                            <p className="font-semibold">
+                              {servicio.cliente.user.nombre} {servicio.cliente.user.apellido}
+                            </p>
+                            <p className="text-xs text-gray-600">{servicio.distanciaKm} km</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-base md:text-lg font-bold text-green-600">
+                              ${(servicio.totalGruero / 1000).toFixed(0)}k
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => aceptarServicio(servicio.id)}
+                          disabled={loading}
+                          className="w-full bg-[#ff7a3d] text-white rounded-lg py-2.5 text-sm font-semibold disabled:opacity-50"
+                        >
+                          {loading ? <Loader2 className="animate-spin h-5 w-5 mx-auto" /> : 'Aceptar Servicio'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Mapa - Ocupa el resto de la pantalla */}
+        {/* Mapa */}
         <div className="flex-1 relative">
           <MapContainer center={ubicacionActual} zoom={13} className="h-full w-full" scrollWheelZoom={true}>
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
