@@ -323,8 +323,16 @@ export default function PerfilGruero() {
 
       if (response.data.success) {
         toast.success('Cuenta eliminada exitosamente');
-        localStorage.removeItem('token');
-        window.location.href = '/login';
+        
+        // Limpiar TODO el almacenamiento local y de sesión
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        // Esperar un momento para que se vea el toast
+        setTimeout(() => {
+          // Redirigir al login con hard redirect
+          window.location.href = '/login';
+        }, 1500);
       }
     } catch (error: any) {
       console.error('Error al eliminar cuenta:', error);
