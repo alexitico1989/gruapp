@@ -67,6 +67,9 @@ function RecenterMap({ position }: { position: [number, number] }) {
   return null;
 }
 
+// Variable global para mantener el watchId del GPS
+let gpsWatchId: number | null = null;
+
 export default function GrueroDashboard() {
   const { user } = useAuthStore();
   const [disponible, setDisponible] = useState(false);
@@ -80,7 +83,17 @@ export default function GrueroDashboard() {
   const [perfilCargado, setPerfilCargado] = useState(false);
 
   const socketRef = useRef<Socket | null>(null);
-  const watchIdRef = useRef<number | null>(null);
+
+  // Recuperar estado de rastreo al montar el componente
+  useEffect(() => {
+    const savedDisponible = sessionStorage.getItem('grueroDisponible');
+    const savedRastreo = sessionStorage.getItem('gpsRastreoActivo');
+    
+    if (savedRastreo === 'true') {
+      setRastreoActivo(true);
+      console.log('♻️ Rastreo GPS recuperado - sigue activo');
+    }
+  }, []);
 
   // Obtener ubicación GPS inmediatamente al cargar
   useEffect(() => {
@@ -112,23 +125,29 @@ export default function GrueroDashboard() {
           const grueroData = response.data.data;
           console.log('✅ Gruero ID:', grueroData.id);
           setGrueroId(grueroData.id);
-          setDisponible(grueroData.status === 'DISPONIBLE');
+          
+          // Recuperar estado de disponibilidad desde sessionStorage si existe
+          const savedDisponible = sessionStorage.getItem('grueroDisponible');
+          if (savedDisponible !== null) {
+            setDisponible(savedDisponible === 'true');
+            console.log('♻️ Estado de disponibilidad recuperado:', savedDisponible);
+          } else {
+            const estaDisponible = grueroData.status === 'DISPONIBLE';
+            setDisponible(estaDisponible);
+            sessionStorage.setItem('grueroDisponible', estaDisponible.toString());
+          }
+          
           setPerfilCargado(true);
 
           if (grueroData.latitud && grueroData.longitud) {
             setUbicacionActual([grueroData.latitud, grueroData.longitud]);
           }
 
-          // Iniciar rastreo GPS automáticamente
-          setTimeout(() => {
-            iniciarRastreoAutomatico(grueroData.id);
-          }, 500);
-
           // Solo mostrar toast de bienvenida si acaba de iniciar sesión
           const justLoggedIn = sessionStorage.getItem('justLoggedIn');
           if (justLoggedIn === 'true') {
             toast.success(`Bienvenido ${grueroData.user.nombre}!`);
-            sessionStorage.removeItem('justLoggedIn'); // Limpiar el flag
+            sessionStorage.removeItem('justLoggedIn');
           }
         }
       } catch (error: any) {
@@ -190,7 +209,7 @@ export default function GrueroDashboard() {
 
     return () => {
       socket.disconnect();
-      detenerRastreo();
+      // NO detener rastreo GPS aquí - debe persistir entre cambios de sección
     };
   }, []);
 
@@ -220,9 +239,17 @@ export default function GrueroDashboard() {
       return;
     }
 
+    // Si ya está rastreando, no iniciar de nuevo
+    if (gpsWatchId !== null) {
+      console.log('✅ Rastreo GPS ya está activo, no se reinicia');
+      setRastreoActivo(true);
+      return;
+    }
+
     console.log('🌍 Iniciando rastreo GPS para gruero:', grueroId);
     toast.success('Rastreo GPS activado');
     setRastreoActivo(true);
+    sessionStorage.setItem('gpsRastreoActivo', 'true');
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -244,10 +271,11 @@ export default function GrueroDashboard() {
         console.error('❌ Error obteniendo ubicación:', error);
         toast.error('No se pudo obtener tu ubicación');
         setRastreoActivo(false);
+        sessionStorage.removeItem('gpsRastreoActivo');
       }
     );
 
-    watchIdRef.current = navigator.geolocation.watchPosition(
+    gpsWatchId = navigator.geolocation.watchPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
         const nuevaUbicacion: [number, number] = [latitude, longitude];
@@ -272,73 +300,17 @@ export default function GrueroDashboard() {
         maximumAge: 0,
       }
     );
-  };
 
-  // Función para iniciar rastreo automáticamente (sin toast)
-  const iniciarRastreoAutomatico = (grueroIdParam: string) => {
-    if (!navigator.geolocation) {
-      console.error('❌ Navegador no soporta geolocalización');
-      return;
-    }
-
-    console.log('🌍 Iniciando rastreo GPS automático para gruero:', grueroIdParam);
-    setRastreoActivo(true);
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        const nuevaUbicacion: [number, number] = [latitude, longitude];
-        
-        console.log('📍 Ubicación inicial automática:', latitude, longitude);
-        setUbicacionActual(nuevaUbicacion);
-        
-        if (socketRef.current && grueroIdParam) {
-          socketRef.current.emit('gruero:updateLocation', {
-            grueroId: grueroIdParam,
-            lat: latitude,
-            lng: longitude,
-          });
-        }
-      },
-      (error) => {
-        console.error('❌ Error obteniendo ubicación automática:', error);
-        setRastreoActivo(false);
-      }
-    );
-
-    watchIdRef.current = navigator.geolocation.watchPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        const nuevaUbicacion: [number, number] = [latitude, longitude];
-        
-        console.log('📍 Ubicación actualizada automática:', latitude, longitude);
-        setUbicacionActual(nuevaUbicacion);
-        
-        if (socketRef.current && grueroIdParam) {
-          socketRef.current.emit('gruero:updateLocation', {
-            grueroId: grueroIdParam,
-            lat: latitude,
-            lng: longitude,
-          });
-        }
-      },
-      (error) => {
-        console.error('❌ Error en rastreo GPS automático:', error);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
-      }
-    );
+    console.log('💾 GPS WatchId:', gpsWatchId);
   };
 
   const detenerRastreo = () => {
-    if (watchIdRef.current !== null) {
-      navigator.geolocation.clearWatch(watchIdRef.current);
-      watchIdRef.current = null;
+    if (gpsWatchId !== null) {
+      navigator.geolocation.clearWatch(gpsWatchId);
+      gpsWatchId = null;
+      sessionStorage.removeItem('gpsRastreoActivo');
       setRastreoActivo(false);
-      console.log('🛑 Rastreo GPS detenido');
+      console.log('🛑 Rastreo GPS detenido completamente');
       toast.success('Rastreo GPS desactivado');
     }
   };
@@ -369,6 +341,7 @@ export default function GrueroDashboard() {
 
       if (response.data.success) {
         setDisponible(nuevoEstado);
+        sessionStorage.setItem('grueroDisponible', nuevoEstado.toString());
         
         if (socketRef.current) {
           socketRef.current.emit('gruero:updateStatus', {
@@ -379,7 +352,6 @@ export default function GrueroDashboard() {
 
         if (nuevoEstado) {
           toast.success('¡Ahora estás disponible para servicios!');
-          // No llamar iniciarRastreo aquí, se maneja automáticamente en el useEffect
         } else {
           toast.success('Te has puesto fuera de línea');
           detenerRastreo();
@@ -399,11 +371,8 @@ export default function GrueroDashboard() {
     if (disponible && grueroId && !rastreoActivo) {
       console.log('🌍 Auto-iniciando rastreo GPS porque el gruero está disponible');
       iniciarRastreo();
-    } else if (!disponible && rastreoActivo) {
-      console.log('🛑 Deteniendo rastreo GPS porque el gruero no está disponible');
-      detenerRastreo();
     }
-  }, [disponible, grueroId]); // Se ejecuta cuando cambia disponibilidad o grueroId
+  }, [disponible, grueroId]);
 
   const cargarServiciosPendientes = async () => {
     try {
