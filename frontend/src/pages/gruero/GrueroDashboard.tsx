@@ -10,12 +10,12 @@ import io, { Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
 import 'leaflet/dist/leaflet.css';
 
-// Icono de grúa personalizado con círculo de fondo (igual al logo de Gruapp)
+// Icono de grúa personalizado - GiTowTruck (igual al logo) en círculo naranja
 const grueroIcon = new Icon({
-  iconUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MCIgaGVpZ2h0PSI1MCIgdmlld0JveD0iMCAwIDUwIDUwIj48Y2lyY2xlIGN4PSIyNSIgY3k9IjI1IiByPSIyNCIgZmlsbD0iI2ZmN2EzZCIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjIiLz48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxMywgMTMpIj48cGF0aCBkPSJNMjAgOGgtM1Y0SDN2NWgybC0uMDEgNi4wMWMtMS4yMi4wMy0yLjE4IDEuMDYtMi4xOCAyLjI4QzIuODEgMTguNyAzLjgxIDE5LjcgNSAxOS43YzEuMTkgMCAxLjQ5LTEuMDEgMS40OS0yLjQxIDAtMS4yMi0uOTUtMi4yNi0yLjE3LTIuMjlWOWgxMXY3Ljk5Yy0xLjIyLjAyLTIuMTggMS4wNi0yLjE4IDIuMjggMCAxLjM5IDEuMDEgMi40MSAxLjE5IDIuNDEgMS4xOSAwIDIuMTktLjk5IDIuMTktMi4zOSAwLTEuMjItLjk1LTIuMjYtMi4xNy0yLjI5VjloM2MxLjEgMCAyLS45IDItMlY4ek0xMSA2aDJsLjAxIDEuOTlIOWwuMDEtMnoiIGZpbGw9IiNmZmYiLz48L2c+PC9zdmc+',
-  iconSize: [50, 50],
-  iconAnchor: [25, 50],
-  popupAnchor: [0, -50],
+  iconUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48Y2lyY2xlIGN4PSIzMCIgY3k9IjMwIiByPSIyOCIgZmlsbD0iI2ZmN2EzZCIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjMiLz48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxNSwgMTUpIHNjYWxlKDEuMjUpIj48cGF0aCBkPSJNMTggMTFoLTN2LTZjMC0xLjEtLjktMi0yLTJINWMtMS4xIDAtMiAuOS0yIDJ2Nmg0di05aDR2OWg0djljLTEuNjYgMC0zIDEuMzQtMyAzczEuMzQgMyAzIDMgMy0xLjM0IDMtMy0xLjM0LTMtMy0zem0tOSA2Yy0xLjY2IDAtMyAxLjM0LTMgM3MxLjM0IDMgMyAzIDMtMS4zNCAzLTMtMS4zNC0zLTMtM3ptMTAtMTJoMnYyaC0yem0tNiAyaC0ydi0yaDF6IiBmaWxsPSIjZmZmIi8+PC9nPjwvc3ZnPg==',
+  iconSize: [60, 60],
+  iconAnchor: [30, 60],
+  popupAnchor: [0, -60],
 });
 
 const servicioIcon = new Icon({
