@@ -20,9 +20,9 @@ export default function Header() {
           
           {/* LOGO */}
           <Link to="/" className="flex items-center gap-2 group" onClick={closeMenu}>
-            <GiTowTruck className="text-[#ff7a3d] text-3xl md:text-4xl group-hover:scale-110 transition-transform" />
+            <GiTowTruck className="text-white text-3xl md:text-4xl group-hover:scale-110 transition-transform" />
             <span className="text-white text-xl md:text-2xl font-bold">
-              Gru<span className="text-white">App</span>
+              Gru<span className="text-[#ff7a3d]">App</span>
             </span>
           </Link>
 
