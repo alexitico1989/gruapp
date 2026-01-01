@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
-import { Icon } from 'leaflet';
+import { Icon, DivIcon } from 'leaflet';
 import { Navigation, MapPin, CheckCircle, XCircle, Clock, DollarSign, Phone, Loader2 } from 'lucide-react';
 import { GiTowTruck } from 'react-icons/gi';
+import { renderToStaticMarkup } from 'react-dom/server';
 import Layout from '../../components/Layout';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../lib/api';
@@ -10,12 +11,37 @@ import io, { Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
 import 'leaflet/dist/leaflet.css';
 
-// Icono de grúa personalizado - GiTowTruck (igual al logo) en círculo naranja
-const grueroIcon = new Icon({
-  iconUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48Y2lyY2xlIGN4PSIzMCIgY3k9IjMwIiByPSIyOCIgZmlsbD0iI2ZmN2EzZCIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjMiLz48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxNSwgMTUpIHNjYWxlKDEuMjUpIj48cGF0aCBkPSJNMTggMTFoLTN2LTZjMC0xLjEtLjktMi0yLTJINWMtMS4xIDAtMiAuOS0yIDJ2Nmg0di05aDR2OWg0djljLTEuNjYgMC0zIDEuMzQtMyAzczEuMzQgMyAzIDMgMy0xLjM0IDMtMy0xLjM0LTMtMy0zem0tOSA2Yy0xLjY2IDAtMyAxLjM0LTMgM3MxLjM0IDMgMyAzIDMtMS4zNCAzLTMtMS4zNC0zLTMtM3ptMTAtMTJoMnYyaC0yem0tNiAyaC0ydi0yaDF6IiBmaWxsPSIjZmZmIi8+PC9nPjwvc3ZnPg==',
-  iconSize: [60, 60],
-  iconAnchor: [30, 60],
-  popupAnchor: [0, -60],
+// CSS para el icono personalizado
+const style = document.createElement('style');
+style.textContent = `
+  .custom-truck-icon {
+    background: transparent !important;
+    border: none !important;
+  }
+`;
+document.head.appendChild(style);
+
+// Icono de grúa personalizado usando react-icons directamente
+const grueroIcon = new DivIcon({
+  className: 'custom-truck-icon',
+  html: renderToStaticMarkup(
+    <div style={{
+      width: '50px',
+      height: '50px',
+      borderRadius: '50%',
+      backgroundColor: '#ff7a3d',
+      border: '3px solid white',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+    }}>
+      <GiTowTruck style={{ fontSize: '28px', color: 'white' }} />
+    </div>
+  ),
+  iconSize: [50, 50],
+  iconAnchor: [25, 50],
+  popupAnchor: [0, -50],
 });
 
 const servicioIcon = new Icon({
