@@ -89,7 +89,7 @@ export default function RegisterCliente() {
                       },
                     })}
                     className="w-full pl-11 pr-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
-                    placeholder="Luis"
+                    placeholder="Nombre"
                   />
                 </div>
                 {errors.nombre && (
@@ -114,7 +114,7 @@ export default function RegisterCliente() {
                       },
                     })}
                     className="w-full pl-11 pr-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
-                    placeholder="Monardes"
+                    placeholder="Apellido"
                   />
                 </div>
                 {errors.apellido && (
@@ -164,7 +164,7 @@ export default function RegisterCliente() {
                       },
                     })}
                     className="w-full pl-11 pr-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
-                    placeholder="+56912345678"
+                    placeholder="912345678"
                   />
                 </div>
                 {errors.telefono && (
