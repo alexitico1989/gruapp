@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import { Icon } from 'leaflet';
-import { Navigation, MapPin, CheckCircle, XCircle, Clock, DollarSign, Phone, Loader2, Menu, X } from 'lucide-react';
+import { Navigation, MapPin, CheckCircle, XCircle, Clock, DollarSign, Phone, Loader2 } from 'lucide-react';
 import { GiTowTruck } from 'react-icons/gi';
 import Layout from '../../components/Layout';
 import { useAuthStore } from '../../store/authStore';
@@ -10,9 +10,9 @@ import io, { Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
 import 'leaflet/dist/leaflet.css';
 
-// Icono personalizado de grúa
+// Icono de grúa personalizado usando el mismo diseño del logo (camión de grúa naranja)
 const grueroIcon = new Icon({
-  iconUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSIjMTBiOTgxIj48cGF0aCBkPSJNMjAgOGgtM1Y0SDN2NWgybC0uMDEgNi4wMWMtMS4yMi4wMy0yLjE4IDEuMDYtMi4xOCAyLjI4QzIuODEgMTguNyAzLjgxIDE5LjcgNSAxOS43YzEuMTkgMCAxLjQ5LTEuMDEgMS40OS0yLjQxIDAtMS4yMi0uOTUtMi4yNi0yLjE3LTIuMjlWOWgxMXY3Ljk5Yy0xLjIyLjAyLTIuMTggMS4wNi0yLjE4IDIuMjggMCAxLjM5IDEuMDEgMi40MSAxLjE5IDIuNDEgMS4xOSAwIDIuMTktLjk5IDIuMTktMi4zOSAwLTEuMjItLjk1LTIuMjYtMi4xNy0yLjI5VjloM2MxLjEgMCAyLS45IDItMlY4ek0xMSA2aDJsLjAxIDEuOTlIOWwuMDEtMnoiLz48L3N2Zz4=',
+  iconUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSIjZmY3YTNkIj48cGF0aCBkPSJNMjAgOGgtM1Y0SDN2NWgybC0uMDEgNi4wMWMtMS4yMi4wMy0yLjE4IDEuMDYtMi4xOCAyLjI4QzIuODEgMTguNyAzLjgxIDE5LjcgNSAxOS43YzEuMTkgMCAxLjQ5LTEuMDEgMS40OS0yLjQxIDAtMS4yMi0uOTUtMi4yNi0yLjE3LTIuMjlWOWgxMXY3Ljk5Yy0xLjIyLjAyLTIuMTggMS4wNi0yLjE4IDIuMjggMCAxLjM5IDEuMDEgMi40MSAxLjE5IDIuNDEgMS4xOSAwIDIuMTktLjk5IDIuMTktMi4zOSAwLTEuMjItLjk1LTIuMjYtMi4xNy0yLjI5VjloM2MxLjEgMCAyLS45IDItMlY4ek0xMSA2aDJsLjAxIDEuOTlIOWwuMDEtMnoiLz48L3N2Zz4=',
   iconSize: [40, 40],
   iconAnchor: [20, 40],
   popupAnchor: [0, -40],
@@ -78,7 +78,6 @@ export default function GrueroDashboard() {
   const [grueroId, setGrueroId] = useState<string | null>(null);
   const [rastreoActivo, setRastreoActivo] = useState(false);
   const [perfilCargado, setPerfilCargado] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const socketRef = useRef<Socket | null>(null);
   const watchIdRef = useRef<number | null>(null);
@@ -120,7 +119,12 @@ export default function GrueroDashboard() {
             setUbicacionActual([grueroData.latitud, grueroData.longitud]);
           }
 
-          toast.success(`Bienvenido ${grueroData.user.nombre}!`);
+          // Solo mostrar toast de bienvenida si acaba de iniciar sesión
+          const justLoggedIn = sessionStorage.getItem('justLoggedIn');
+          if (justLoggedIn === 'true') {
+            toast.success(`Bienvenido ${grueroData.user.nombre}!`);
+            sessionStorage.removeItem('justLoggedIn'); // Limpiar el flag
+          }
         }
       } catch (error: any) {
         console.error('❌ Error obteniendo perfil gruero:', error);
@@ -385,7 +389,6 @@ export default function GrueroDashboard() {
 
         cargarServicioActivo();
         cargarServiciosPendientes();
-        setSidebarOpen(false);
       }
     } catch (error: any) {
       console.error('Error al aceptar servicio:', error);
@@ -493,41 +496,14 @@ export default function GrueroDashboard() {
 
   return (
     <Layout>
-      <div className="flex h-[calc(100vh-64px)] relative">
-        {/* Botón Hamburguesa Móvil */}
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="lg:hidden fixed top-20 left-4 z-[1001] bg-[#1e3a5f] text-white p-3 rounded-full shadow-lg"
-        >
-          {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </button>
-
-        {/* Overlay para cerrar sidebar en móvil */}
-        {sidebarOpen && (
-          <div
-            className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-[999]"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
-
-        {/* Sidebar */}
-        <div
-          className={`
-            fixed lg:relative
-            top-0 left-0 h-full
-            w-80 max-w-[85vw]
-            bg-white border-r border-gray-200
-            overflow-y-auto
-            transform transition-transform duration-300 ease-in-out
-            z-[1000]
-            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-          `}
-        >
+      <div className="flex h-[calc(100vh-64px)]">
+        {/* Panel Izquierdo - Info del Gruero */}
+        <div className="w-80 bg-white border-r border-gray-200 overflow-y-auto">
           <div className="p-4 md:p-6">
             <h2 className="text-lg md:text-xl font-bold text-[#1e3a5f] mb-4">Dashboard Gruero</h2>
 
             {/* Estado de Disponibilidad */}
-            <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2d5a8f] rounded-lg p-4 mb-4 md:mb-6 text-white">
+            <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2d5a8f] rounded-lg p-4 mb-6 text-white">
               <div className="flex items-center justify-between mb-3">
                 <span className="font-semibold text-sm md:text-base">Estado</span>
                 <button
@@ -560,7 +536,7 @@ export default function GrueroDashboard() {
             </div>
 
             {/* Rastreo GPS */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 md:p-4 mb-4 md:mb-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
               <div className="flex items-center justify-between mb-2">
                 <span className="font-semibold text-blue-900 text-sm md:text-base">Rastreo GPS</span>
                 <div
@@ -581,24 +557,24 @@ export default function GrueroDashboard() {
 
             {/* Estadísticas */}
             {estadisticas && (
-              <div className="grid grid-cols-2 gap-2 md:gap-3 mb-4 md:mb-6">
-                <div className="bg-green-50 p-2 md:p-3 rounded-lg">
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                <div className="bg-green-50 p-3 rounded-lg">
                   <p className="text-xs text-gray-600 mb-1">Completados</p>
-                  <p className="text-xl md:text-2xl font-bold text-green-600">{estadisticas.serviciosCompletados}</p>
+                  <p className="text-2xl font-bold text-green-600">{estadisticas.serviciosCompletados}</p>
                 </div>
-                <div className="bg-blue-50 p-2 md:p-3 rounded-lg">
+                <div className="bg-blue-50 p-3 rounded-lg">
                   <p className="text-xs text-gray-600 mb-1">Activos</p>
-                  <p className="text-xl md:text-2xl font-bold text-blue-600">{estadisticas.serviciosActivos}</p>
+                  <p className="text-2xl font-bold text-blue-600">{estadisticas.serviciosActivos}</p>
                 </div>
-                <div className="bg-purple-50 p-2 md:p-3 rounded-lg">
+                <div className="bg-purple-50 p-3 rounded-lg">
                   <p className="text-xs text-gray-600 mb-1">Hoy</p>
-                  <p className="text-base md:text-lg font-bold text-purple-600">
+                  <p className="text-lg font-bold text-purple-600">
                     ${(estadisticas.gananciasHoy / 1000).toFixed(0)}k
                   </p>
                 </div>
-                <div className="bg-orange-50 p-2 md:p-3 rounded-lg">
+                <div className="bg-orange-50 p-3 rounded-lg">
                   <p className="text-xs text-gray-600 mb-1">Semana</p>
-                  <p className="text-base md:text-lg font-bold text-orange-600">
+                  <p className="text-lg font-bold text-orange-600">
                     ${(estadisticas.gananciasSemana / 1000).toFixed(0)}k
                   </p>
                 </div>
@@ -607,7 +583,7 @@ export default function GrueroDashboard() {
 
             {/* Servicio Activo */}
             {servicioActivo && (
-              <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-3 md:p-4 mb-4 md:mb-6">
+              <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-4 mb-6">
                 <h3 className="font-bold text-orange-900 mb-3 text-sm md:text-base">Servicio Activo</h3>
                 <div className="space-y-2 text-xs md:text-sm">
                   <div>
@@ -681,8 +657,8 @@ export default function GrueroDashboard() {
                 <h3 className="font-bold text-[#1e3a5f] mb-3 text-sm md:text-base">Servicios Disponibles</h3>
                 {serviciosPendientes.length === 0 ? (
                   <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <Clock className="h-10 w-10 md:h-12 md:w-12 text-gray-400 mx-auto mb-2" />
-                    <p className="text-xs md:text-sm text-gray-600">No hay servicios pendientes</p>
+                    <Clock className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-600">No hay servicios pendientes</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -692,14 +668,14 @@ export default function GrueroDashboard() {
                         className="border-2 border-gray-200 rounded-lg p-3 hover:border-[#ff7a3d] transition-colors"
                       >
                         <div className="flex justify-between items-start mb-2">
-                          <div className="text-xs md:text-sm">
+                          <div className="text-sm">
                             <p className="font-semibold">
                               {servicio.cliente.user.nombre} {servicio.cliente.user.apellido}
                             </p>
                             <p className="text-xs text-gray-600">{servicio.distanciaKm} km</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-base md:text-lg font-bold text-green-600">
+                            <p className="text-lg font-bold text-green-600">
                               ${(servicio.totalGruero / 1000).toFixed(0)}k
                             </p>
                           </div>
@@ -720,7 +696,7 @@ export default function GrueroDashboard() {
           </div>
         </div>
 
-        {/* Mapa */}
+        {/* Mapa - Panel Derecho */}
         <div className="flex-1 relative">
           <MapContainer center={ubicacionActual} zoom={13} className="h-full w-full" scrollWheelZoom={true}>
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
