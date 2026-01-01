@@ -103,45 +103,49 @@ export default function GrueroServicios() {
 
   return (
     <Layout>
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#1e3a5f] mb-2">Mis Servicios</h1>
-          <p className="text-gray-600">Historial completo de servicios realizados</p>
+      <div className="max-w-7xl mx-auto p-4 md:p-6">
+        {/* Header */}
+        <div className="mb-6 md:mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold text-[#1e3a5f] mb-2">Mis Servicios</h1>
+          <p className="text-sm md:text-base text-gray-600">Historial completo de servicios realizados</p>
         </div>
 
+        {/* Resumen Stats */}
         {resumen && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500">
-              <p className="text-sm text-gray-600 mb-1">Total Servicios</p>
-              <p className="text-3xl font-bold text-blue-600">{resumen.totalServicios}</p>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
+            <div className="bg-white rounded-xl shadow-md p-4 md:p-6 border-l-4 border-blue-500">
+              <p className="text-xs md:text-sm text-gray-600 mb-1">Total Servicios</p>
+              <p className="text-2xl md:text-3xl font-bold text-blue-600">{resumen.totalServicios}</p>
             </div>
-            <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
-              <p className="text-sm text-gray-600 mb-1">Completados</p>
-              <p className="text-3xl font-bold text-green-600">{resumen.completados}</p>
+            <div className="bg-white rounded-xl shadow-md p-4 md:p-6 border-l-4 border-green-500">
+              <p className="text-xs md:text-sm text-gray-600 mb-1">Completados</p>
+              <p className="text-2xl md:text-3xl font-bold text-green-600">{resumen.completados}</p>
             </div>
-            <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-red-500">
-              <p className="text-sm text-gray-600 mb-1">Cancelados</p>
-              <p className="text-3xl font-bold text-red-600">{resumen.cancelados}</p>
+            <div className="bg-white rounded-xl shadow-md p-4 md:p-6 border-l-4 border-red-500">
+              <p className="text-xs md:text-sm text-gray-600 mb-1">Cancelados</p>
+              <p className="text-2xl md:text-3xl font-bold text-red-600">{resumen.cancelados}</p>
             </div>
-            <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-orange-500">
-              <p className="text-sm text-gray-600 mb-1">Ganancias</p>
-              <p className="text-2xl font-bold text-orange-600">
-                ${resumen.gananciasTotal.toLocaleString('es-CL')}
+            <div className="bg-white rounded-xl shadow-md p-4 md:p-6 border-l-4 border-orange-500 col-span-2 lg:col-span-1">
+              <p className="text-xs md:text-sm text-gray-600 mb-1">Ganancias</p>
+              <p className="text-xl md:text-2xl font-bold text-orange-600">
+                ${(resumen.gananciasTotal / 1000).toFixed(0)}k
               </p>
             </div>
           </div>
         )}
 
-        <div className="bg-white rounded-xl shadow-lg p-4 mb-6 border border-gray-100">
+        {/* Filtros */}
+        <div className="bg-white rounded-xl shadow-lg p-3 md:p-4 mb-6 border border-gray-100">
+          {/* Filtro Estado */}
           <div className="mb-4">
             <div className="flex items-center space-x-2 mb-2">
-              <Filter className="h-5 w-5 text-gray-400 flex-shrink-0" />
-              <span className="font-semibold text-gray-700">Estado</span>
+              <Filter className="h-4 w-4 md:h-5 md:w-5 text-gray-400 flex-shrink-0" />
+              <span className="font-semibold text-gray-700 text-sm md:text-base">Estado</span>
             </div>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setFiltroEstado('TODOS')}
-                className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
+                className={`px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-medium whitespace-nowrap transition-colors text-xs md:text-sm ${
                   filtroEstado === 'TODOS'
                     ? 'bg-[#1e3a5f] text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -153,7 +157,7 @@ export default function GrueroServicios() {
                 <button
                   key={key}
                   onClick={() => setFiltroEstado(key)}
-                  className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
+                  className={`px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-medium whitespace-nowrap transition-colors text-xs md:text-sm ${
                     filtroEstado === key
                       ? `${config.bg} ${config.text}`
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -165,10 +169,11 @@ export default function GrueroServicios() {
             </div>
           </div>
 
+          {/* Filtro Período */}
           <div>
             <div className="flex items-center space-x-2 mb-2">
-              <Calendar className="h-5 w-5 text-gray-400 flex-shrink-0" />
-              <span className="font-semibold text-gray-700">Período</span>
+              <Calendar className="h-4 w-4 md:h-5 md:w-5 text-gray-400 flex-shrink-0" />
+              <span className="font-semibold text-gray-700 text-sm md:text-base">Período</span>
             </div>
             <div className="flex flex-wrap gap-2">
               {[
@@ -180,7 +185,7 @@ export default function GrueroServicios() {
                 <button
                   key={periodo.value}
                   onClick={() => setFiltroPeriodo(periodo.value)}
-                  className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
+                  className={`px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-medium whitespace-nowrap transition-colors text-xs md:text-sm ${
                     filtroPeriodo === periodo.value
                       ? 'bg-[#ff7a3d] text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -193,18 +198,19 @@ export default function GrueroServicios() {
           </div>
         </div>
 
+        {/* Lista de Servicios */}
         {servicios.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-lg p-12 text-center border border-gray-100">
-            <Truck className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-700 mb-2">No hay servicios</h3>
-            <p className="text-gray-500">
+          <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 text-center border border-gray-100">
+            <Truck className="h-12 w-12 md:h-16 md:w-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg md:text-xl font-semibold text-gray-700 mb-2">No hay servicios</h3>
+            <p className="text-sm md:text-base text-gray-500">
               {filtroEstado !== 'TODOS' || filtroPeriodo !== 'todo'
                 ? 'Intenta con otros filtros'
                 : 'Los servicios que aceptes aparecerán aquí'}
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {servicios.map((servicio) => {
               const estado = estadoConfig[servicio.status as keyof typeof estadoConfig];
 
@@ -213,12 +219,13 @@ export default function GrueroServicios() {
                   key={servicio.id}
                   className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all border border-gray-100 overflow-hidden"
                 >
-                  <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2d4a6f] p-4">
+                  {/* Header de Card */}
+                  <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2d4a6f] p-3 md:p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-white font-bold text-sm">
+                      <span className="text-white font-bold text-xs md:text-sm">
                         {format(new Date(servicio.solicitadoAt), "dd 'de' MMM, yyyy", { locale: es })}
                       </span>
-                      <span className={`${estado.bg} ${estado.text} px-3 py-1 rounded-full text-xs font-semibold`}>
+                      <span className={`${estado.bg} ${estado.text} px-2 md:px-3 py-0.5 md:py-1 rounded-full text-xs font-semibold`}>
                         {estado.label}
                       </span>
                     </div>
@@ -227,54 +234,64 @@ export default function GrueroServicios() {
                     </p>
                   </div>
 
-                  <div className="p-4 space-y-3">
+                  {/* Contenido de Card */}
+                  <div className="p-3 md:p-4 space-y-3">
+                    {/* Cliente */}
                     <div>
                       <p className="text-xs text-gray-500">Cliente</p>
-                      <p className="text-sm font-semibold text-gray-900">
+                      <p className="text-sm font-semibold text-gray-900 truncate">
                         {servicio.cliente.user.nombre} {servicio.cliente.user.apellido}
                       </p>
                     </div>
 
+                    {/* Origen */}
                     <div className="flex items-start">
-                      <MapPin className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                      <MapPin className="h-4 w-4 md:h-5 md:w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-xs text-gray-500">Origen</p>
-                        <p className="text-sm font-medium text-gray-900 truncate">{servicio.origenDireccion}</p>
+                        <p className="text-xs md:text-sm font-medium text-gray-900 line-clamp-1">
+                          {servicio.origenDireccion}
+                        </p>
                       </div>
                     </div>
 
+                    {/* Destino */}
                     <div className="flex items-start">
-                      <Navigation className="h-5 w-5 text-orange-500 mr-2 mt-0.5 flex-shrink-0" />
+                      <Navigation className="h-4 w-4 md:h-5 md:w-5 text-orange-500 mr-2 mt-0.5 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-xs text-gray-500">Destino</p>
-                        <p className="text-sm font-medium text-gray-900 truncate">{servicio.destinoDireccion}</p>
+                        <p className="text-xs md:text-sm font-medium text-gray-900 line-clamp-1">
+                          {servicio.destinoDireccion}
+                        </p>
                       </div>
                     </div>
 
+                    {/* Footer: Precio y Distancia */}
                     <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
                       <div className="flex items-center text-gray-600">
                         <DollarSign className="h-4 w-4 mr-1" />
-                        <span className="text-sm font-semibold text-green-600">
-                          ${servicio.totalGruero.toLocaleString('es-CL')}
+                        <span className="text-sm md:text-base font-semibold text-green-600">
+                          ${(servicio.totalGruero / 1000).toFixed(0)}k
                         </span>
                       </div>
                       <div className="text-xs text-gray-500">{servicio.distanciaKm} km</div>
                     </div>
 
+                    {/* Calificación */}
                     {servicio.calificacion && (
                       <div className="pt-3 border-t border-gray-100">
                         <div className="flex items-center">
                           {[1, 2, 3, 4, 5].map((star) => (
                             <Star
                               key={star}
-                              className={`h-4 w-4 ${
+                              className={`h-3 w-3 md:h-4 md:w-4 ${
                                 star <= servicio.calificacion!.puntuacionGruero
                                   ? 'fill-yellow-400 text-yellow-400'
                                   : 'text-gray-300'
                               }`}
                             />
                           ))}
-                          <span className="ml-2 text-sm font-semibold text-gray-700">
+                          <span className="ml-2 text-xs md:text-sm font-semibold text-gray-700">
                             {servicio.calificacion.puntuacionGruero}.0
                           </span>
                         </div>

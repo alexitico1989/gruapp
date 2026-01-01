@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import { Icon } from 'leaflet';
-import { Navigation, MapPin, CheckCircle, XCircle, Clock, DollarSign, Phone, Loader2 } from 'lucide-react';
+import { Navigation, MapPin, CheckCircle, XCircle, Clock, DollarSign, Phone, Loader2, Menu, X } from 'lucide-react';
 import { GiTowTruck } from 'react-icons/gi';
 import Layout from '../../components/Layout';
 import { useAuthStore } from '../../store/authStore';
@@ -79,6 +79,7 @@ export default function GrueroDashboard() {
   const [grueroId, setGrueroId] = useState<string | null>(null);
   const [rastreoActivo, setRastreoActivo] = useState(false);
   const [perfilCargado, setPerfilCargado] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const socketRef = useRef<Socket | null>(null);
   const watchIdRef = useRef<number | null>(null);
@@ -113,7 +114,6 @@ export default function GrueroDashboard() {
 
     initGruero();
 
-    // Socket.IO para eventos de servicios (NO para notificaciones)
     const socket = io('http://localhost:5000');
     socketRef.current = socket;
 
@@ -367,6 +367,7 @@ export default function GrueroDashboard() {
 
         cargarServicioActivo();
         cargarServiciosPendientes();
+        setSidebarOpen(false);
       }
     } catch (error: any) {
       console.error('Error al aceptar servicio:', error);
@@ -474,14 +475,43 @@ export default function GrueroDashboard() {
 
   return (
     <Layout>
-      <div className="flex h-[calc(100vh-64px)]">
-        <div className="w-80 bg-white border-r border-gray-200 overflow-y-auto">
-          <div className="p-6">
-            <h2 className="text-xl font-bold text-[#1e3a5f] mb-4">Dashboard Gruero</h2>
+      <div className="flex h-[calc(100vh-64px)] relative">
+        {/* Botón Hamburguesa Móvil */}
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="lg:hidden fixed top-20 left-4 z-[1001] bg-[#1e3a5f] text-white p-3 rounded-full shadow-lg"
+        >
+          {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+        </button>
 
-            <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2d5a8f] rounded-lg p-4 mb-6 text-white">
+        {/* Overlay para cerrar sidebar en móvil */}
+        {sidebarOpen && (
+          <div
+            className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-[999]"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
+        {/* Sidebar */}
+        <div
+          className={`
+            fixed lg:relative
+            top-0 left-0 h-full
+            w-80 max-w-[85vw]
+            bg-white border-r border-gray-200
+            overflow-y-auto
+            transform transition-transform duration-300 ease-in-out
+            z-[1000]
+            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          `}
+        >
+          <div className="p-4 md:p-6">
+            <h2 className="text-lg md:text-xl font-bold text-[#1e3a5f] mb-4">Dashboard Gruero</h2>
+
+            {/* Estado de Disponibilidad */}
+            <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2d5a8f] rounded-lg p-4 mb-4 md:mb-6 text-white">
               <div className="flex items-center justify-between mb-3">
-                <span className="font-semibold">Estado</span>
+                <span className="font-semibold text-sm md:text-base">Estado</span>
                 <button
                   onClick={toggleDisponibilidad}
                   disabled={loading || !grueroId}
@@ -496,24 +526,25 @@ export default function GrueroDashboard() {
                   />
                 </button>
               </div>
-              <div className="flex items-center">
+              <div className="flex items-center text-sm md:text-base">
                 {disponible ? (
                   <>
-                    <CheckCircle className="h-5 w-5 mr-2" />
+                    <CheckCircle className="h-4 w-4 md:h-5 md:w-5 mr-2" />
                     <span>Disponible</span>
                   </>
                 ) : (
                   <>
-                    <XCircle className="h-5 w-5 mr-2" />
+                    <XCircle className="h-4 w-4 md:h-5 md:w-5 mr-2" />
                     <span>Fuera de línea</span>
                   </>
                 )}
               </div>
             </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            {/* Rastreo GPS */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 md:p-4 mb-4 md:mb-6">
               <div className="flex items-center justify-between mb-2">
-                <span className="font-semibold text-blue-900">Rastreo GPS</span>
+                <span className="font-semibold text-blue-900 text-sm md:text-base">Rastreo GPS</span>
                 <div
                   className={`h-3 w-3 rounded-full ${
                     rastreoActivo ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
@@ -530,101 +561,110 @@ export default function GrueroDashboard() {
               </div>
             </div>
 
+            {/* Estadísticas */}
             {estadisticas && (
-              <div className="grid grid-cols-2 gap-3 mb-6">
-                <div className="bg-green-50 p-3 rounded-lg">
+              <div className="grid grid-cols-2 gap-2 md:gap-3 mb-4 md:mb-6">
+                <div className="bg-green-50 p-2 md:p-3 rounded-lg">
                   <p className="text-xs text-gray-600 mb-1">Completados</p>
-                  <p className="text-2xl font-bold text-green-600">{estadisticas.serviciosCompletados}</p>
+                  <p className="text-xl md:text-2xl font-bold text-green-600">{estadisticas.serviciosCompletados}</p>
                 </div>
-                <div className="bg-blue-50 p-3 rounded-lg">
+                <div className="bg-blue-50 p-2 md:p-3 rounded-lg">
                   <p className="text-xs text-gray-600 mb-1">Activos</p>
-                  <p className="text-2xl font-bold text-blue-600">{estadisticas.serviciosActivos}</p>
+                  <p className="text-xl md:text-2xl font-bold text-blue-600">{estadisticas.serviciosActivos}</p>
                 </div>
-                <div className="bg-purple-50 p-3 rounded-lg">
+                <div className="bg-purple-50 p-2 md:p-3 rounded-lg">
                   <p className="text-xs text-gray-600 mb-1">Hoy</p>
-                  <p className="text-lg font-bold text-purple-600">
-                    ${estadisticas.gananciasHoy.toLocaleString('es-CL')}
+                  <p className="text-base md:text-lg font-bold text-purple-600">
+                    ${(estadisticas.gananciasHoy / 1000).toFixed(0)}k
                   </p>
                 </div>
-                <div className="bg-orange-50 p-3 rounded-lg">
+                <div className="bg-orange-50 p-2 md:p-3 rounded-lg">
                   <p className="text-xs text-gray-600 mb-1">Semana</p>
-                  <p className="text-lg font-bold text-orange-600">
-                    ${estadisticas.gananciasSemana.toLocaleString('es-CL')}
+                  <p className="text-base md:text-lg font-bold text-orange-600">
+                    ${(estadisticas.gananciasSemana / 1000).toFixed(0)}k
                   </p>
                 </div>
               </div>
             )}
 
+            {/* Servicio Activo */}
             {servicioActivo && (
-              <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-4 mb-6">
-                <h3 className="font-bold text-orange-900 mb-3">Servicio Activo</h3>
-                <div className="space-y-2 text-sm">
+              <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-3 md:p-4 mb-4 md:mb-6">
+                <h3 className="font-bold text-orange-900 mb-3 text-sm md:text-base">Servicio Activo</h3>
+                <div className="space-y-2 text-xs md:text-sm">
                   <div>
                     <span className="font-semibold">Cliente:</span>{' '}
                     {servicioActivo.cliente.user.nombre} {servicioActivo.cliente.user.apellido}
                   </div>
                   <div>
-                    <span className="font-semibold">Origen:</span> {servicioActivo.origenDireccion}
+                    <span className="font-semibold">Origen:</span>{' '}
+                    <span className="text-xs">{servicioActivo.origenDireccion}</span>
                   </div>
                   <div>
-                    <span className="font-semibold">Destino:</span> {servicioActivo.destinoDireccion}
+                    <span className="font-semibold">Destino:</span>{' '}
+                    <span className="text-xs">{servicioActivo.destinoDireccion}</span>
                   </div>
                   <div>
                     <span className="font-semibold">Distancia:</span> {servicioActivo.distanciaKm} km
                   </div>
-                  <div className="text-lg font-bold text-orange-600">
+                  <div className="text-base md:text-lg font-bold text-orange-600">
                     Ganancia: ${servicioActivo.totalGruero.toLocaleString('es-CL')}
                   </div>
-                  <div className="flex space-x-2 mt-4">
+                  
+                  {/* Botones de Estado */}
+                  <div className="flex flex-col gap-2 mt-4">
                     {servicioActivo.status === 'ACEPTADO' && (
                       <button
                         onClick={() => actualizarEstadoServicio('EN_CAMINO')}
-                        className="flex-1 bg-blue-500 text-white rounded-lg py-2 text-sm font-semibold"
+                        className="w-full bg-blue-500 text-white rounded-lg py-2.5 text-sm font-semibold"
                       >
-                        En Camino
+                        🚗 En Camino
                       </button>
                     )}
                     {servicioActivo.status === 'EN_CAMINO' && (
                       <button
                         onClick={() => actualizarEstadoServicio('EN_SITIO')}
-                        className="flex-1 bg-purple-500 text-white rounded-lg py-2 text-sm font-semibold"
+                        className="w-full bg-purple-500 text-white rounded-lg py-2.5 text-sm font-semibold"
                       >
-                        Llegué al Sitio
+                        📍 Llegué al Sitio
                       </button>
                     )}
                     {servicioActivo.status === 'EN_SITIO' && (
                       <button
                         onClick={() => actualizarEstadoServicio('COMPLETADO')}
-                        className="flex-1 bg-green-500 text-white rounded-lg py-2 text-sm font-semibold"
+                        className="w-full bg-green-500 text-white rounded-lg py-2.5 text-sm font-semibold"
                       >
-                        Completar
+                        ✅ Completar Servicio
                       </button>
                     )}
+                    
+                    <a 
+                      href={`tel:${servicioActivo.cliente.user.telefono}`}
+                      className="w-full bg-orange-600 text-white rounded-lg py-2.5 text-center text-sm font-semibold flex items-center justify-center"
+                    >
+                      <Phone className="inline h-4 w-4 mr-2" />
+                      Llamar Cliente
+                    </a>
+                    
+                    <button 
+                      onClick={cancelarServicio}
+                      className="w-full bg-red-500 text-white rounded-lg py-2.5 text-sm font-semibold"
+                    >
+                      ❌ Cancelar Servicio
+                    </button>
                   </div>
-                  <button 
-                    onClick={() => window.location.href = `tel:${servicioActivo.cliente.user.telefono}`}
-                    className="w-full bg-orange-600 text-white rounded-lg py-2 mt-2"
-                  >
-                    <Phone className="inline h-4 w-4 mr-2" />
-                    Llamar Cliente
-                  </button>
-                  <button 
-                    onClick={cancelarServicio}
-                    className="w-full bg-red-500 text-white rounded-lg py-2 mt-2 font-semibold"
-                  >
-                    Cancelar Servicio
-                  </button>
                 </div>
               </div>
             )}
 
+            {/* Servicios Disponibles */}
             {disponible && !servicioActivo && (
               <div>
-                <h3 className="font-bold text-[#1e3a5f] mb-3">Servicios Disponibles</h3>
+                <h3 className="font-bold text-[#1e3a5f] mb-3 text-sm md:text-base">Servicios Disponibles</h3>
                 {serviciosPendientes.length === 0 ? (
                   <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <Clock className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-600">No hay servicios pendientes</p>
+                    <Clock className="h-10 w-10 md:h-12 md:w-12 text-gray-400 mx-auto mb-2" />
+                    <p className="text-xs md:text-sm text-gray-600">No hay servicios pendientes</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -634,22 +674,22 @@ export default function GrueroDashboard() {
                         className="border-2 border-gray-200 rounded-lg p-3 hover:border-[#ff7a3d] transition-colors"
                       >
                         <div className="flex justify-between items-start mb-2">
-                          <div className="text-sm">
+                          <div className="text-xs md:text-sm">
                             <p className="font-semibold">
                               {servicio.cliente.user.nombre} {servicio.cliente.user.apellido}
                             </p>
                             <p className="text-xs text-gray-600">{servicio.distanciaKm} km</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-lg font-bold text-green-600">
-                              ${servicio.totalGruero.toLocaleString('es-CL')}
+                            <p className="text-base md:text-lg font-bold text-green-600">
+                              ${(servicio.totalGruero / 1000).toFixed(0)}k
                             </p>
                           </div>
                         </div>
                         <button
                           onClick={() => aceptarServicio(servicio.id)}
                           disabled={loading}
-                          className="w-full bg-[#ff7a3d] text-white rounded-lg py-2 font-semibold disabled:opacity-50"
+                          className="w-full bg-[#ff7a3d] text-white rounded-lg py-2.5 text-sm font-semibold disabled:opacity-50"
                         >
                           {loading ? <Loader2 className="animate-spin h-5 w-5 mx-auto" /> : 'Aceptar Servicio'}
                         </button>
@@ -662,6 +702,7 @@ export default function GrueroDashboard() {
           </div>
         </div>
 
+        {/* Mapa */}
         <div className="flex-1 relative">
           <MapContainer center={ubicacionActual} zoom={13} className="h-full w-full" scrollWheelZoom={true}>
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
@@ -694,15 +735,14 @@ export default function GrueroDashboard() {
               <Marker key={servicio.id} position={[servicio.origenLat, servicio.origenLng]} icon={servicioIcon}>
                 <Popup maxWidth={300}>
                   <div className="p-2">
-                    <h3 className="font-bold text-[#1e3a5f] mb-2 flex items-center">
+                    <h3 className="font-bold text-[#1e3a5f] mb-2 flex items-center text-sm">
                       <GiTowTruck className="h-5 w-5 mr-2" />
                       Servicio Disponible
                     </h3>
                     
-                    {/* Cliente */}
                     <div className="mb-3 pb-2 border-b">
                       <p className="text-xs text-gray-600 mb-1">Cliente:</p>
-                      <p className="font-semibold text-gray-900">
+                      <p className="font-semibold text-gray-900 text-sm">
                         {servicio.cliente.user.nombre} {servicio.cliente.user.apellido}
                       </p>
                       <a 
@@ -714,7 +754,6 @@ export default function GrueroDashboard() {
                       </a>
                     </div>
 
-                    {/* Origen */}
                     <div className="mb-2">
                       <div className="flex items-start">
                         <MapPin className="h-4 w-4 text-green-600 mr-2 mt-0.5 flex-shrink-0" />
@@ -725,7 +764,6 @@ export default function GrueroDashboard() {
                       </div>
                     </div>
 
-                    {/* Destino */}
                     <div className="mb-3 pb-2 border-b">
                       <div className="flex items-start">
                         <Navigation className="h-4 w-4 text-orange-600 mr-2 mt-0.5 flex-shrink-0" />
@@ -736,21 +774,19 @@ export default function GrueroDashboard() {
                       </div>
                     </div>
 
-                    {/* Distancia y Ganancia */}
                     <div className="flex justify-between items-center mb-3">
                       <div>
                         <p className="text-xs text-gray-600">Distancia:</p>
-                        <p className="font-semibold text-gray-900">{servicio.distanciaKm} km</p>
+                        <p className="font-semibold text-gray-900 text-sm">{servicio.distanciaKm} km</p>
                       </div>
                       <div className="text-right">
                         <p className="text-xs text-gray-600">Tu ganancia:</p>
-                        <p className="text-lg font-bold text-green-600">
-                          ${servicio.totalGruero.toLocaleString('es-CL')}
+                        <p className="text-base font-bold text-green-600">
+                          ${(servicio.totalGruero / 1000).toFixed(0)}k
                         </p>
                       </div>
                     </div>
 
-                    {/* Botón Aceptar */}
                     <button
                       onClick={() => aceptarServicio(servicio.id)}
                       disabled={loading}
