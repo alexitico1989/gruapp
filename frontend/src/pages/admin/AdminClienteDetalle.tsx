@@ -223,31 +223,31 @@ export default function AdminClienteDetalle() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center space-x-3 md:space-x-4">
           <button
             onClick={() => navigate('/admin/clientes')}
-            className="text-gray-600 hover:text-gray-900"
+            className="text-gray-600 hover:text-gray-900 flex-shrink-0"
           >
             ← Volver
           </button>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
               {cliente.user.nombre} {cliente.user.apellido}
             </h1>
-            <p className="text-gray-600">Detalle del Cliente</p>
+            <p className="text-sm md:text-base text-gray-600">Detalle del Cliente</p>
           </div>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center flex-wrap gap-2">
           {/* Badge de estado */}
           {cliente.cuentaSuspendida ? (
-            <span className="px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-800">
+            <span className="px-3 py-1 rounded-full text-xs md:text-sm font-semibold bg-red-100 text-red-800">
               SUSPENDIDO
             </span>
           ) : (
-            <span className="px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800">
+            <span className="px-3 py-1 rounded-full text-xs md:text-sm font-semibold bg-green-100 text-green-800">
               ACTIVO
             </span>
           )}
@@ -256,14 +256,14 @@ export default function AdminClienteDetalle() {
           {cliente.cuentaSuspendida ? (
             <button
               onClick={handleReactivar}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              className="px-3 md:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm md:text-base"
             >
               Reactivar
             </button>
           ) : (
             <button
               onClick={handleSuspender}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+              className="px-3 md:px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm md:text-base"
             >
               Suspender
             </button>
@@ -273,14 +273,14 @@ export default function AdminClienteDetalle() {
 
       {/* Alerta de Suspensión */}
       {cliente.cuentaSuspendida && cliente.motivoSuspension && (
-        <div className="bg-red-50 border-l-4 border-red-400 p-4">
+        <div className="bg-red-50 border-l-4 border-red-400 p-3 md:p-4">
           <div className="flex">
             <div className="flex-shrink-0">
-              <span className="text-2xl">⚠️</span>
+              <span className="text-xl md:text-2xl">⚠️</span>
             </div>
             <div className="ml-3">
               <h3 className="text-sm font-medium text-red-800">Cuenta Suspendida</h3>
-              <p className="mt-2 text-sm text-red-700">
+              <p className="mt-2 text-xs md:text-sm text-red-700">
                 <strong>Motivo:</strong> {cliente.motivoSuspension}
               </p>
             </div>
@@ -290,51 +290,52 @@ export default function AdminClienteDetalle() {
 
       {/* Tabs */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="border-b border-gray-200">
-          <nav className="flex space-x-8 px-6" aria-label="Tabs">
+        <div className="border-b border-gray-200 overflow-x-auto scrollbar-hide">
+          <nav className="flex space-x-4 md:space-x-8 px-4 md:px-6 min-w-max" aria-label="Tabs">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition ${
+                className={`py-3 md:py-4 px-1 border-b-2 font-medium text-xs md:text-sm transition whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
                 <span className="mr-2">{tab.icon}</span>
-                {tab.nombre}
+                <span className="hidden sm:inline">{tab.nombre}</span>
+                <span className="sm:hidden">{tab.nombre.split(' ')[0]}</span>
               </button>
             ))}
           </nav>
         </div>
 
         {/* Tab Content */}
-        <div className="p-6">
+        <div className="p-4 md:p-6">
           {/* Información General */}
           {activeTab === 'informacion' && (
             <div className="space-y-6">
               {/* Información Personal */}
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Información Personal</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Información Personal</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                   <div>
-                    <p className="text-sm text-gray-600">Email</p>
-                    <p className="font-medium">{cliente.user.email}</p>
+                    <p className="text-xs md:text-sm text-gray-600">Email</p>
+                    <p className="font-medium text-sm md:text-base truncate">{cliente.user.email}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Teléfono</p>
-                    <p className="font-medium">{cliente.user.telefono}</p>
+                    <p className="text-xs md:text-sm text-gray-600">Teléfono</p>
+                    <p className="font-medium text-sm md:text-base">{cliente.user.telefono}</p>
                   </div>
                   {cliente.user.rut && (
                     <div>
-                      <p className="text-sm text-gray-600">RUT</p>
-                      <p className="font-medium">{cliente.user.rut}</p>
+                      <p className="text-xs md:text-sm text-gray-600">RUT</p>
+                      <p className="font-medium text-sm md:text-base">{cliente.user.rut}</p>
                     </div>
                   )}
                   <div>
-                    <p className="text-sm text-gray-600">Miembro desde</p>
-                    <p className="font-medium">
+                    <p className="text-xs md:text-sm text-gray-600">Miembro desde</p>
+                    <p className="font-medium text-sm md:text-base">
                       {new Date(cliente.user.createdAt).toLocaleDateString('es-CL')}
                     </p>
                   </div>
@@ -343,30 +344,30 @@ export default function AdminClienteDetalle() {
 
               {/* Estadísticas del Cliente */}
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Estadísticas</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="bg-blue-50 rounded-lg p-4">
-                    <p className="text-sm text-blue-600 font-medium">Total Servicios</p>
-                    <p className="text-3xl font-bold text-blue-900">
+                <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Estadísticas</h2>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+                  <div className="bg-blue-50 rounded-lg p-3 md:p-4">
+                    <p className="text-xs md:text-sm text-blue-600 font-medium">Total Servicios</p>
+                    <p className="text-2xl md:text-3xl font-bold text-blue-900">
                       {cliente.estadisticas.totalServicios}
                     </p>
                   </div>
-                  <div className="bg-green-50 rounded-lg p-4">
-                    <p className="text-sm text-green-600 font-medium">Completados</p>
-                    <p className="text-3xl font-bold text-green-900">
+                  <div className="bg-green-50 rounded-lg p-3 md:p-4">
+                    <p className="text-xs md:text-sm text-green-600 font-medium">Completados</p>
+                    <p className="text-2xl md:text-3xl font-bold text-green-900">
                       {cliente.estadisticas.serviciosCompletados}
                     </p>
                   </div>
-                  <div className="bg-red-50 rounded-lg p-4">
-                    <p className="text-sm text-red-600 font-medium">Cancelados</p>
-                    <p className="text-3xl font-bold text-red-900">
+                  <div className="bg-red-50 rounded-lg p-3 md:p-4">
+                    <p className="text-xs md:text-sm text-red-600 font-medium">Cancelados</p>
+                    <p className="text-2xl md:text-3xl font-bold text-red-900">
                       {cliente.estadisticas.serviciosCancelados}
                     </p>
                   </div>
-                  <div className="bg-purple-50 rounded-lg p-4">
-                    <p className="text-sm text-purple-600 font-medium">Total Gastado</p>
-                    <p className="text-3xl font-bold text-purple-900">
-                      ${cliente.estadisticas.totalGastado.toLocaleString('es-CL')}
+                  <div className="bg-purple-50 rounded-lg p-3 md:p-4 col-span-2 lg:col-span-1">
+                    <p className="text-xs md:text-sm text-purple-600 font-medium">Total Gastado</p>
+                    <p className="text-xl md:text-3xl font-bold text-purple-900">
+                      ${(cliente.estadisticas.totalGastado / 1000).toFixed(0)}k
                     </p>
                   </div>
                 </div>
@@ -374,16 +375,16 @@ export default function AdminClienteDetalle() {
 
               {/* Alerta de Comportamiento */}
               {cliente.estadisticas.tasaCancelacion > 30 && (
-                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 md:p-4">
                   <div className="flex">
                     <div className="flex-shrink-0">
-                      <span className="text-2xl">⚠️</span>
+                      <span className="text-xl md:text-2xl">⚠️</span>
                     </div>
                     <div className="ml-3">
                       <h3 className="text-sm font-medium text-yellow-800">
                         Tasa de Cancelación Alta
                       </h3>
-                      <p className="mt-2 text-sm text-yellow-700">
+                      <p className="mt-2 text-xs md:text-sm text-yellow-700">
                         Este cliente tiene una tasa de cancelación del{' '}
                         {cliente.estadisticas.tasaCancelacion.toFixed(1)}%. 
                         Considera revisar su comportamiento.
@@ -399,12 +400,12 @@ export default function AdminClienteDetalle() {
           {activeTab === 'servicios' && (
             <div className="space-y-4">
               {/* Filtros y Estadísticas */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <select
                     value={filtroStatus}
                     onChange={(e) => setFiltroStatus(e.target.value)}
-                    className="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                    className="border border-gray-300 rounded-lg px-3 md:px-4 py-2 text-xs md:text-sm focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="TODOS">Todos los estados</option>
                     <option value="COMPLETADO">Completados</option>
@@ -417,7 +418,7 @@ export default function AdminClienteDetalle() {
                   <select
                     value={filtroPeriodo}
                     onChange={(e) => setFiltroPeriodo(e.target.value)}
-                    className="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                    className="border border-gray-300 rounded-lg px-3 md:px-4 py-2 text-xs md:text-sm focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Todo el tiempo</option>
                     <option value="hoy">Hoy</option>
@@ -428,19 +429,19 @@ export default function AdminClienteDetalle() {
                 </div>
 
                 {estadisticasServicios && (
-                  <div className="flex items-center space-x-4 text-sm">
+                  <div className="grid grid-cols-3 gap-2 md:gap-4 text-xs md:text-sm">
                     <div className="text-center">
                       <p className="text-gray-600">Total</p>
-                      <p className="text-xl font-bold text-gray-900">{estadisticasServicios.total}</p>
+                      <p className="text-lg md:text-xl font-bold text-gray-900">{estadisticasServicios.total}</p>
                     </div>
                     <div className="text-center">
                       <p className="text-gray-600">Completados</p>
-                      <p className="text-xl font-bold text-green-600">{estadisticasServicios.completados}</p>
+                      <p className="text-lg md:text-xl font-bold text-green-600">{estadisticasServicios.completados}</p>
                     </div>
                     <div className="text-center">
                       <p className="text-gray-600">Gastado</p>
-                      <p className="text-xl font-bold text-blue-600">
-                        ${estadisticasServicios.totalGastado?.toLocaleString('es-CL')}
+                      <p className="text-base md:text-xl font-bold text-blue-600">
+                        ${(estadisticasServicios.totalGastado / 1000)?.toFixed(0)}k
                       </p>
                     </div>
                   </div>
@@ -457,22 +458,22 @@ export default function AdminClienteDetalle() {
                   <p className="text-gray-500">No hay servicios para mostrar</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3 md:space-y-4">
                   {servicios.map((servicio) => (
                     <div
                       key={servicio.id}
-                      className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition cursor-pointer hover:border-blue-300"
+                      className="border border-gray-200 rounded-lg p-3 md:p-4 hover:shadow-md transition cursor-pointer hover:border-blue-300"
                       onClick={() => setSelectedServicio(servicio)}
                     >
                       <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(servicio.status)}`}>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`px-2 md:px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(servicio.status)}`}>
                             {servicio.status}
                           </span>
-                          <span className="ml-2 text-sm text-gray-600">{servicio.tipoVehiculo}</span>
+                          <span className="text-xs md:text-sm text-gray-600">{servicio.tipoVehiculo}</span>
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm font-semibold text-gray-900">
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-sm md:text-base font-semibold text-gray-900">
                             ${servicio.totalCliente.toLocaleString('es-CL')}
                           </p>
                           <p className="text-xs text-gray-500">
@@ -481,15 +482,15 @@ export default function AdminClienteDetalle() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="grid grid-cols-2 gap-3 md:gap-4 text-xs md:text-sm">
                         {servicio.gruero && (
                           <div>
                             <p className="text-gray-600">Gruero</p>
-                            <p className="font-medium">
+                            <p className="font-medium truncate">
                               {servicio.gruero.user.nombre} {servicio.gruero.user.apellido}
                             </p>
-                            <p className="text-xs text-gray-500">
-                              {servicio.gruero.marca} {servicio.gruero.modelo} - {servicio.gruero.patente}
+                            <p className="text-xs text-gray-500 truncate">
+                              {servicio.gruero.marca} - {servicio.gruero.patente}
                             </p>
                           </div>
                         )}
@@ -500,22 +501,22 @@ export default function AdminClienteDetalle() {
                         <div className="col-span-2">
                           <p className="text-gray-600">Ruta</p>
                           <p
-                            className="text-xs text-gray-700"
+                            className="text-xs text-gray-700 truncate"
                             title={`${servicio.origenDireccion || 'No especificado'} → ${servicio.destinoDireccion || 'No especificado'}`}
                           >
-                            {truncateAddress(servicio.origenDireccion, 40)} → {truncateAddress(servicio.destinoDireccion, 40)}
+                            {truncateAddress(servicio.origenDireccion, 30)} → {truncateAddress(servicio.destinoDireccion, 30)}
                           </p>
                         </div>
                       </div>
 
                       {servicio.status === 'CANCELADO' && servicio.motivoCancelacion && (
-                        <div className="mt-3 pt-3 border-t border-red-200 bg-red-50 -m-4 p-4 rounded-b-lg">
+                        <div className="mt-3 pt-3 border-t border-red-200 bg-red-50 -mx-3 md:-mx-4 -mb-3 md:-mb-4 p-3 md:p-4 rounded-b-lg">
                           <p className="text-xs text-red-700 font-medium">Motivo de cancelación:</p>
-                          <p className="text-sm text-red-900 italic">"{servicio.motivoCancelacion}"</p>
+                          <p className="text-xs md:text-sm text-red-900 italic line-clamp-2">"{servicio.motivoCancelacion}"</p>
                         </div>
                       )}
 
-                      <p className="text-xs text-blue-600 mt-2">Click para ver detalles completos →</p>
+                      <p className="text-xs text-blue-600 mt-2">Click para ver detalles →</p>
                     </div>
                   ))}
                 </div>
@@ -526,31 +527,31 @@ export default function AdminClienteDetalle() {
           {/* Calificaciones Dadas */}
           {activeTab === 'calificaciones' && (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Calificaciones que ha dado</h3>
+              <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Calificaciones que ha dado</h3>
 
               {cliente.calificacionesDadas.length === 0 ? (
                 <div className="text-center py-12">
                   <p className="text-gray-500">No ha dado calificaciones aún</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3 md:space-y-4">
                   {cliente.calificacionesDadas.map((cal: any) => (
-                    <div key={cal.id} className="border border-gray-200 rounded-lg p-4">
+                    <div key={cal.id} className="border border-gray-200 rounded-lg p-3 md:p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-1 md:space-x-2">
                           {[...Array(5)].map((_, i) => (
-                            <span key={i} className={i < cal.puntuacionGruero ? 'text-yellow-500' : 'text-gray-300'}>
+                            <span key={i} className={`text-base md:text-lg ${i < cal.puntuacionGruero ? 'text-yellow-500' : 'text-gray-300'}`}>
                               ⭐
                             </span>
                           ))}
-                          <span className="font-medium">al Gruero</span>
+                          <span className="font-medium text-sm md:text-base">al Gruero</span>
                         </div>
-                        <span className="text-sm text-gray-500">
+                        <span className="text-xs md:text-sm text-gray-500">
                           {new Date(cal.createdAt).toLocaleDateString('es-CL')}
                         </span>
                       </div>
                       {cal.comentarioGruero && (
-                        <p className="text-sm text-gray-700 italic">"{cal.comentarioGruero}"</p>
+                        <p className="text-xs md:text-sm text-gray-700 italic">"{cal.comentarioGruero}"</p>
                       )}
                     </div>
                   ))}
@@ -564,112 +565,112 @@ export default function AdminClienteDetalle() {
       {/* Modal de Detalle de Servicio */}
       {selectedServicio && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white rounded-lg max-w-3xl w-full p-6 my-8">
+          <div className="bg-white rounded-lg max-w-full md:max-w-3xl w-full p-4 md:p-6 my-8 max-h-screen overflow-y-auto">
             {/* Header del Modal */}
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Detalles del Servicio</h2>
+            <div className="flex items-center justify-between mb-4 md:mb-6 sticky top-0 bg-white pb-3 border-b border-gray-100">
+              <h2 className="text-xl md:text-2xl font-bold text-gray-900">Detalles del Servicio</h2>
               <button
                 onClick={() => setSelectedServicio(null)}
-                className="text-gray-400 hover:text-gray-600 text-2xl"
+                className="text-gray-400 hover:text-gray-600 text-2xl md:text-3xl"
               >
                 ×
               </button>
             </div>
 
             {/* Estado del Servicio */}
-            <div className="mb-6">
-              <span className={`px-4 py-2 rounded-full text-sm font-semibold ${getStatusColor(selectedServicio.status)}`}>
+            <div className="mb-4 md:mb-6">
+              <span className={`px-3 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-semibold ${getStatusColor(selectedServicio.status)}`}>
                 {selectedServicio.status}
               </span>
-              <span className="ml-3 text-gray-600">{selectedServicio.tipoVehiculo}</span>
+              <span className="ml-3 text-sm md:text-base text-gray-600">{selectedServicio.tipoVehiculo}</span>
             </div>
 
             {/* Grid de Información */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
               {/* Gruero */}
               {selectedServicio.gruero && (
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h3 className="text-sm font-semibold text-gray-700 mb-2">🚛 Gruero</h3>
-                  <p className="font-medium text-gray-900">
+                <div className="bg-gray-50 rounded-lg p-3 md:p-4">
+                  <h3 className="text-xs md:text-sm font-semibold text-gray-700 mb-2">🚛 Gruero</h3>
+                  <p className="font-medium text-sm md:text-base text-gray-900">
                     {selectedServicio.gruero.user.nombre} {selectedServicio.gruero.user.apellido}
                   </p>
-                  <p className="text-sm text-gray-600">{selectedServicio.gruero.user.telefono}</p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-xs md:text-sm text-gray-600">{selectedServicio.gruero.user.telefono}</p>
+                  <p className="text-xs md:text-sm text-gray-600">
                     {selectedServicio.gruero.marca} {selectedServicio.gruero.modelo} - {selectedServicio.gruero.patente}
                   </p>
                 </div>
               )}
 
               {/* Distancia */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">📏 Distancia</h3>
-                <p className="text-2xl font-bold text-blue-600">{selectedServicio.distanciaKm.toFixed(1)} km</p>
+              <div className="bg-gray-50 rounded-lg p-3 md:p-4">
+                <h3 className="text-xs md:text-sm font-semibold text-gray-700 mb-2">📏 Distancia</h3>
+                <p className="text-xl md:text-2xl font-bold text-blue-600">{selectedServicio.distanciaKm.toFixed(1)} km</p>
               </div>
             </div>
 
             {/* Ruta Completa */}
-            <div className="bg-blue-50 rounded-lg p-4 mb-6">
-              <h3 className="text-sm font-semibold text-blue-900 mb-3">🗺️ Ruta del Servicio</h3>
+            <div className="bg-blue-50 rounded-lg p-3 md:p-4 mb-4 md:mb-6">
+              <h3 className="text-xs md:text-sm font-semibold text-blue-900 mb-3">🗺️ Ruta del Servicio</h3>
               <div className="space-y-2">
                 <div>
                   <p className="text-xs text-blue-700 font-medium">Origen:</p>
-                  <p className="text-sm text-blue-900">{selectedServicio.origenDireccion}</p>
+                  <p className="text-xs md:text-sm text-blue-900">{selectedServicio.origenDireccion}</p>
                 </div>
                 <div className="flex items-center justify-center text-blue-600">
-                  <span className="text-2xl">↓</span>
+                  <span className="text-xl md:text-2xl">↓</span>
                 </div>
                 <div>
                   <p className="text-xs text-blue-700 font-medium">Destino:</p>
-                  <p className="text-sm text-blue-900">{selectedServicio.destinoDireccion}</p>
+                  <p className="text-xs md:text-sm text-blue-900">{selectedServicio.destinoDireccion}</p>
                 </div>
               </div>
             </div>
 
             {/* Fechas y Horas */}
-            <div className="bg-gray-50 rounded-lg p-4 mb-6">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">🕐 Línea de Tiempo</h3>
+            <div className="bg-gray-50 rounded-lg p-3 md:p-4 mb-4 md:mb-6">
+              <h3 className="text-xs md:text-sm font-semibold text-gray-700 mb-3">🕐 Línea de Tiempo</h3>
               <div className="space-y-2">
                 <div>
                   <p className="text-xs text-gray-600">Solicitado:</p>
-                  <p className="text-sm font-medium">{formatDateTime(selectedServicio.solicitadoAt).fecha}</p>
-                  <p className="text-sm text-gray-600">{formatDateTime(selectedServicio.solicitadoAt).hora}</p>
+                  <p className="text-xs md:text-sm font-medium">{formatDateTime(selectedServicio.solicitadoAt).fecha}</p>
+                  <p className="text-xs md:text-sm text-gray-600">{formatDateTime(selectedServicio.solicitadoAt).hora}</p>
                 </div>
                 {selectedServicio.completadoAt && (
                   <div>
                     <p className="text-xs text-gray-600">Completado:</p>
-                    <p className="text-sm font-medium">{formatDateTime(selectedServicio.completadoAt).fecha}</p>
-                    <p className="text-sm text-gray-600">{formatDateTime(selectedServicio.completadoAt).hora}</p>
+                    <p className="text-xs md:text-sm font-medium">{formatDateTime(selectedServicio.completadoAt).fecha}</p>
+                    <p className="text-xs md:text-sm text-gray-600">{formatDateTime(selectedServicio.completadoAt).hora}</p>
                   </div>
                 )}
                 {selectedServicio.canceladoAt && (
                   <div>
                     <p className="text-xs text-red-600">Cancelado:</p>
-                    <p className="text-sm font-medium">{formatDateTime(selectedServicio.canceladoAt).fecha}</p>
-                    <p className="text-sm text-gray-600">{formatDateTime(selectedServicio.canceladoAt).hora}</p>
+                    <p className="text-xs md:text-sm font-medium">{formatDateTime(selectedServicio.canceladoAt).fecha}</p>
+                    <p className="text-xs md:text-sm text-gray-600">{formatDateTime(selectedServicio.canceladoAt).hora}</p>
                   </div>
                 )}
               </div>
             </div>
 
             {/* Información Financiera */}
-            <div className="bg-green-50 rounded-lg p-4 mb-6">
-              <h3 className="text-sm font-semibold text-green-900 mb-3">💰 Información Financiera</h3>
-              <div className="grid grid-cols-2 gap-4">
+            <div className="bg-green-50 rounded-lg p-3 md:p-4 mb-4 md:mb-6">
+              <h3 className="text-xs md:text-sm font-semibold text-green-900 mb-3">💰 Información Financiera</h3>
+              <div className="grid grid-cols-2 gap-3 md:gap-4">
                 <div>
                   <p className="text-xs text-green-700">Total Pagado:</p>
-                  <p className="text-xl font-bold text-green-900">
+                  <p className="text-lg md:text-xl font-bold text-green-900">
                     ${selectedServicio.totalCliente.toLocaleString('es-CL')}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-green-700">Pago al Gruero:</p>
-                  <p className="text-xl font-bold text-green-900">
+                  <p className="text-lg md:text-xl font-bold text-green-900">
                     ${selectedServicio.totalGruero.toLocaleString('es-CL')}
                   </p>
                 </div>
                 <div className="col-span-2">
                   <p className="text-xs text-green-700">Comisión Plataforma:</p>
-                  <p className="text-lg font-bold text-green-600">
+                  <p className="text-base md:text-lg font-bold text-green-600">
                     ${(selectedServicio.totalCliente - selectedServicio.totalGruero).toLocaleString('es-CL')}
                   </p>
                 </div>
@@ -678,49 +679,49 @@ export default function AdminClienteDetalle() {
 
             {/* Motivo de Cancelación */}
             {selectedServicio.motivoCancelacion && (
-              <div className="bg-red-50 rounded-lg p-4 mb-6">
-                <h3 className="text-sm font-semibold text-red-900 mb-2">❌ Motivo de Cancelación</h3>
-                <p className="text-sm text-red-800 italic">"{selectedServicio.motivoCancelacion}"</p>
+              <div className="bg-red-50 rounded-lg p-3 md:p-4 mb-4 md:mb-6">
+                <h3 className="text-xs md:text-sm font-semibold text-red-900 mb-2">❌ Motivo de Cancelación</h3>
+                <p className="text-xs md:text-sm text-red-800 italic">"{selectedServicio.motivoCancelacion}"</p>
               </div>
             )}
 
             {/* Calificación */}
             {selectedServicio.calificacion && (
-              <div className="bg-yellow-50 rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-yellow-900 mb-3">⭐ Calificación</h3>
-                <div className="grid grid-cols-2 gap-4">
+              <div className="bg-yellow-50 rounded-lg p-3 md:p-4">
+                <h3 className="text-xs md:text-sm font-semibold text-yellow-900 mb-3">⭐ Calificación</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <p className="text-xs text-yellow-700 mb-1">Al Gruero:</p>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-1">
                       {[...Array(5)].map((_, i) => (
                         <span
                           key={i}
-                          className={`text-xl ${i < selectedServicio.calificacion!.puntuacionGruero ? 'text-yellow-500' : 'text-gray-300'}`}
+                          className={`text-base md:text-xl ${i < selectedServicio.calificacion!.puntuacionGruero ? 'text-yellow-500' : 'text-gray-300'}`}
                         >
                           ⭐
                         </span>
                       ))}
                     </div>
                     {selectedServicio.calificacion.comentarioGruero && (
-                      <p className="text-sm text-yellow-900 italic mt-2">
+                      <p className="text-xs md:text-sm text-yellow-900 italic mt-2">
                         "{selectedServicio.calificacion.comentarioGruero}"
                       </p>
                     )}
                   </div>
                   <div>
                     <p className="text-xs text-yellow-700 mb-1">Al Cliente:</p>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-1">
                       {[...Array(5)].map((_, i) => (
                         <span
                           key={i}
-                          className={`text-xl ${i < selectedServicio.calificacion!.puntuacionCliente ? 'text-yellow-500' : 'text-gray-300'}`}
+                          className={`text-base md:text-xl ${i < selectedServicio.calificacion!.puntuacionCliente ? 'text-yellow-500' : 'text-gray-300'}`}
                         >
                           ⭐
                         </span>
                       ))}
                     </div>
                     {selectedServicio.calificacion.comentarioCliente && (
-                      <p className="text-sm text-yellow-900 italic mt-2">
+                      <p className="text-xs md:text-sm text-yellow-900 italic mt-2">
                         "{selectedServicio.calificacion.comentarioCliente}"
                       </p>
                     )}
@@ -730,10 +731,10 @@ export default function AdminClienteDetalle() {
             )}
 
             {/* Botón Cerrar */}
-            <div className="mt-6 flex justify-end">
+            <div className="mt-4 md:mt-6 flex justify-end sticky bottom-0 bg-white pt-3 border-t border-gray-100">
               <button
                 onClick={() => setSelectedServicio(null)}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                className="px-4 md:px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm md:text-base"
               >
                 Cerrar
               </button>

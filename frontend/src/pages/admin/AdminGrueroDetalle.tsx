@@ -311,26 +311,26 @@ export default function AdminGrueroDetalle() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center space-x-3 md:space-x-4">
           <button
             onClick={() => navigate('/admin/grueros')}
-            className="text-gray-600 hover:text-gray-900"
+            className="text-gray-600 hover:text-gray-900 flex-shrink-0"
           >
             ← Volver
           </button>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
               {gruero.user.nombre} {gruero.user.apellido}
             </h1>
-            <p className="text-gray-600">Detalle del Gruero</p>
+            <p className="text-sm md:text-base text-gray-600">Detalle del Gruero</p>
           </div>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center flex-wrap gap-2">
           <span
-            className={`px-3 py-1 rounded-full text-sm font-semibold ${
+            className={`px-3 py-1 rounded-full text-xs md:text-sm font-semibold ${
               gruero.estadoVerificacion === 'APROBADO'
                 ? 'bg-green-100 text-green-800'
                 : gruero.estadoVerificacion === 'RECHAZADO'
@@ -341,7 +341,7 @@ export default function AdminGrueroDetalle() {
             {gruero.estadoVerificacion}
           </span>
           {gruero.cuentaSuspendida && (
-            <span className="px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-800">
+            <span className="px-3 py-1 rounded-full text-xs md:text-sm font-semibold bg-red-100 text-red-800">
               SUSPENDIDO
             </span>
           )}
@@ -350,87 +350,88 @@ export default function AdminGrueroDetalle() {
 
       {/* Tabs */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="border-b border-gray-200">
-          <nav className="flex space-x-8 px-6" aria-label="Tabs">
+        <div className="border-b border-gray-200 overflow-x-auto scrollbar-hide">
+          <nav className="flex space-x-4 md:space-x-8 px-4 md:px-6 min-w-max" aria-label="Tabs">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition ${
+                className={`py-3 md:py-4 px-1 border-b-2 font-medium text-xs md:text-sm transition whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
                 <span className="mr-2">{tab.icon}</span>
-                {tab.nombre}
+                <span className="hidden sm:inline">{tab.nombre}</span>
+                <span className="sm:hidden">{tab.nombre.split(' ')[0]}</span>
               </button>
             ))}
           </nav>
         </div>
 
         {/* Tab Content */}
-        <div className="p-6">
+        <div className="p-4 md:p-6">
           {/* Información General */}
           {activeTab === 'informacion' && (
             <div className="space-y-6">
               {/* Información Personal */}
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Información Personal</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Información Personal</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                   <div>
-                    <p className="text-sm text-gray-600">Email</p>
-                    <p className="font-medium">{gruero.user.email}</p>
+                    <p className="text-xs md:text-sm text-gray-600">Email</p>
+                    <p className="font-medium text-sm md:text-base truncate">{gruero.user.email}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Teléfono</p>
-                    <p className="font-medium">{gruero.user.telefono}</p>
+                    <p className="text-xs md:text-sm text-gray-600">Teléfono</p>
+                    <p className="font-medium text-sm md:text-base">{gruero.user.telefono}</p>
                   </div>
                   {gruero.user.rut && (
                     <div>
-                      <p className="text-sm text-gray-600">RUT</p>
-                      <p className="font-medium">{gruero.user.rut}</p>
+                      <p className="text-xs md:text-sm text-gray-600">RUT</p>
+                      <p className="font-medium text-sm md:text-base">{gruero.user.rut}</p>
                     </div>
                   )}
                   <div>
-                    <p className="text-sm text-gray-600">Servicios Realizados</p>
-                    <p className="font-medium">{gruero.totalServicios}</p>
+                    <p className="text-xs md:text-sm text-gray-600">Servicios Realizados</p>
+                    <p className="font-medium text-sm md:text-base">{gruero.totalServicios}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Calificación</p>
-                    <p className="font-medium flex items-center">
+                    <p className="text-xs md:text-sm text-gray-600">Calificación</p>
+                    <p className="font-medium text-sm md:text-base flex items-center">
                       <span className="text-yellow-500 mr-1">⭐</span>
                       {gruero.calificacionPromedio.toFixed(1)}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Estado</p>
-                    <p className="font-medium">{gruero.status}</p>
+                    <p className="text-xs md:text-sm text-gray-600">Estado</p>
+                    <p className="font-medium text-sm md:text-base">{gruero.status}</p>
                   </div>
                 </div>
               </div>
 
               {/* Información del Vehículo */}
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Información del Vehículo</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Información del Vehículo</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                   <div>
-                    <p className="text-sm text-gray-600">Patente</p>
-                    <p className="font-medium">{gruero.patente}</p>
+                    <p className="text-xs md:text-sm text-gray-600">Patente</p>
+                    <p className="font-medium text-sm md:text-base">{gruero.patente}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Marca y Modelo</p>
-                    <p className="font-medium">
+                    <p className="text-xs md:text-sm text-gray-600">Marca y Modelo</p>
+                    <p className="font-medium text-sm md:text-base">
                       {gruero.marca} {gruero.modelo} ({gruero.anio})
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Tipo de Grúa</p>
-                    <p className="font-medium">{gruero.tipoGrua}</p>
+                    <p className="text-xs md:text-sm text-gray-600">Tipo de Grúa</p>
+                    <p className="font-medium text-sm md:text-base">{gruero.tipoGrua}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Capacidad</p>
-                    <p className="font-medium">{gruero.capacidadToneladas} Toneladas</p>
+                    <p className="text-xs md:text-sm text-gray-600">Capacidad</p>
+                    <p className="font-medium text-sm md:text-base">{gruero.capacidadToneladas} Toneladas</p>
                   </div>
                 </div>
 
@@ -438,22 +439,22 @@ export default function AdminGrueroDetalle() {
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                   {gruero.fotoGruero && (
                     <div>
-                      <p className="text-sm text-gray-600 mb-2">Foto del Gruero</p>
+                      <p className="text-xs md:text-sm text-gray-600 mb-2">Foto del Gruero</p>
                       <img
                         src={getImageUrl(gruero.fotoGruero)}
                         alt="Gruero"
-                        className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-80"
+                        className="w-full h-40 md:h-48 object-cover rounded-lg cursor-pointer hover:opacity-80"
                         onClick={() => setSelectedImage(getImageUrl(gruero.fotoGruero)!)}
                       />
                     </div>
                   )}
                   {gruero.fotoGrua && (
                     <div>
-                      <p className="text-sm text-gray-600 mb-2">Foto de la Grúa</p>
+                      <p className="text-xs md:text-sm text-gray-600 mb-2">Foto de la Grúa</p>
                       <img
                         src={getImageUrl(gruero.fotoGrua)}
                         alt="Grúa"
-                        className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-80"
+                        className="w-full h-40 md:h-48 object-cover rounded-lg cursor-pointer hover:opacity-80"
                         onClick={() => setSelectedImage(getImageUrl(gruero.fotoGrua)!)}
                       />
                     </div>
@@ -463,43 +464,43 @@ export default function AdminGrueroDetalle() {
 
               {/* Documentos */}
               <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900">Documentos</h2>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                  <h2 className="text-base md:text-lg font-semibold text-gray-900">Documentos</h2>
                   {gruero.estadoVerificacion === 'PENDIENTE' && documentosAprobados.length > 0 && (
                     <button
                       onClick={handleAprobarDocumentos}
                       disabled={actionLoading}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm md:text-base"
                     >
                       {actionLoading ? 'Procesando...' : `Aprobar ${documentosAprobados.length} documento(s)`}
                     </button>
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   {documentos.map((doc) => {
                     const dias = calcularDiasHastaVencimiento(doc.vencimiento);
                     return (
-                      <div key={doc.key} className="border border-gray-200 rounded-lg p-4">
+                      <div key={doc.key} className="border border-gray-200 rounded-lg p-3 md:p-4">
                         <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center space-x-3">
+                          <div className="flex items-center space-x-2 md:space-x-3 flex-1">
                             {gruero.estadoVerificacion === 'PENDIENTE' && (
                               <input
                                 type="checkbox"
                                 checked={documentosAprobados.includes(doc.key)}
                                 onChange={() => handleToggleDocumento(doc.key)}
-                                className="w-5 h-5 text-blue-600"
+                                className="w-5 h-5 text-blue-600 flex-shrink-0"
                               />
                             )}
-                            <h3 className="font-medium text-gray-900">{doc.nombre}</h3>
+                            <h3 className="font-medium text-gray-900 text-sm md:text-base">{doc.nombre}</h3>
                           </div>
                           {doc.vencimiento && (
-                            <span className={`text-xs ${getColorVencimiento(dias)}`}>
+                            <span className={`text-xs ${getColorVencimiento(dias)} text-right flex-shrink-0`}>
                               {dias !== null && dias < 0
-                                ? `Vencido hace ${Math.abs(dias)} días`
+                                ? `Vencido hace ${Math.abs(dias)}d`
                                 : dias !== null && dias <= 15
-                                ? `Vence en ${dias} días`
-                                : `Vence en ${dias} días`}
+                                ? `Vence en ${dias}d`
+                                : `${dias}d`}
                             </span>
                           )}
                         </div>
@@ -509,11 +510,11 @@ export default function AdminGrueroDetalle() {
                             <img
                               src={doc.url}
                               alt={doc.nombre}
-                              className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-80 mb-3"
+                              className="w-full h-32 md:h-48 object-cover rounded-lg cursor-pointer hover:opacity-80 mb-3"
                               onClick={() => setSelectedImage(doc.url!)}
                             />
                             {doc.vencimiento && (
-                              <p className="text-sm text-gray-600">
+                              <p className="text-xs md:text-sm text-gray-600">
                                 Vencimiento: {new Date(doc.vencimiento).toLocaleDateString('es-CL')}
                               </p>
                             )}
@@ -523,15 +524,15 @@ export default function AdminGrueroDetalle() {
                                   setDocumentoRechazar(doc.nombre);
                                   setShowRejectModal(true);
                                 }}
-                                className="mt-2 text-sm text-red-600 hover:text-red-800"
+                                className="mt-2 text-xs md:text-sm text-red-600 hover:text-red-800"
                               >
                                 Rechazar documento
                               </button>
                             )}
                           </>
                         ) : (
-                          <div className="w-full h-48 bg-gray-100 rounded-lg flex items-center justify-center">
-                            <p className="text-gray-400">No cargado</p>
+                          <div className="w-full h-32 md:h-48 bg-gray-100 rounded-lg flex items-center justify-center">
+                            <p className="text-gray-400 text-sm">No cargado</p>
                           </div>
                         )}
                       </div>
@@ -546,12 +547,12 @@ export default function AdminGrueroDetalle() {
           {activeTab === 'servicios' && (
             <div className="space-y-4">
               {/* Filtros y Estadísticas */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <select
                     value={filtroStatus}
                     onChange={(e) => setFiltroStatus(e.target.value)}
-                    className="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                    className="border border-gray-300 rounded-lg px-3 md:px-4 py-2 text-xs md:text-sm focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="TODOS">Todos los estados</option>
                     <option value="COMPLETADO">Completados</option>
@@ -563,7 +564,7 @@ export default function AdminGrueroDetalle() {
                   <select
                     value={filtroPeriodo}
                     onChange={(e) => setFiltroPeriodo(e.target.value)}
-                    className="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                    className="border border-gray-300 rounded-lg px-3 md:px-4 py-2 text-xs md:text-sm focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Todo el tiempo</option>
                     <option value="hoy">Hoy</option>
@@ -574,19 +575,19 @@ export default function AdminGrueroDetalle() {
                 </div>
 
                 {estadisticasServicios && (
-                  <div className="flex items-center space-x-4 text-sm">
+                  <div className="grid grid-cols-3 gap-2 md:gap-4 text-xs md:text-sm">
                     <div className="text-center">
                       <p className="text-gray-600">Total</p>
-                      <p className="text-xl font-bold text-gray-900">{estadisticasServicios.total}</p>
+                      <p className="text-lg md:text-xl font-bold text-gray-900">{estadisticasServicios.total}</p>
                     </div>
                     <div className="text-center">
                       <p className="text-gray-600">Completados</p>
-                      <p className="text-xl font-bold text-green-600">{estadisticasServicios.completados}</p>
+                      <p className="text-lg md:text-xl font-bold text-green-600">{estadisticasServicios.completados}</p>
                     </div>
                     <div className="text-center">
                       <p className="text-gray-600">Ganado</p>
-                      <p className="text-xl font-bold text-blue-600">
-                        ${estadisticasServicios.totalGanado?.toLocaleString('es-CL')}
+                      <p className="text-base md:text-xl font-bold text-blue-600">
+                        ${(estadisticasServicios.totalGanado / 1000)?.toFixed(0)}k
                       </p>
                     </div>
                   </div>
@@ -603,22 +604,22 @@ export default function AdminGrueroDetalle() {
                   <p className="text-gray-500">No hay servicios para mostrar</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3 md:space-y-4">
                   {servicios.map((servicio) => (
                     <div 
                       key={servicio.id} 
-                      className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition cursor-pointer hover:border-blue-300"
+                      className="border border-gray-200 rounded-lg p-3 md:p-4 hover:shadow-md transition cursor-pointer hover:border-blue-300"
                       onClick={() => setSelectedServicio(servicio)}
                     >
                       <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(servicio.status)}`}>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`px-2 md:px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(servicio.status)}`}>
                             {servicio.status}
                           </span>
-                          <span className="ml-2 text-sm text-gray-600">{servicio.tipoVehiculo}</span>
+                          <span className="text-xs md:text-sm text-gray-600">{servicio.tipoVehiculo}</span>
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm font-semibold text-gray-900">
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-sm md:text-base font-semibold text-gray-900">
                             ${servicio.totalGruero.toLocaleString('es-CL')}
                           </p>
                           <p className="text-xs text-gray-500">
@@ -627,10 +628,10 @@ export default function AdminGrueroDetalle() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="grid grid-cols-2 gap-3 md:gap-4 text-xs md:text-sm">
                         <div>
                           <p className="text-gray-600">Cliente</p>
-                          <p className="font-medium">
+                          <p className="font-medium truncate">
                             {servicio.cliente.user.nombre} {servicio.cliente.user.apellido}
                           </p>
                         </div>
@@ -641,10 +642,10 @@ export default function AdminGrueroDetalle() {
                         <div className="col-span-2">
                           <p className="text-gray-600">Ruta</p>
                           <p 
-                            className="text-xs text-gray-700" 
+                            className="text-xs text-gray-700 truncate" 
                             title={`${servicio.origenDireccion || 'No especificado'} → ${servicio.destinoDireccion || 'No especificado'}`}
                           >
-                            {truncateAddress(servicio.origenDireccion, 40)} → {truncateAddress(servicio.destinoDireccion, 40)}
+                            {truncateAddress(servicio.origenDireccion, 30)} → {truncateAddress(servicio.destinoDireccion, 30)}
                           </p>
                         </div>
                       </div>
@@ -654,18 +655,18 @@ export default function AdminGrueroDetalle() {
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-2">
                               <span className="text-yellow-500">⭐</span>
-                              <span className="font-semibold">{servicio.calificacion.puntuacionGruero}/5</span>
+                              <span className="font-semibold text-sm">{servicio.calificacion.puntuacionGruero}/5</span>
                             </div>
                           </div>
                           {servicio.calificacion.comentarioGruero && (
-                            <p className="text-sm text-gray-600 mt-2 italic">
+                            <p className="text-xs md:text-sm text-gray-600 mt-2 italic line-clamp-2">
                               "{servicio.calificacion.comentarioGruero}"
                             </p>
                           )}
                         </div>
                       )}
                       
-                      <p className="text-xs text-blue-600 mt-2">Click para ver detalles completos →</p>
+                      <p className="text-xs text-blue-600 mt-2">Click para ver detalles →</p>
                     </div>
                   ))}
                 </div>
@@ -677,12 +678,12 @@ export default function AdminGrueroDetalle() {
           {activeTab === 'calificaciones' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Calificaciones Recibidas</h3>
+                <h3 className="text-base md:text-lg font-semibold text-gray-900">Calificaciones Recibidas</h3>
                 <div className="flex items-center space-x-2">
-                  <span className="text-3xl">⭐</span>
+                  <span className="text-2xl md:text-3xl">⭐</span>
                   <div>
-                    <p className="text-2xl font-bold text-gray-900">{gruero.calificacionPromedio.toFixed(1)}</p>
-                    <p className="text-sm text-gray-600">{gruero.calificacionesRecibidas.length} calificaciones</p>
+                    <p className="text-xl md:text-2xl font-bold text-gray-900">{gruero.calificacionPromedio.toFixed(1)}</p>
+                    <p className="text-xs md:text-sm text-gray-600">{gruero.calificacionesRecibidas.length} calificaciones</p>
                   </div>
                 </div>
               </div>
@@ -692,23 +693,23 @@ export default function AdminGrueroDetalle() {
                   <p className="text-gray-500">No hay calificaciones aún</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3 md:space-y-4">
                   {gruero.calificacionesRecibidas.map((cal: any) => (
-                    <div key={cal.id} className="border border-gray-200 rounded-lg p-4">
+                    <div key={cal.id} className="border border-gray-200 rounded-lg p-3 md:p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-1">
                           {[...Array(5)].map((_, i) => (
-                            <span key={i} className={i < cal.puntuacionGruero ? 'text-yellow-500' : 'text-gray-300'}>
+                            <span key={i} className={`text-base md:text-lg ${i < cal.puntuacionGruero ? 'text-yellow-500' : 'text-gray-300'}`}>
                               ⭐
                             </span>
                           ))}
                         </div>
-                        <span className="text-sm text-gray-500">
+                        <span className="text-xs md:text-sm text-gray-500">
                           {new Date(cal.createdAt).toLocaleDateString('es-CL')}
                         </span>
                       </div>
                       {cal.comentarioGruero && (
-                        <p className="text-sm text-gray-700 italic">"{cal.comentarioGruero}"</p>
+                        <p className="text-xs md:text-sm text-gray-700 italic">"{cal.comentarioGruero}"</p>
                       )}
                     </div>
                   ))}
@@ -722,82 +723,82 @@ export default function AdminGrueroDetalle() {
       {/* Modal de Detalle de Servicio */}
       {selectedServicio && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white rounded-lg max-w-3xl w-full p-6 my-8">
+          <div className="bg-white rounded-lg max-w-full md:max-w-3xl w-full p-4 md:p-6 my-8 max-h-screen overflow-y-auto">
             {/* Header del Modal */}
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Detalles del Servicio</h2>
+            <div className="flex items-center justify-between mb-4 md:mb-6 sticky top-0 bg-white pb-3 border-b border-gray-100">
+              <h2 className="text-xl md:text-2xl font-bold text-gray-900">Detalles del Servicio</h2>
               <button
                 onClick={() => setSelectedServicio(null)}
-                className="text-gray-400 hover:text-gray-600 text-2xl"
+                className="text-gray-400 hover:text-gray-600 text-2xl md:text-3xl"
               >
                 ×
               </button>
             </div>
 
             {/* Estado del Servicio */}
-            <div className="mb-6">
-              <span className={`px-4 py-2 rounded-full text-sm font-semibold ${getStatusColor(selectedServicio.status)}`}>
+            <div className="mb-4 md:mb-6">
+              <span className={`px-3 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-semibold ${getStatusColor(selectedServicio.status)}`}>
                 {selectedServicio.status}
               </span>
-              <span className="ml-3 text-gray-600">{selectedServicio.tipoVehiculo}</span>
+              <span className="ml-3 text-sm md:text-base text-gray-600">{selectedServicio.tipoVehiculo}</span>
             </div>
 
             {/* Grid de Información */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
               {/* Cliente */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">👤 Cliente</h3>
-                <p className="font-medium text-gray-900">
+              <div className="bg-gray-50 rounded-lg p-3 md:p-4">
+                <h3 className="text-xs md:text-sm font-semibold text-gray-700 mb-2">👤 Cliente</h3>
+                <p className="font-medium text-sm md:text-base text-gray-900">
                   {selectedServicio.cliente.user.nombre} {selectedServicio.cliente.user.apellido}
                 </p>
-                <p className="text-sm text-gray-600">{selectedServicio.cliente.user.telefono}</p>
+                <p className="text-xs md:text-sm text-gray-600">{selectedServicio.cliente.user.telefono}</p>
               </div>
 
               {/* Distancia */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">📏 Distancia</h3>
-                <p className="text-2xl font-bold text-blue-600">{selectedServicio.distanciaKm.toFixed(1)} km</p>
+              <div className="bg-gray-50 rounded-lg p-3 md:p-4">
+                <h3 className="text-xs md:text-sm font-semibold text-gray-700 mb-2">📏 Distancia</h3>
+                <p className="text-xl md:text-2xl font-bold text-blue-600">{selectedServicio.distanciaKm.toFixed(1)} km</p>
               </div>
             </div>
 
             {/* Ruta Completa */}
-            <div className="bg-blue-50 rounded-lg p-4 mb-6">
-              <h3 className="text-sm font-semibold text-blue-900 mb-3">🗺️ Ruta del Servicio</h3>
+            <div className="bg-blue-50 rounded-lg p-3 md:p-4 mb-4 md:mb-6">
+              <h3 className="text-xs md:text-sm font-semibold text-blue-900 mb-3">🗺️ Ruta del Servicio</h3>
               <div className="space-y-2">
                 <div>
                   <p className="text-xs text-blue-700 font-medium">Origen:</p>
-                  <p className="text-sm text-blue-900">{selectedServicio.origenDireccion}</p>
+                  <p className="text-xs md:text-sm text-blue-900">{selectedServicio.origenDireccion}</p>
                 </div>
                 <div className="flex items-center justify-center text-blue-600">
-                  <span className="text-2xl">↓</span>
+                  <span className="text-xl md:text-2xl">↓</span>
                 </div>
                 <div>
                   <p className="text-xs text-blue-700 font-medium">Destino:</p>
-                  <p className="text-sm text-blue-900">{selectedServicio.destinoDireccion}</p>
+                  <p className="text-xs md:text-sm text-blue-900">{selectedServicio.destinoDireccion}</p>
                 </div>
               </div>
             </div>
 
             {/* Fechas y Horas */}
-            <div className="bg-gray-50 rounded-lg p-4 mb-6">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">🕐 Línea de Tiempo</h3>
+            <div className="bg-gray-50 rounded-lg p-3 md:p-4 mb-4 md:mb-6">
+              <h3 className="text-xs md:text-sm font-semibold text-gray-700 mb-3">🕐 Línea de Tiempo</h3>
               <div className="space-y-2">
                 <div>
                   <p className="text-xs text-gray-600">Solicitado:</p>
-                  <p className="text-sm font-medium">
+                  <p className="text-xs md:text-sm font-medium">
                     {formatDateTime(selectedServicio.solicitadoAt).fecha}
                   </p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-xs md:text-sm text-gray-600">
                     {formatDateTime(selectedServicio.solicitadoAt).hora}
                   </p>
                 </div>
                 {selectedServicio.completadoAt && (
                   <div>
                     <p className="text-xs text-gray-600">Completado:</p>
-                    <p className="text-sm font-medium">
+                    <p className="text-xs md:text-sm font-medium">
                       {formatDateTime(selectedServicio.completadoAt).fecha}
                     </p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-xs md:text-sm text-gray-600">
                       {formatDateTime(selectedServicio.completadoAt).hora}
                     </p>
                   </div>
@@ -806,24 +807,24 @@ export default function AdminGrueroDetalle() {
             </div>
 
             {/* Información Financiera */}
-            <div className="bg-green-50 rounded-lg p-4 mb-6">
-              <h3 className="text-sm font-semibold text-green-900 mb-3">💰 Información Financiera</h3>
-              <div className="grid grid-cols-2 gap-4">
+            <div className="bg-green-50 rounded-lg p-3 md:p-4 mb-4 md:mb-6">
+              <h3 className="text-xs md:text-sm font-semibold text-green-900 mb-3">💰 Información Financiera</h3>
+              <div className="grid grid-cols-2 gap-3 md:gap-4">
                 <div>
                   <p className="text-xs text-green-700">Total Cliente:</p>
-                  <p className="text-xl font-bold text-green-900">
+                  <p className="text-lg md:text-xl font-bold text-green-900">
                     ${selectedServicio.totalCliente.toLocaleString('es-CL')}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-green-700">Ganancia Gruero:</p>
-                  <p className="text-xl font-bold text-green-900">
+                  <p className="text-lg md:text-xl font-bold text-green-900">
                     ${selectedServicio.totalGruero.toLocaleString('es-CL')}
                   </p>
                 </div>
                 <div className="col-span-2">
                   <p className="text-xs text-green-700">Comisión Plataforma:</p>
-                  <p className="text-lg font-bold text-green-600">
+                  <p className="text-base md:text-lg font-bold text-green-600">
                     ${(selectedServicio.totalCliente - selectedServicio.totalGruero).toLocaleString('es-CL')}
                   </p>
                 </div>
@@ -832,25 +833,25 @@ export default function AdminGrueroDetalle() {
 
             {/* Calificación */}
             {selectedServicio.calificacion && (
-              <div className="bg-yellow-50 rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-yellow-900 mb-3">⭐ Calificación del Cliente</h3>
+              <div className="bg-yellow-50 rounded-lg p-3 md:p-4">
+                <h3 className="text-xs md:text-sm font-semibold text-yellow-900 mb-3">⭐ Calificación del Cliente</h3>
                 <div className="flex items-center space-x-2 mb-2">
                   {[...Array(5)].map((_, i) => (
                     <span 
                       key={i} 
-                      className={`text-2xl ${i < selectedServicio.calificacion!.puntuacionGruero ? 'text-yellow-500' : 'text-gray-300'}`}
+                      className={`text-xl md:text-2xl ${i < selectedServicio.calificacion!.puntuacionGruero ? 'text-yellow-500' : 'text-gray-300'}`}
                     >
                       ⭐
                     </span>
                   ))}
-                  <span className="text-lg font-bold text-yellow-900">
+                  <span className="text-base md:text-lg font-bold text-yellow-900">
                     {selectedServicio.calificacion.puntuacionGruero}/5
                   </span>
                 </div>
                 {selectedServicio.calificacion.comentarioGruero && (
                   <div className="mt-3">
                     <p className="text-xs text-yellow-700 mb-1">Comentario:</p>
-                    <p className="text-sm text-yellow-900 italic">
+                    <p className="text-xs md:text-sm text-yellow-900 italic">
                       "{selectedServicio.calificacion.comentarioGruero}"
                     </p>
                   </div>
@@ -859,10 +860,10 @@ export default function AdminGrueroDetalle() {
             )}
 
             {/* Botón Cerrar */}
-            <div className="mt-6 flex justify-end">
+            <div className="mt-4 md:mt-6 flex justify-end sticky bottom-0 bg-white pt-3 border-t border-gray-100">
               <button
                 onClick={() => setSelectedServicio(null)}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                className="px-4 md:px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm md:text-base"
               >
                 Cerrar
               </button>
@@ -884,17 +885,17 @@ export default function AdminGrueroDetalle() {
       {/* Modal de Rechazo */}
       {showRejectModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Rechazar Documento</h3>
+          <div className="bg-white rounded-lg max-w-md w-full p-4 md:p-6">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-3 md:mb-4">Rechazar Documento</h3>
             <p className="text-sm text-gray-600 mb-4">{documentoRechazar}</p>
             <textarea
               value={motivoRechazo}
               onChange={(e) => setMotivoRechazo(e.target.value)}
               placeholder="Ingresa el motivo del rechazo..."
-              className="w-full border border-gray-300 rounded-lg p-3 mb-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-lg p-3 mb-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
               rows={4}
             />
-            <div className="flex space-x-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => {
                   setShowRejectModal(false);

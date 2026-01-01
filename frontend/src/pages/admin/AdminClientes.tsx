@@ -89,71 +89,71 @@ export default function AdminClientes() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Gestión de Clientes</h1>
-        <p className="text-gray-600 mt-1">Visualiza todos los clientes de la plataforma</p>
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Gestión de Clientes</h1>
+        <p className="text-sm md:text-base text-gray-600 mt-1">Visualiza todos los clientes de la plataforma</p>
       </div>
 
       {/* Estadísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Total Clientes</p>
-              <p className="text-2xl font-bold text-gray-900">{clientes.length}</p>
+              <p className="text-xs md:text-sm text-gray-600">Total Clientes</p>
+              <p className="text-xl md:text-2xl font-bold text-gray-900">{clientes.length}</p>
             </div>
-            <div className="text-3xl">👥</div>
+            <div className="text-2xl md:text-3xl">👥</div>
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Clientes Activos</p>
-              <p className="text-2xl font-bold text-green-600">
+              <p className="text-xs md:text-sm text-gray-600">Clientes Activos</p>
+              <p className="text-xl md:text-2xl font-bold text-green-600">
                 {clientes.filter(c => !c.cuentaSuspendida).length}
               </p>
             </div>
-            <div className="text-3xl">✅</div>
+            <div className="text-2xl md:text-3xl">✅</div>
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Servicios Totales</p>
-              <p className="text-2xl font-bold text-blue-600">
+              <p className="text-xs md:text-sm text-gray-600">Servicios Totales</p>
+              <p className="text-xl md:text-2xl font-bold text-blue-600">
                 {clientes.reduce((sum, c) => sum + c.totalServicios, 0)}
               </p>
             </div>
-            <div className="text-3xl">📊</div>
+            <div className="text-2xl md:text-3xl">📊</div>
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-4 col-span-2 lg:col-span-1">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Ingresos Totales</p>
-              <p className="text-2xl font-bold text-purple-600">
+              <p className="text-xs md:text-sm text-gray-600">Ingresos Totales</p>
+              <p className="text-lg md:text-2xl font-bold text-purple-600">
                 ${clientes.reduce((sum, c) => sum + c.totalGastado, 0).toLocaleString('es-CL')}
               </p>
             </div>
-            <div className="text-3xl">💰</div>
+            <div className="text-2xl md:text-3xl">💰</div>
           </div>
         </div>
       </div>
 
       {/* Búsqueda */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-4">
         <div className="relative">
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Buscar por nombre, email o teléfono..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 md:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
           />
           <svg
-            className="absolute left-3 top-2.5 w-5 h-5 text-gray-400"
+            className="absolute left-3 top-2.5 md:top-3 w-5 h-5 text-gray-400"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -168,31 +168,31 @@ export default function AdminClientes() {
         </div>
       </div>
 
-      {/* Lista de Clientes */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      {/* Tabla Desktop */}
+      <div className="hidden lg:block bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Cliente
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Contacto
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Estado
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Registro
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Servicios
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Total Gastado
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Último Servicio
                 </th>
               </tr>
@@ -211,14 +211,14 @@ export default function AdminClientes() {
                     onClick={() => navigate(`/admin/clientes/${cliente.id}`)}
                     className="hover:bg-gray-50 cursor-pointer transition"
                   >
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                          <span className="text-blue-600 font-semibold">
+                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-blue-600 font-semibold text-sm">
                             {cliente.user.nombre[0]}{cliente.user.apellido[0]}
                           </span>
                         </div>
-                        <div className="ml-4">
+                        <div className="ml-3">
                           <div className="text-sm font-medium text-gray-900">
                             {cliente.user.nombre} {cliente.user.apellido}
                           </div>
@@ -228,11 +228,11 @@ export default function AdminClientes() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{cliente.user.email}</div>
-                      <div className="text-sm text-gray-500">{cliente.user.telefono}</div>
+                      <div className="text-xs text-gray-500">{cliente.user.telefono}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       {cliente.cuentaSuspendida ? (
                         <div className="flex flex-col">
                           <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 text-center">
@@ -252,7 +252,7 @@ export default function AdminClientes() {
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
                         {formatDate(cliente.user.createdAt)}
                       </div>
@@ -264,7 +264,7 @@ export default function AdminClientes() {
                         días
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="text-sm font-medium text-gray-900">
                           {cliente.totalServicios}
@@ -277,7 +277,7 @@ export default function AdminClientes() {
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
                         ${cliente.totalGastado.toLocaleString('es-CL')}
                       </div>
@@ -290,7 +290,7 @@ export default function AdminClientes() {
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       {cliente.servicios.length > 0 ? (
                         <div className="text-sm text-gray-900">
                           {formatDate(cliente.servicios[0].solicitadoAt)}
@@ -305,6 +305,112 @@ export default function AdminClientes() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Cards Móvil */}
+      <div className="lg:hidden space-y-3">
+        {filteredClientes.length === 0 ? (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center text-gray-500">
+            {searchTerm ? 'No se encontraron clientes' : 'No hay clientes registrados'}
+          </div>
+        ) : (
+          filteredClientes.map((cliente) => (
+            <div
+              key={cliente.id}
+              onClick={() => navigate(`/admin/clientes/${cliente.id}`)}
+              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 active:bg-gray-50 transition"
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center flex-1">
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-blue-600 font-semibold">
+                      {cliente.user.nombre[0]}{cliente.user.apellido[0]}
+                    </span>
+                  </div>
+                  <div className="ml-3 overflow-hidden">
+                    <p className="font-semibold text-gray-900 truncate">
+                      {cliente.user.nombre} {cliente.user.apellido}
+                    </p>
+                    {cliente.user.rut && (
+                      <p className="text-xs text-gray-500">RUT: {cliente.user.rut}</p>
+                    )}
+                  </div>
+                </div>
+                {cliente.cuentaSuspendida ? (
+                  <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 flex-shrink-0">
+                    SUSPENDIDO
+                  </span>
+                ) : (
+                  <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 flex-shrink-0">
+                    ACTIVO
+                  </span>
+                )}
+              </div>
+
+              {/* Contacto */}
+              <div className="bg-gray-50 rounded-lg p-3 mb-3 text-sm">
+                <p className="text-gray-900 truncate">{cliente.user.email}</p>
+                <p className="text-gray-600 mt-1">{cliente.user.telefono}</p>
+              </div>
+
+              {/* Stats */}
+              <div className="grid grid-cols-3 gap-3 mb-3 pb-3 border-b border-gray-100">
+                <div>
+                  <p className="text-xs text-gray-500">Servicios</p>
+                  <p className="text-base font-semibold text-gray-900">{cliente.totalServicios}</p>
+                  {cliente.totalServicios > 0 && (
+                    <p className="text-xs text-gray-400">
+                      {cliente.servicios.filter(s => s.status === 'COMPLETADO').length} OK
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Total Gastado</p>
+                  <p className="text-base font-semibold text-purple-600">
+                    ${(cliente.totalGastado / 1000).toFixed(0)}k
+                  </p>
+                  {cliente.totalServicios > 0 && (
+                    <p className="text-xs text-gray-400">
+                      ~${Math.round(cliente.totalGastado / cliente.totalServicios / 1000)}k/serv
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Registro</p>
+                  <p className="text-xs font-medium text-gray-900">
+                    {formatDate(cliente.user.createdAt)}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    {Math.floor(
+                      (new Date().getTime() - new Date(cliente.user.createdAt).getTime()) /
+                        (1000 * 60 * 60 * 24)
+                    )} días
+                  </p>
+                </div>
+              </div>
+
+              {/* Último Servicio */}
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-500">Último servicio:</span>
+                {cliente.servicios.length > 0 ? (
+                  <span className="font-medium text-gray-900">
+                    {formatDate(cliente.servicios[0].solicitadoAt)}
+                  </span>
+                ) : (
+                  <span className="text-gray-400">Sin servicios</span>
+                )}
+              </div>
+
+              {/* Ver Detalle Indicator */}
+              <div className="mt-3 pt-3 border-t border-gray-100 text-center">
+                <span className="text-xs text-blue-600 font-medium">
+                  Toca para ver detalle completo →
+                </span>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

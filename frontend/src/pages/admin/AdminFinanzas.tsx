@@ -109,6 +109,7 @@ export default function AdminFinanzas() {
   const [transacciones, setTransacciones] = useState<Transaccion[]>([]);
   const [loading, setLoading] = useState(true);
   const [diasGrafico, setDiasGrafico] = useState(30);
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
   useEffect(() => {
     fetchAllData();
@@ -173,16 +174,16 @@ export default function AdminFinanzas() {
   if (!metricas) return null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard Financiero</h1>
-          <p className="text-gray-600 mt-1">Métricas e ingresos de la plataforma</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Dashboard Financiero</h1>
+          <p className="text-sm md:text-base text-gray-600 mt-1">Métricas e ingresos de la plataforma</p>
         </div>
         
         {/* Botones de Exportación */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => {
               if (!metricas) {
@@ -198,104 +199,121 @@ export default function AdminFinanzas() {
               });
               toast.success('Exportando reporte completo...');
             }}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center space-x-2"
+            className="px-3 md:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center space-x-2 text-sm md:text-base"
           >
             <span>📊</span>
-            <span>Exportar Todo</span>
+            <span className="hidden sm:inline">Exportar Todo</span>
+            <span className="sm:hidden">Exportar</span>
           </button>
           
-          <div className="relative group">
-            <button className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">
+          <div className="relative">
+            <button 
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              className="px-3 md:px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition text-sm md:text-base"
+            >
               ⋮ Más
             </button>
-            <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 hidden group-hover:block z-10">
-              <button
-                onClick={() => {
-                  if (!metricas) return;
-                  exportMetricasCSV(metricas);
-                  toast.success('Métricas exportadas');
-                }}
-                className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700 rounded-t-lg"
-              >
-                📈 Exportar Métricas
-              </button>
-              <button
-                onClick={() => {
-                  if (transacciones.length === 0) {
-                    toast.error('No hay transacciones');
-                    return;
-                  }
-                  exportTransaccionesCSV(transacciones);
-                  toast.success('Transacciones exportadas');
-                }}
-                className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700"
-              >
-                💳 Exportar Transacciones
-              </button>
-              <button
-                onClick={() => {
-                  if (finanzasGrueros.length === 0) {
-                    toast.error('No hay datos de grueros');
-                    return;
-                  }
-                  exportGruerosCSV(finanzasGrueros);
-                  toast.success('Top Grueros exportado');
-                }}
-                className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700"
-              >
-                👥 Exportar Top Grueros
-              </button>
-              <button
-                onClick={() => {
-                  if (finanzasVehiculos.length === 0) {
-                    toast.error('No hay datos de vehículos');
-                    return;
-                  }
-                  exportVehiculosCSV(finanzasVehiculos);
-                  toast.success('Ingresos por Vehículo exportados');
-                }}
-                className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700"
-              >
-                🚗 Exportar por Vehículo
-              </button>
-              <button
-                onClick={() => {
-                  if (ingresosDiarios.length === 0) {
-                    toast.error('No hay datos de ingresos diarios');
-                    return;
-                  }
-                  exportIngresosDiariosCSV(ingresosDiarios);
-                  toast.success('Ingresos Diarios exportados');
-                }}
-                className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700 rounded-b-lg"
-              >
-                📅 Exportar Ingresos Diarios
-              </button>
-            </div>
+            {showExportMenu && (
+              <>
+                <div 
+                  className="fixed inset-0 z-10" 
+                  onClick={() => setShowExportMenu(false)}
+                />
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+                  <button
+                    onClick={() => {
+                      if (!metricas) return;
+                      exportMetricasCSV(metricas);
+                      toast.success('Métricas exportadas');
+                      setShowExportMenu(false);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700 rounded-t-lg"
+                  >
+                    📈 Exportar Métricas
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (transacciones.length === 0) {
+                        toast.error('No hay transacciones');
+                        return;
+                      }
+                      exportTransaccionesCSV(transacciones);
+                      toast.success('Transacciones exportadas');
+                      setShowExportMenu(false);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700"
+                  >
+                    💳 Exportar Transacciones
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (finanzasGrueros.length === 0) {
+                        toast.error('No hay datos de grueros');
+                        return;
+                      }
+                      exportGruerosCSV(finanzasGrueros);
+                      toast.success('Top Grueros exportado');
+                      setShowExportMenu(false);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700"
+                  >
+                    👥 Exportar Top Grueros
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (finanzasVehiculos.length === 0) {
+                        toast.error('No hay datos de vehículos');
+                        return;
+                      }
+                      exportVehiculosCSV(finanzasVehiculos);
+                      toast.success('Ingresos por Vehículo exportados');
+                      setShowExportMenu(false);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700"
+                  >
+                    🚗 Exportar por Vehículo
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (ingresosDiarios.length === 0) {
+                        toast.error('No hay datos de ingresos diarios');
+                        return;
+                      }
+                      exportIngresosDiariosCSV(ingresosDiarios);
+                      toast.success('Ingresos Diarios exportados');
+                      setShowExportMenu(false);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700 rounded-b-lg"
+                  >
+                    📅 Exportar Ingresos Diarios
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
 
       {/* Métricas Principales */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-gray-600 font-medium">Ingresos Totales</p>
-            <span className="text-2xl">💰</span>
+            <p className="text-xs md:text-sm text-gray-600 font-medium">Ingresos Totales</p>
+            <span className="text-xl md:text-2xl">💰</span>
           </div>
-          <p className="text-3xl font-bold text-gray-900">
-            {formatCurrency(metricas.ingresosTotal)}
+          <p className="text-xl md:text-3xl font-bold text-gray-900">
+            ${(metricas.ingresosTotal / 1000000).toFixed(1)}M
           </p>
           <p className="text-xs text-gray-500 mt-1">Comisión acumulada</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-gray-600 font-medium">Este Mes</p>
-            <span className="text-2xl">📈</span>
+            <p className="text-xs md:text-sm text-gray-600 font-medium">Este Mes</p>
+            <span className="text-xl md:text-2xl">📈</span>
           </div>
-          <p className="text-3xl font-bold text-green-600">
-            {formatCurrency(metricas.ingresosMesActual)}
+          <p className="text-xl md:text-3xl font-bold text-green-600">
+            ${(metricas.ingresosMesActual / 1000).toFixed(0)}k
           </p>
           <div className="flex items-center mt-1">
             <span
@@ -305,57 +323,57 @@ export default function AdminFinanzas() {
             >
               {metricas.cambioMensual >= 0 ? '↑' : '↓'} {Math.abs(metricas.cambioMensual)}%
             </span>
-            <span className="text-xs text-gray-500 ml-2">vs mes anterior</span>
+            <span className="text-xs text-gray-500 ml-2 hidden sm:inline">vs mes anterior</span>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-gray-600 font-medium">Servicios Completados</p>
-            <span className="text-2xl">✅</span>
+            <p className="text-xs md:text-sm text-gray-600 font-medium">Servicios</p>
+            <span className="text-xl md:text-2xl">✅</span>
           </div>
-          <p className="text-3xl font-bold text-blue-600">{metricas.serviciosCompletadosMes}</p>
+          <p className="text-xl md:text-3xl font-bold text-blue-600">{metricas.serviciosCompletadosMes}</p>
           <p className="text-xs text-gray-500 mt-1">
-            Tasa de conversión: {metricas.tasaConversion}%
+            Conversión: {metricas.tasaConversion}%
           </p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-gray-600 font-medium">Comisión Promedio</p>
-            <span className="text-2xl">💵</span>
+            <p className="text-xs md:text-sm text-gray-600 font-medium">Comisión Prom.</p>
+            <span className="text-xl md:text-2xl">💵</span>
           </div>
-          <p className="text-3xl font-bold text-purple-600">
-            {formatCurrency(metricas.comisionPromedio)}
+          <p className="text-xl md:text-3xl font-bold text-purple-600">
+            ${(metricas.comisionPromedio / 1000).toFixed(1)}k
           </p>
           <p className="text-xs text-gray-500 mt-1">Por servicio</p>
         </div>
       </div>
 
       {/* Proyección Mensual */}
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200 p-6">
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200 p-4 md:p-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm text-blue-800 font-medium">Proyección Fin de Mes</p>
-            <p className="text-4xl font-bold text-blue-900 mt-2">
-              {formatCurrency(metricas.proyeccionMensual)}
+            <p className="text-xs md:text-sm text-blue-800 font-medium">Proyección Fin de Mes</p>
+            <p className="text-2xl md:text-4xl font-bold text-blue-900 mt-2">
+              ${(metricas.proyeccionMensual / 1000).toFixed(0)}k
             </p>
-            <p className="text-sm text-blue-700 mt-1">
-              Basado en el rendimiento actual del mes
+            <p className="text-xs md:text-sm text-blue-700 mt-1">
+              Basado en rendimiento actual
             </p>
           </div>
-          <span className="text-6xl">🎯</span>
+          <span className="text-4xl md:text-6xl">🎯</span>
         </div>
       </div>
 
       {/* Gráfico de Ingresos Diarios */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-gray-900">Ingresos por Día</h2>
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+          <h2 className="text-lg md:text-xl font-bold text-gray-900">Ingresos por Día</h2>
           <select
             value={diasGrafico}
             onChange={(e) => setDiasGrafico(parseInt(e.target.value))}
-            className="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+            className="border border-gray-300 rounded-lg px-3 md:px-4 py-2 text-xs md:text-sm focus:ring-2 focus:ring-blue-500"
           >
             <option value="7">Últimos 7 días</option>
             <option value="30">Últimos 30 días</option>
@@ -363,157 +381,140 @@ export default function AdminFinanzas() {
             <option value="90">Últimos 90 días</option>
           </select>
         </div>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={ingresosDiarios}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="fecha"
-              tickFormatter={(value) => {
-                const date = new Date(value);
-                return `${date.getDate()}/${date.getMonth() + 1}`;
-              }}
-            />
-            <YAxis tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} />
-            <Tooltip
-              formatter={(value: number) => formatCurrency(value)}
-              labelFormatter={(label) => formatDate(label)}
-            />
-            <Legend />
-            <Line
-              type="monotone"
-              dataKey="comisionPlataforma"
-              stroke="#3B82F6"
-              name="Comisión Plataforma"
-              strokeWidth={2}
-            />
-            <Line
-              type="monotone"
-              dataKey="facturacion"
-              stroke="#10B981"
-              name="Facturación Total"
-              strokeWidth={2}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+        <div className="h-[250px] md:h-[300px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={ingresosDiarios}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey="fecha"
+                tick={{ fontSize: 10 }}
+                tickFormatter={(value) => {
+                  const date = new Date(value);
+                  return `${date.getDate()}/${date.getMonth() + 1}`;
+                }}
+              />
+              <YAxis tick={{ fontSize: 10 }} tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} />
+              <Tooltip
+                formatter={(value: number) => formatCurrency(value)}
+                labelFormatter={(label) => formatDate(label)}
+              />
+              <Legend wrapperStyle={{ fontSize: '12px' }} />
+              <Line
+                type="monotone"
+                dataKey="comisionPlataforma"
+                stroke="#3B82F6"
+                name="Comisión"
+                strokeWidth={2}
+              />
+              <Line
+                type="monotone"
+                dataKey="facturacion"
+                stroke="#10B981"
+                name="Facturación"
+                strokeWidth={2}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       {/* Gráficos en Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         {/* Top 10 Grueros */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">Top 10 Grueros</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={finanzasGrueros.slice(0, 10)}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="nombre" angle={-45} textAnchor="end" height={100} />
-              <YAxis tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} />
-              <Tooltip formatter={(value: number) => formatCurrency(value)} />
-              <Legend />
-              <Bar dataKey="comisionGenerada" fill="#3B82F6" name="Comisión Generada" />
-            </BarChart>
-          </ResponsiveContainer>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
+          <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4 md:mb-6">Top 10 Grueros</h2>
+          <div className="h-[250px] md:h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={finanzasGrueros.slice(0, 10)}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="nombre" 
+                  angle={-45} 
+                  textAnchor="end" 
+                  height={100}
+                  tick={{ fontSize: 9 }}
+                />
+                <YAxis tick={{ fontSize: 10 }} tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} />
+                <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                <Legend wrapperStyle={{ fontSize: '12px' }} />
+                <Bar dataKey="comisionGenerada" fill="#3B82F6" name="Comisión Generada" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
         {/* Ingresos por Tipo de Vehículo */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">Ingresos por Tipo de Vehículo</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={finanzasVehiculos}
-                dataKey="comisionTotal"
-                nameKey="tipoVehiculo"
-                cx="50%"
-                cy="50%"
-                outerRadius={100}
-                label={({ tipoVehiculo, percent }) =>
-                  `${tipoVehiculo} (${(percent * 100).toFixed(0)}%)`
-                }
-              >
-                {finanzasVehiculos.map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(value: number) => formatCurrency(value)} />
-            </PieChart>
-          </ResponsiveContainer>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
+          <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4 md:mb-6">
+            Ingresos por Tipo de Vehículo
+          </h2>
+          <div className="h-[250px] md:h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={finanzasVehiculos.map(f => ({
+                    name: f.tipoVehiculo,
+                    value: f.comisionTotal,
+                  }))}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                  labelLine={{ strokeWidth: 1 }}
+                  style={{ fontSize: '11px' }}
+                >
+                  {finanzasVehiculos.map((_, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                <Legend wrapperStyle={{ fontSize: '12px' }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
 
       {/* Tabla de Transacciones Recientes */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900">Transacciones Recientes</h2>
-        </div>
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
+        <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4">Transacciones Recientes</h2>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Fecha
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Cliente
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Gruero
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Vehículo
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Total Cliente
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Pago Gruero
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Comisión
-                </th>
+          <table className="w-full border-collapse text-left text-sm md:text-base">
+            <thead>
+              <tr className="border-b border-gray-300">
+                <th className="px-2 md:px-4 py-2">Cliente</th>
+                <th className="px-2 md:px-4 py-2">Gruero</th>
+                <th className="px-2 md:px-4 py-2">Vehículo</th>
+                <th className="px-2 md:px-4 py-2">Tipo Vehículo</th>
+                <th className="px-2 md:px-4 py-2">Distancia (km)</th>
+                <th className="px-2 md:px-4 py-2">Total Cliente</th>
+                <th className="px-2 md:px-4 py-2">Total Gruero</th>
+                <th className="px-2 md:px-4 py-2">Comisión Plataforma</th>
+                <th className="px-2 md:px-4 py-2">Fecha</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {transacciones.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
-                    No hay transacciones registradas
+            <tbody>
+              {transacciones.map((t) => (
+                <tr key={t.id} className="border-b border-gray-100 hover:bg-gray-50">
+                  <td className="px-2 md:px-4 py-1 md:py-2">
+                    {t.cliente.user.nombre} {t.cliente.user.apellido}
                   </td>
+                  <td className="px-2 md:px-4 py-1 md:py-2">
+                    {t.gruero
+                      ? `${t.gruero.user.nombre} ${t.gruero.user.apellido}`
+                      : 'N/A'}
+                  </td>
+                  <td className="px-2 md:px-4 py-1 md:py-2">{t.gruero?.patente || 'N/A'}</td>
+                  <td className="px-2 md:px-4 py-1 md:py-2">{t.tipoVehiculo}</td>
+                  <td className="px-2 md:px-4 py-1 md:py-2">{t.distanciaKm.toFixed(1)}</td>
+                  <td className="px-2 md:px-4 py-1 md:py-2">{formatCurrency(t.totalCliente)}</td>
+                  <td className="px-2 md:px-4 py-1 md:py-2">{formatCurrency(t.totalGruero)}</td>
+                  <td className="px-2 md:px-4 py-1 md:py-2">{formatCurrency(t.comisionPlataforma)}</td>
+                  <td className="px-2 md:px-4 py-1 md:py-2">{formatDate(t.completadoAt)}</td>
                 </tr>
-              ) : (
-                transacciones.map((transaccion) => (
-                  <tr key={transaccion.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatDate(transaccion.completadoAt)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {transaccion.cliente.user.nombre} {transaccion.cliente.user.apellido}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {transaccion.gruero ? (
-                        <>
-                          {transaccion.gruero.user.nombre} {transaccion.gruero.user.apellido}
-                          <br />
-                          <span className="text-xs text-gray-500">{transaccion.gruero.patente}</span>
-                        </>
-                      ) : (
-                        'N/A'
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {transaccion.tipoVehiculo}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {formatCurrency(transaccion.totalCliente)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatCurrency(transaccion.totalGruero)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
-                      {formatCurrency(transaccion.comisionPlataforma)}
-                    </td>
-                  </tr>
-                ))
-              )}
+              ))}
             </tbody>
           </table>
         </div>

@@ -21,7 +21,6 @@ export default function AdminLogin() {
       const response = await axios.post(`${API_URL}/admin/login`, formData);
 
       if (response.data.success) {
-        // Guardar token y datos del admin
         localStorage.setItem('adminToken', response.data.data.token);
         localStorage.setItem('adminData', JSON.stringify(response.data.data.admin));
         
@@ -47,19 +46,19 @@ export default function AdminLogin() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         {/* Logo y título */}
-        <div className="text-center mb-8">
-          <div className="inline-block p-4 bg-blue-600 rounded-2xl mb-4">
-            <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="text-center mb-6 md:mb-8">
+          <div className="inline-block p-3 md:p-4 bg-blue-600 rounded-2xl mb-3 md:mb-4">
+            <svg className="w-10 h-10 md:w-12 md:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">Panel de Administración</h1>
-          <p className="text-slate-400">GruApp - Sistema de Gestión</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Panel de Administración</h1>
+          <p className="text-sm md:text-base text-slate-400">GruApp - Sistema de Gestión</p>
         </div>
 
         {/* Formulario */}
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+          <form onSubmit={handleSubmit} className="space-y-5 md:space-y-6">
             {/* Email */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -71,8 +70,8 @@ export default function AdminLogin() {
                 value={formData.email}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                placeholder="admin@gruapp.com"
+                className="w-full px-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-base"
+                placeholder="admin@gruappchile.cl"
               />
             </div>
 
@@ -87,7 +86,7 @@ export default function AdminLogin() {
                 value={formData.password}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                className="w-full px-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-base"
                 placeholder="••••••••"
               />
             </div>
@@ -96,27 +95,42 @@ export default function AdminLogin() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-blue-600 text-white py-3.5 md:py-4 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed text-base md:text-lg shadow-lg hover:shadow-xl"
             >
-              {loading ? 'Ingresando...' : 'Iniciar Sesión'}
+              {loading ? (
+                <span className="flex items-center justify-center">
+                  <svg className="animate-spin h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Ingresando...
+                </span>
+              ) : (
+                'Iniciar Sesión'
+              )}
             </button>
           </form>
 
-          {/* Info de desarrollo */}
-          <div className="mt-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
-            <p className="text-xs text-slate-600 font-medium mb-2">Credenciales de prueba:</p>
-            <p className="text-xs text-slate-500">Email: admin@gruapp.com</p>
-            <p className="text-xs text-slate-500">Contraseña: Admin123!</p>
-          </div>
+          {/* Info de desarrollo - OCULTAR EN PRODUCCIÓN */}
+          {import.meta.env.DEV && (
+            <div className="mt-5 md:mt-6 p-3 md:p-4 bg-slate-50 rounded-lg border border-slate-200">
+              <p className="text-xs text-slate-600 font-medium mb-2">Credenciales de prueba:</p>
+              <p className="text-xs text-slate-500">Email: admin@gruappchile.cl</p>
+              <p className="text-xs text-slate-500">Contraseña: admin123</p>
+            </div>
+          )}
         </div>
 
         {/* Volver */}
-        <div className="text-center mt-6">
+        <div className="text-center mt-5 md:mt-6">
           <button
             onClick={() => navigate('/')}
-            className="text-slate-400 hover:text-white transition text-sm"
+            className="text-slate-400 hover:text-white transition text-sm inline-flex items-center"
           >
-            ← Volver al inicio
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Volver al inicio
           </button>
         </div>
       </div>

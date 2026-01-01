@@ -8,7 +8,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 export default function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // Cerrado por defecto en móvil
   const [alertCount, setAlertCount] = useState(0);
   const [reclamosCount, setReclamosCount] = useState(0);
 
@@ -25,6 +25,13 @@ export default function AdminLayout() {
     return () => clearInterval(interval);
   }, []);
 
+  // Cerrar sidebar en móvil al cambiar de ruta
+  useEffect(() => {
+    if (window.innerWidth < 1024) {
+      setSidebarOpen(false);
+    }
+  }, [location.pathname]);
+
   const fetchAlertCount = async () => {
     try {
       const token = localStorage.getItem('adminToken');
@@ -33,7 +40,6 @@ export default function AdminLayout() {
       });
 
       if (response.data.success) {
-        // Contar alertas críticas y vencidas
         const total = (response.data.resumen?.vencidos || 0) + (response.data.resumen?.criticos || 0);
         setAlertCount(total);
       }
@@ -127,14 +133,22 @@ export default function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Overlay para móvil */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-40 h-screen transition-transform ${
+        className={`fixed top-0 left-0 z-40 h-screen transition-transform duration-300 ease-in-out ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } w-64 bg-slate-900`}
+        } lg:translate-x-0 w-64 bg-slate-900`}
       >
         {/* Logo */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-800">
+        <div className="flex items-center justify-between p-4 lg:p-6 border-b border-slate-800">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-xl">G</span>
@@ -144,15 +158,25 @@ export default function AdminLayout() {
               <p className="text-slate-400 text-xs">Admin Panel</p>
             </div>
           </div>
+          
+          {/* Botón cerrar en móvil */}
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="lg:hidden text-slate-400 hover:text-white"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
 
         {/* Menu */}
-        <nav className="p-4 space-y-2">
+        <nav className="p-3 lg:p-4 space-y-1 lg:space-y-2 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 180px)' }}>
           {menuItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center justify-between px-4 py-3 rounded-lg transition ${
+              className={`flex items-center justify-between px-3 lg:px-4 py-2.5 lg:py-3 rounded-lg transition ${
                 location.pathname === item.path
                   ? 'bg-blue-600 text-white'
                   : 'text-slate-300 hover:bg-slate-800'
@@ -160,7 +184,7 @@ export default function AdminLayout() {
             >
               <div className="flex items-center space-x-3">
                 {item.icon}
-                <span className="font-medium">{item.name}</span>
+                <span className="font-medium text-sm lg:text-base">{item.name}</span>
               </div>
               {item.badge && (
                 <span className={`${item.badgeColor} text-white text-xs font-bold px-2 py-1 rounded-full min-w-[20px] text-center`}>
@@ -172,16 +196,16 @@ export default function AdminLayout() {
         </nav>
 
         {/* Admin Info */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-800">
+        <div className="absolute bottom-0 left-0 right-0 p-3 lg:p-4 border-t border-slate-800 bg-slate-900">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-slate-700 rounded-full flex items-center justify-center">
-                <span className="text-white font-semibold">
+            <div className="flex items-center space-x-2 lg:space-x-3 overflow-hidden">
+              <div className="w-9 h-9 lg:w-10 lg:h-10 bg-slate-700 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-white font-semibold text-sm">
                   {adminData.nombre?.[0]}
                 </span>
               </div>
-              <div>
-                <p className="text-white text-sm font-medium">
+              <div className="overflow-hidden">
+                <p className="text-white text-xs lg:text-sm font-medium truncate">
                   {adminData.nombre} {adminData.apellido}
                 </p>
                 <p className="text-slate-400 text-xs">Administrador</p>
@@ -189,7 +213,7 @@ export default function AdminLayout() {
             </div>
             <button
               onClick={handleLogout}
-              className="text-slate-400 hover:text-white transition"
+              className="text-slate-400 hover:text-white transition flex-shrink-0"
               title="Cerrar sesión"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -201,10 +225,10 @@ export default function AdminLayout() {
       </aside>
 
       {/* Main Content */}
-      <div className={`transition-all ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <div className="lg:ml-64">
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
-          <div className="px-6 py-4 flex items-center justify-between">
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-20">
+          <div className="px-4 lg:px-6 py-3 lg:py-4 flex items-center justify-between">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="text-gray-600 hover:text-gray-900 transition"
@@ -214,7 +238,7 @@ export default function AdminLayout() {
               </svg>
             </button>
 
-            <div className="text-sm text-gray-500">
+            <div className="text-xs lg:text-sm text-gray-500 hidden sm:block">
               {new Date().toLocaleDateString('es-CL', { 
                 weekday: 'long', 
                 year: 'numeric', 
@@ -222,11 +246,22 @@ export default function AdminLayout() {
                 day: 'numeric' 
               })}
             </div>
+            
+            {/* Botón logout móvil */}
+            <button
+              onClick={handleLogout}
+              className="lg:hidden text-gray-600 hover:text-gray-900 transition"
+              title="Cerrar sesión"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            </button>
           </div>
         </header>
 
         {/* Page Content */}
-        <main className="p-6">
+        <main className="p-4 lg:p-6">
           <Outlet />
         </main>
       </div>

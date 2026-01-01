@@ -212,25 +212,23 @@ export default function AdminGrueros() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gestión de Grueros</h1>
-          <p className="text-gray-600 mt-1">Aprobar, rechazar o suspender grueros</p>
-        </div>
+      <div>
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Gestión de Grueros</h1>
+        <p className="text-sm md:text-base text-gray-600 mt-1">Aprobar, rechazar o suspender grueros</p>
       </div>
 
       {/* Filtros */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-        <div className="flex items-center space-x-4">
-          <span className="text-sm font-medium text-gray-700">Filtrar por estado:</span>
-          <div className="flex space-x-2">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-4">
+        <div className="space-y-2 md:space-y-0 md:flex md:items-center md:space-x-4">
+          <span className="text-xs md:text-sm font-medium text-gray-700">Filtrar por estado:</span>
+          <div className="flex flex-wrap gap-2">
             {['TODOS', 'PENDIENTE', 'APROBADO', 'RECHAZADO'].map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f as any)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                className={`px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition ${
                   filter === f
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -243,31 +241,31 @@ export default function AdminGrueros() {
         </div>
       </div>
 
-      {/* Lista de Grueros */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      {/* Tabla Desktop */}
+      <div className="hidden lg:block bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Gruero
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Vehículo
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Estado
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Servicios
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Calificación
+                <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Rating
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 xl:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Acciones
                 </th>
               </tr>
@@ -282,32 +280,32 @@ export default function AdminGrueros() {
               ) : (
                 grueros.map((gruero) => (
                   <tr key={gruero.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                          <span className="text-blue-600 font-semibold">
+                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-blue-600 font-semibold text-sm">
                             {gruero.user.nombre[0]}{gruero.user.apellido[0]}
                           </span>
                         </div>
-                        <div className="ml-4">
+                        <div className="ml-3">
                           <div className="text-sm font-medium text-gray-900">
                             {gruero.user.nombre} {gruero.user.apellido}
                           </div>
-                          <div className="text-sm text-gray-500">{gruero.user.email}</div>
+                          <div className="text-xs text-gray-500">{gruero.user.email}</div>
                           <div className="text-xs text-gray-400">{gruero.user.telefono}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {gruero.marca} {gruero.modelo} ({gruero.anio})
+                        {gruero.marca} {gruero.modelo}
                       </div>
-                      <div className="text-sm text-gray-500">Patente: {gruero.patente}</div>
+                      <div className="text-xs text-gray-500">Patente: {gruero.patente}</div>
                       <div className="text-xs text-gray-400">
                         {gruero.tipoGrua} - {gruero.capacidadToneladas}T
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getEstadoBadge(gruero.estadoVerificacion)}`}>
                         {gruero.estadoVerificacion}
                       </span>
@@ -317,15 +315,15 @@ export default function AdminGrueros() {
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(gruero.status)}`}>
                         {gruero.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {gruero.totalServicios}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <span className="text-yellow-500 mr-1">⭐</span>
                         <span className="text-sm font-medium text-gray-900">
@@ -333,9 +331,8 @@ export default function AdminGrueros() {
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-2">
-                        {/* Botón Ver Detalle */}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -411,11 +408,131 @@ export default function AdminGrueros() {
         </div>
       </div>
 
+      {/* Cards Móvil */}
+      <div className="lg:hidden space-y-3">
+        {grueros.length === 0 ? (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center text-gray-500">
+            No hay grueros en esta categoría
+          </div>
+        ) : (
+          grueros.map((gruero) => (
+            <div key={gruero.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+              {/* Header Card */}
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center flex-1">
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-blue-600 font-semibold">
+                      {gruero.user.nombre[0]}{gruero.user.apellido[0]}
+                    </span>
+                  </div>
+                  <div className="ml-3 overflow-hidden">
+                    <p className="font-semibold text-gray-900 truncate">
+                      {gruero.user.nombre} {gruero.user.apellido}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">{gruero.user.email}</p>
+                    <p className="text-xs text-gray-400">{gruero.user.telefono}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Info Vehículo */}
+              <div className="bg-gray-50 rounded-lg p-3 mb-3 text-sm">
+                <p className="font-medium text-gray-900">{gruero.marca} {gruero.modelo} ({gruero.anio})</p>
+                <p className="text-xs text-gray-600">Patente: {gruero.patente}</p>
+                <p className="text-xs text-gray-500">{gruero.tipoGrua} - {gruero.capacidadToneladas}T</p>
+              </div>
+
+              {/* Badges */}
+              <div className="flex flex-wrap gap-2 mb-3">
+                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getEstadoBadge(gruero.estadoVerificacion)}`}>
+                  {gruero.estadoVerificacion}
+                </span>
+                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(gruero.status)}`}>
+                  {gruero.status}
+                </span>
+                {gruero.cuentaSuspendida && (
+                  <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                    SUSPENDIDO
+                  </span>
+                )}
+              </div>
+
+              {/* Stats */}
+              <div className="flex items-center justify-between text-sm mb-3">
+                <div>
+                  <span className="text-gray-500">Servicios:</span>
+                  <span className="font-medium text-gray-900 ml-1">{gruero.totalServicios}</span>
+                </div>
+                <div className="flex items-center">
+                  <span className="text-yellow-500 mr-1">⭐</span>
+                  <span className="font-medium text-gray-900">
+                    {gruero.calificacionPromedio.toFixed(1)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Acciones */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => navigate(`/admin/grueros/${gruero.id}`)}
+                  className="flex-1 bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-2 rounded-lg text-sm font-medium transition"
+                >
+                  👁️ Ver Detalle
+                </button>
+
+                {gruero.estadoVerificacion === 'PENDIENTE' && (
+                  <>
+                    <button
+                      onClick={() => handleAprobar(gruero.id)}
+                      disabled={actionLoading}
+                      className="bg-green-50 text-green-600 hover:bg-green-100 px-3 py-2 rounded-lg text-sm font-medium transition disabled:opacity-50"
+                    >
+                      ✅
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedGruero(gruero);
+                        setShowModal(true);
+                      }}
+                      disabled={actionLoading}
+                      className="bg-red-50 text-red-600 hover:bg-red-100 px-3 py-2 rounded-lg text-sm font-medium transition disabled:opacity-50"
+                    >
+                      ❌
+                    </button>
+                  </>
+                )}
+                {gruero.estadoVerificacion === 'APROBADO' && !gruero.cuentaSuspendida && (
+                  <button
+                    onClick={() => {
+                      setSelectedGruero(gruero);
+                      setShowModal(true);
+                    }}
+                    disabled={actionLoading}
+                    className="bg-orange-50 text-orange-600 hover:bg-orange-100 px-3 py-2 rounded-lg text-sm font-medium transition disabled:opacity-50"
+                  >
+                    🚫
+                  </button>
+                )}
+                {gruero.cuentaSuspendida && (
+                  <button
+                    onClick={() => handleReactivar(gruero.id)}
+                    disabled={actionLoading}
+                    className="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-2 rounded-lg text-sm font-medium transition disabled:opacity-50"
+                  >
+                    🔄
+                  </button>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
       {/* Modal */}
       {showModal && selectedGruero && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-5 md:p-6">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-3 md:mb-4">
               {selectedGruero.estadoVerificacion === 'PENDIENTE' ? 'Rechazar Gruero' : 'Suspender Gruero'}
             </h3>
             <p className="text-sm text-gray-600 mb-4">
@@ -429,10 +546,10 @@ export default function AdminGrueros() {
                   : setMotivoSuspension(e.target.value)
               }
               placeholder="Ingresa el motivo..."
-              className="w-full border border-gray-300 rounded-lg p-3 mb-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-lg p-3 mb-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
               rows={4}
             />
-            <div className="flex space-x-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => {
                   setShowModal(false);
@@ -440,7 +557,7 @@ export default function AdminGrueros() {
                   setMotivoSuspension('');
                   setSelectedGruero(null);
                 }}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
               >
                 Cancelar
               </button>
@@ -451,7 +568,7 @@ export default function AdminGrueros() {
                     : handleSuspender(selectedGruero.id)
                 }
                 disabled={actionLoading}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 font-medium"
               >
                 {actionLoading ? 'Procesando...' : 'Confirmar'}
               </button>

@@ -65,7 +65,6 @@ export default function AdminDashboard() {
       setLoading(true);
       const token = localStorage.getItem('adminToken');
 
-      // Cargar estadísticas y alertas en paralelo
       const [estadisticasRes, alertasRes] = await Promise.all([
         axios.get(`${API_URL}/admin/estadisticas`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -190,16 +189,16 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 mt-1">Resumen general de la plataforma</p>
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Dashboard</h1>
+        <p className="text-sm md:text-base text-gray-600 mt-1">Resumen general de la plataforma</p>
       </div>
 
       {/* Alertas de Vencimientos */}
       {alertas && alertas.resumen.total > 0 && (
         <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">⚠️ Alertas de Vencimientos</h2>
-            <div className="flex items-center space-x-2">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+            <h2 className="text-base md:text-lg font-semibold text-gray-900">⚠️ Alertas de Vencimientos</h2>
+            <div className="flex flex-wrap items-center gap-2">
               {alertas.resumen.vencidos > 0 && (
                 <span className="bg-red-100 text-red-800 text-xs font-semibold px-3 py-1 rounded-full">
                   {alertas.resumen.vencidos} vencidos
@@ -218,21 +217,22 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          {/* Tabla Desktop */}
+          <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <div className="max-h-96 overflow-y-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50 sticky top-0">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                       Gruero
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                       Documentos
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                       Estado
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-4 lg:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
                       Acciones
                     </th>
                   </tr>
@@ -240,27 +240,23 @@ export default function AdminDashboard() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {alertas.data.map((alerta, index) => (
                     <tr key={index} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                         <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {alerta.gruero.nombre}
-                          </div>
+                          <div className="text-sm font-medium text-gray-900">{alerta.gruero.nombre}</div>
                           <div className="text-sm text-gray-500">{alerta.gruero.patente}</div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 lg:px-6 py-4">
                         <div className="space-y-1">
                           {alerta.documentos.map((doc, idx) => (
                             <div key={idx} className="text-sm">
                               <span className="font-medium text-gray-700">{doc.nombre}</span>
-                              <span className="text-gray-500 ml-2">
-                                {getEstadoTexto(doc.diasRestantes)}
-                              </span>
+                              <span className="text-gray-500 ml-2">{getEstadoTexto(doc.diasRestantes)}</span>
                             </div>
                           ))}
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 lg:px-6 py-4">
                         <div className="space-y-1">
                           {alerta.documentos.map((doc, idx) => (
                             <span
@@ -272,7 +268,7 @@ export default function AdminDashboard() {
                           ))}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-right text-sm">
                         <button
                           onClick={() => navigate(`/admin/grueros/${alerta.gruero.id}`)}
                           className="text-blue-600 hover:text-blue-900 font-medium"
@@ -286,30 +282,63 @@ export default function AdminDashboard() {
               </table>
             </div>
           </div>
+
+          {/* Cards Móvil */}
+          <div className="md:hidden space-y-3">
+            {alertas.data.map((alerta, index) => (
+              <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <p className="font-semibold text-gray-900">{alerta.gruero.nombre}</p>
+                    <p className="text-sm text-gray-500">{alerta.gruero.patente}</p>
+                  </div>
+                </div>
+                <div className="space-y-2 mb-3">
+                  {alerta.documentos.map((doc, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-sm">
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-700">{doc.nombre}</p>
+                        <p className="text-xs text-gray-500">{getEstadoTexto(doc.diasRestantes)}</p>
+                      </div>
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getEstadoColor(doc.estado)} ml-2`}>
+                        {doc.estado === 'vencido' ? '🔴' : doc.estado === 'critico' ? '🟠' : '🟡'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={() => navigate(`/admin/grueros/${alerta.gruero.id}`)}
+                  className="w-full bg-blue-50 text-blue-600 hover:bg-blue-100 px-4 py-2 rounded-lg text-sm font-medium transition"
+                >
+                  Ver Detalle →
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
       {/* Estadísticas de Usuarios */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">👥 Usuarios</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">👥 Usuarios</h2>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
           {stats.map((stat, index) => (
             <div
               key={index}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition"
+              className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6 hover:shadow-md transition"
             >
-              <div className="flex items-center justify-between mb-4">
-                <div className={`w-12 h-12 ${stat.color} rounded-lg flex items-center justify-center text-2xl`}>
+              <div className="flex items-center justify-between mb-3 md:mb-4">
+                <div className={`w-10 h-10 md:w-12 md:h-12 ${stat.color} rounded-lg flex items-center justify-center text-xl md:text-2xl`}>
                   {stat.icon}
                 </div>
-                <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded hidden sm:block">
                   {stat.change}
                 </span>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-1">
+              <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-1">
                 {stat.value.toLocaleString()}
               </h3>
-              <p className="text-sm text-gray-600">{stat.title}</p>
+              <p className="text-xs md:text-sm text-gray-600">{stat.title}</p>
             </div>
           ))}
         </div>
@@ -317,22 +346,22 @@ export default function AdminDashboard() {
 
       {/* Estadísticas de Servicios */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">📊 Servicios</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">📊 Servicios</h2>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
           {servicioStats.map((stat, index) => (
             <div
               key={index}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition"
+              className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6 hover:shadow-md transition"
             >
-              <div className="flex items-center justify-between mb-4">
-                <div className={`w-12 h-12 ${stat.color} rounded-lg flex items-center justify-center text-2xl`}>
+              <div className="flex items-center justify-between mb-3 md:mb-4">
+                <div className={`w-10 h-10 md:w-12 md:h-12 ${stat.color} rounded-lg flex items-center justify-center text-xl md:text-2xl`}>
                   {stat.icon}
                 </div>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-1">
+              <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-1">
                 {stat.value.toLocaleString()}
               </h3>
-              <p className="text-sm text-gray-600">{stat.title}</p>
+              <p className="text-xs md:text-sm text-gray-600">{stat.title}</p>
             </div>
           ))}
         </div>
@@ -340,44 +369,44 @@ export default function AdminDashboard() {
 
       {/* Estadísticas de Ingresos */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">💰 Ingresos</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-sm p-6 text-white">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center text-2xl">
+        <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">💰 Ingresos</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-sm p-5 md:p-6 text-white">
+            <div className="flex items-center justify-between mb-3 md:mb-4">
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-white/20 rounded-lg flex items-center justify-center text-xl md:text-2xl">
                 💵
               </div>
             </div>
-            <h3 className="text-3xl font-bold mb-1">
+            <h3 className="text-2xl md:text-3xl font-bold mb-1">
               ${estadisticas.ingresos.comisionTotal.toLocaleString('es-CL')}
             </h3>
-            <p className="text-blue-100">Comisión Total Plataforma</p>
+            <p className="text-sm md:text-base text-blue-100">Comisión Total Plataforma</p>
           </div>
 
-          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-sm p-6 text-white">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center text-2xl">
+          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-sm p-5 md:p-6 text-white">
+            <div className="flex items-center justify-between mb-3 md:mb-4">
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-white/20 rounded-lg flex items-center justify-center text-xl md:text-2xl">
                 💸
               </div>
             </div>
-            <h3 className="text-3xl font-bold mb-1">
+            <h3 className="text-2xl md:text-3xl font-bold mb-1">
               ${estadisticas.ingresos.facturacionTotal.toLocaleString('es-CL')}
             </h3>
-            <p className="text-green-100">Facturación Total</p>
+            <p className="text-sm md:text-base text-green-100">Facturación Total</p>
           </div>
         </div>
       </div>
 
       {/* Acciones Rápidas */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">⚡ Acciones Rápidas</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">⚡ Acciones Rápidas</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
           <button
             onClick={() => navigate('/admin/grueros')}
-            className="bg-white border-2 border-yellow-500 hover:bg-yellow-50 rounded-xl p-6 text-left transition group"
+            className="bg-white border-2 border-yellow-500 hover:bg-yellow-50 rounded-xl p-5 md:p-6 text-left transition group"
           >
             <div className="flex items-center justify-between mb-3">
-              <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center text-2xl group-hover:scale-110 transition">
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-yellow-100 rounded-lg flex items-center justify-center text-xl md:text-2xl group-hover:scale-110 transition">
                 ⏳
               </div>
               {estadisticas.usuarios.gruerosPendientes > 0 && (
@@ -386,20 +415,20 @@ export default function AdminDashboard() {
                 </span>
               )}
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-1">
               Revisar Grueros Pendientes
             </h3>
-            <p className="text-sm text-gray-600">
+            <p className="text-xs md:text-sm text-gray-600">
               {estadisticas.usuarios.gruerosPendientes} grueros esperando aprobación
             </p>
           </button>
 
           <button
             onClick={() => navigate('/admin/servicios')}
-            className="bg-white border-2 border-blue-500 hover:bg-blue-50 rounded-xl p-6 text-left transition group"
+            className="bg-white border-2 border-blue-500 hover:bg-blue-50 rounded-xl p-5 md:p-6 text-left transition group"
           >
             <div className="flex items-center justify-between mb-3">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-2xl group-hover:scale-110 transition">
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-lg flex items-center justify-center text-xl md:text-2xl group-hover:scale-110 transition">
                 🚀
               </div>
               {estadisticas.servicios.enCurso > 0 && (
@@ -408,27 +437,27 @@ export default function AdminDashboard() {
                 </span>
               )}
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-1">
               Ver Servicios Activos
             </h3>
-            <p className="text-sm text-gray-600">
+            <p className="text-xs md:text-sm text-gray-600">
               {estadisticas.servicios.enCurso} servicios en curso ahora
             </p>
           </button>
 
           <button
             onClick={() => navigate('/admin/clientes')}
-            className="bg-white border-2 border-green-500 hover:bg-green-50 rounded-xl p-6 text-left transition group"
+            className="bg-white border-2 border-green-500 hover:bg-green-50 rounded-xl p-5 md:p-6 text-left transition group"
           >
             <div className="flex items-center justify-between mb-3">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center text-2xl group-hover:scale-110 transition">
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-green-100 rounded-lg flex items-center justify-center text-xl md:text-2xl group-hover:scale-110 transition">
                 👥
               </div>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-1">
               Gestionar Clientes
             </h3>
-            <p className="text-sm text-gray-600">
+            <p className="text-xs md:text-sm text-gray-600">
               {estadisticas.usuarios.totalClientes} clientes registrados
             </p>
           </button>
