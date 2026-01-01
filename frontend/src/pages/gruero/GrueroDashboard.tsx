@@ -10,12 +10,12 @@ import io, { Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
 import 'leaflet/dist/leaflet.css';
 
-// Icono de grúa personalizado usando el mismo diseño del logo (camión de grúa naranja)
+// Icono de grúa personalizado con círculo de fondo (igual al logo de Gruapp)
 const grueroIcon = new Icon({
-  iconUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSIjZmY3YTNkIj48cGF0aCBkPSJNMjAgOGgtM1Y0SDN2NWgybC0uMDEgNi4wMWMtMS4yMi4wMy0yLjE4IDEuMDYtMi4xOCAyLjI4QzIuODEgMTguNyAzLjgxIDE5LjcgNSAxOS43YzEuMTkgMCAxLjQ5LTEuMDEgMS40OS0yLjQxIDAtMS4yMi0uOTUtMi4yNi0yLjE3LTIuMjlWOWgxMXY3Ljk5Yy0xLjIyLjAyLTIuMTggMS4wNi0yLjE4IDIuMjggMCAxLjM5IDEuMDEgMi40MSAxLjE5IDIuNDEgMS4xOSAwIDIuMTktLjk5IDIuMTktMi4zOSAwLTEuMjItLjk1LTIuMjYtMi4xNy0yLjI5VjloM2MxLjEgMCAyLS45IDItMlY4ek0xMSA2aDJsLjAxIDEuOTlIOWwuMDEtMnoiLz48L3N2Zz4=',
-  iconSize: [40, 40],
-  iconAnchor: [20, 40],
-  popupAnchor: [0, -40],
+  iconUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MCIgaGVpZ2h0PSI1MCIgdmlld0JveD0iMCAwIDUwIDUwIj48Y2lyY2xlIGN4PSIyNSIgY3k9IjI1IiByPSIyNCIgZmlsbD0iI2ZmN2EzZCIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjIiLz48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxMywgMTMpIj48cGF0aCBkPSJNMjAgOGgtM1Y0SDN2NWgybC0uMDEgNi4wMWMtMS4yMi4wMy0yLjE4IDEuMDYtMi4xOCAyLjI4QzIuODEgMTguNyAzLjgxIDE5LjcgNSAxOS43YzEuMTkgMCAxLjQ5LTEuMDEgMS40OS0yLjQxIDAtMS4yMi0uOTUtMi4yNi0yLjE3LTIuMjlWOWgxMXY3Ljk5Yy0xLjIyLjAyLTIuMTggMS4wNi0yLjE4IDIuMjggMCAxLjM5IDEuMDEgMi40MSAxLjE5IDIuNDEgMS4xOSAwIDIuMTktLjk5IDIuMTktMi4zOSAwLTEuMjItLjk1LTIuMjYtMi4xNy0yLjI5VjloM2MxLjEgMCAyLS45IDItMlY4ek0xMSA2aDJsLjAxIDEuOTlIOWwuMDEtMnoiIGZpbGw9IiNmZmYiLz48L2c+PC9zdmc+',
+  iconSize: [50, 50],
+  iconAnchor: [25, 50],
+  popupAnchor: [0, -50],
 });
 
 const servicioIcon = new Icon({
@@ -118,6 +118,11 @@ export default function GrueroDashboard() {
           if (grueroData.latitud && grueroData.longitud) {
             setUbicacionActual([grueroData.latitud, grueroData.longitud]);
           }
+
+          // Iniciar rastreo GPS automáticamente
+          setTimeout(() => {
+            iniciarRastreoAutomatico(grueroData.id);
+          }, 500);
 
           // Solo mostrar toast de bienvenida si acaba de iniciar sesión
           const justLoggedIn = sessionStorage.getItem('justLoggedIn');
@@ -269,6 +274,65 @@ export default function GrueroDashboard() {
     );
   };
 
+  // Función para iniciar rastreo automáticamente (sin toast)
+  const iniciarRastreoAutomatico = (grueroIdParam: string) => {
+    if (!navigator.geolocation) {
+      console.error('❌ Navegador no soporta geolocalización');
+      return;
+    }
+
+    console.log('🌍 Iniciando rastreo GPS automático para gruero:', grueroIdParam);
+    setRastreoActivo(true);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        const nuevaUbicacion: [number, number] = [latitude, longitude];
+        
+        console.log('📍 Ubicación inicial automática:', latitude, longitude);
+        setUbicacionActual(nuevaUbicacion);
+        
+        if (socketRef.current && grueroIdParam) {
+          socketRef.current.emit('gruero:updateLocation', {
+            grueroId: grueroIdParam,
+            lat: latitude,
+            lng: longitude,
+          });
+        }
+      },
+      (error) => {
+        console.error('❌ Error obteniendo ubicación automática:', error);
+        setRastreoActivo(false);
+      }
+    );
+
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        const nuevaUbicacion: [number, number] = [latitude, longitude];
+        
+        console.log('📍 Ubicación actualizada automática:', latitude, longitude);
+        setUbicacionActual(nuevaUbicacion);
+        
+        if (socketRef.current && grueroIdParam) {
+          socketRef.current.emit('gruero:updateLocation', {
+            grueroId: grueroIdParam,
+            lat: latitude,
+            lng: longitude,
+          });
+        }
+      },
+      (error) => {
+        console.error('❌ Error en rastreo GPS automático:', error);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
+  };
+
   const detenerRastreo = () => {
     if (watchIdRef.current !== null) {
       navigator.geolocation.clearWatch(watchIdRef.current);
@@ -315,7 +379,7 @@ export default function GrueroDashboard() {
 
         if (nuevoEstado) {
           toast.success('¡Ahora estás disponible para servicios!');
-          iniciarRastreo();
+          // No llamar iniciarRastreo aquí, se maneja automáticamente en el useEffect
         } else {
           toast.success('Te has puesto fuera de línea');
           detenerRastreo();
@@ -329,6 +393,17 @@ export default function GrueroDashboard() {
       setLoading(false);
     }
   };
+
+  // Activar rastreo GPS automáticamente cuando está disponible
+  useEffect(() => {
+    if (disponible && grueroId && !rastreoActivo) {
+      console.log('🌍 Auto-iniciando rastreo GPS porque el gruero está disponible');
+      iniciarRastreo();
+    } else if (!disponible && rastreoActivo) {
+      console.log('🛑 Deteniendo rastreo GPS porque el gruero no está disponible');
+      detenerRastreo();
+    }
+  }, [disponible, grueroId]); // Se ejecuta cuando cambia disponibilidad o grueroId
 
   const cargarServiciosPendientes = async () => {
     try {
