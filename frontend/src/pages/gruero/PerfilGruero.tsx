@@ -450,7 +450,10 @@ export default function PerfilGruero() {
                   <div className="relative w-32 h-32 md:w-40 md:h-40 mx-auto mb-3">
                     {grueroData.fotoGruero ? (
                       <img
-                        src={`http://localhost:5000${grueroData.fotoGruero}`}
+                        src={grueroData.fotoGruero?.startsWith('http') 
+                          ? grueroData.fotoGruero 
+                          : `https://gruapp-production.up.railway.app${grueroData.fotoGruero}`
+                        }
                         alt="Foto Gruero"
                         className="w-full h-full object-cover rounded-full border-4 border-gray-200"
                       />
@@ -480,7 +483,10 @@ export default function PerfilGruero() {
                   <div className="relative w-32 h-32 md:w-40 md:h-40 mx-auto mb-3">
                     {grueroData.fotoGrua ? (
                       <img
-                        src={`http://localhost:5000${grueroData.fotoGrua}`}
+                        src={grueroData.fotoGrua?.startsWith('http') 
+                          ? grueroData.fotoGrua 
+                          : `https://gruapp-production.up.railway.app${grueroData.fotoGrua}`
+                        }
                         alt="Foto Grúa"
                         className="w-full h-full object-cover rounded-lg border-4 border-gray-200"
                       />
@@ -781,7 +787,15 @@ export default function PerfilGruero() {
                     <div className="flex items-center justify-between mb-2">
                       <CheckCircle className={`h-5 w-5 md:h-6 md:w-6 ${doc.file ? 'text-green-500' : 'text-gray-400'}`} />
                       {doc.file && (
-                        <a href={`http://localhost:5000${doc.file}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-600">
+                        <a 
+                          href={doc.file?.startsWith('http') 
+                            ? doc.file 
+                            : `https://gruapp-production.up.railway.app${doc.file}`
+                          } 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="text-blue-500 hover:text-blue-600"
+                        >
                           <FileText className="h-4 w-4 md:h-5 md:w-5" />
                         </a>
                       )}

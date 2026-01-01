@@ -10,13 +10,12 @@ import io, { Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
 import 'leaflet/dist/leaflet.css';
 
+// Icono personalizado de grúa
 const grueroIcon = new Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
+  iconUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSIjMTBiOTgxIj48cGF0aCBkPSJNMjAgOGgtM1Y0SDN2NWgybC0uMDEgNi4wMWMtMS4yMi4wMy0yLjE4IDEuMDYtMi4xOCAyLjI4QzIuODEgMTguNyAzLjgxIDE5LjcgNSAxOS43YzEuMTkgMCAxLjQ5LTEuMDEgMS40OS0yLjQxIDAtMS4yMi0uOTUtMi4yNi0yLjE3LTIuMjlWOWgxMXY3Ljk5Yy0xLjIyLjAyLTIuMTggMS4wNi0yLjE4IDIuMjggMCAxLjM5IDEuMDEgMi40MSAxLjE5IDIuNDEgMS4xOSAwIDIuMTktLjk5IDIuMTktMi4zOSAwLTEuMjItLjk1LTIuMjYtMi4xNy0yLjI5VjloM2MxLjEgMCAyLS45IDItMlY4ek0xMSA2aDJsLjAxIDEuOTlIOWwuMDEtMnoiLz48L3N2Zz4=',
+  iconSize: [40, 40],
+  iconAnchor: [20, 40],
+  popupAnchor: [0, -40],
 });
 
 const servicioIcon = new Icon({
@@ -84,6 +83,25 @@ export default function GrueroDashboard() {
   const socketRef = useRef<Socket | null>(null);
   const watchIdRef = useRef<number | null>(null);
 
+  // Obtener ubicación GPS inmediatamente al cargar
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const nuevaUbicacion: [number, number] = [
+            position.coords.latitude,
+            position.coords.longitude,
+          ];
+          console.log('📍 Ubicación inicial obtenida:', nuevaUbicacion);
+          setUbicacionActual(nuevaUbicacion);
+        },
+        (error) => {
+          console.error('❌ Error obteniendo ubicación inicial:', error);
+        }
+      );
+    }
+  }, []);
+
   useEffect(() => {
     const initGruero = async () => {
       try {
@@ -114,7 +132,7 @@ export default function GrueroDashboard() {
 
     initGruero();
 
-    const socket = io('http://localhost:5000');
+    const socket = io('https://gruapp-production.up.railway.app');
     socketRef.current = socket;
 
     socket.on('connect', () => {
