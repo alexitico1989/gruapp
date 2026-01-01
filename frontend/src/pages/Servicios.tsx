@@ -27,7 +27,7 @@ export default function Servicios() {
             
             {/* Grúa Cama Baja */}
             <div className="bg-white rounded-2xl p-6 md:p-8 shadow-lg border border-gray-100">
-              <div className="w-16 h-16 md:w-20 md:h-20 bg-[#ff7a3d] bg-opacity-10 rounded-xl flex items-center justify-center mb-4 md:mb-6">
+              <div className="w-16 h-16 md:w-20 md:h-20 bg-[#1e3a5f] bg-opacity-10 rounded-xl flex items-center justify-center mb-4 md:mb-6">
                 <GiTowTruck className="w-10 h-10 md:w-12 md:h-12 text-[#ff7a3d]" />
               </div>
               <h3 className="text-2xl md:text-3xl font-bold text-[#1e3a5f] mb-3 md:mb-4">Grúa Cama Baja</h3>
@@ -72,7 +72,7 @@ export default function Servicios() {
 
             {/* Grúa Horquilla */}
             <div className="bg-white rounded-2xl p-6 md:p-8 shadow-lg border border-gray-100">
-              <div className="w-16 h-16 md:w-20 md:h-20 bg-[#ff7a3d] bg-opacity-10 rounded-xl flex items-center justify-center mb-4 md:mb-6">
+              <div className="w-16 h-16 md:w-20 md:h-20 bg-[#1e3a5f] bg-opacity-10 rounded-xl flex items-center justify-center mb-4 md:mb-6">
                 <GiTowTruck className="w-10 h-10 md:w-12 md:h-12 text-[#ff7a3d]" />
               </div>
               <h3 className="text-2xl md:text-3xl font-bold text-[#1e3a5f] mb-3 md:mb-4">Grúa Horquilla</h3>
@@ -117,7 +117,7 @@ export default function Servicios() {
 
             {/* Grúa Pluma */}
             <div className="bg-white rounded-2xl p-6 md:p-8 shadow-lg border border-gray-100">
-              <div className="w-16 h-16 md:w-20 md:h-20 bg-[#ff7a3d] bg-opacity-10 rounded-xl flex items-center justify-center mb-4 md:mb-6">
+              <div className="w-16 h-16 md:w-20 md:h-20 bg-[#1e3a5f] bg-opacity-10 rounded-xl flex items-center justify-center mb-4 md:mb-6">
                 <GiTowTruck className="w-10 h-10 md:w-12 md:h-12 text-[#ff7a3d]" />
               </div>
               <h3 className="text-2xl md:text-3xl font-bold text-[#1e3a5f] mb-3 md:mb-4">Grúa Pluma</h3>
