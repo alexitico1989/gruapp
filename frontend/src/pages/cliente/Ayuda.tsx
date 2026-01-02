@@ -118,7 +118,7 @@ export default function Ayuda() {
             <h3 className="font-bold text-gray-900 mb-2">Email</h3>
             <p className="text-sm text-gray-600 mb-3">contacto@gruappchile.cl</p>
             <a
-              href="mailto:soporte@gruaschile.cl"
+              href="mailto:contacto@gruappchile.cl"
               className="text-[#ff7a3d] hover:underline text-sm font-semibold"
             >
               Enviar email
