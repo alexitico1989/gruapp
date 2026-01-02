@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { User, Mail, Lock, Phone, Loader2 } from 'lucide-react';
+import { User, Mail, Lock, Phone, Loader2, CreditCard } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -11,25 +11,76 @@ import toast from 'react-hot-toast';
 interface RegisterForm {
   nombre: string;
   apellido: string;
+  rut: string;
   email: string;
   password: string;
   confirmPassword: string;
   telefono: string;
 }
 
+// Función para formatear RUT
+const formatRut = (value: string) => {
+  // Eliminar todo excepto números y K
+  const cleaned = value.replace(/[^0-9kK]/g, '');
+  
+  if (cleaned.length === 0) return '';
+  
+  // Separar dígito verificador
+  const body = cleaned.slice(0, -1);
+  const dv = cleaned.slice(-1).toUpperCase();
+  
+  // Formatear con puntos
+  const formatted = body.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  
+  return body.length > 0 ? `${formatted}-${dv}` : '';
+};
+
+// Función para validar RUT chileno
+const validateRut = (rut: string) => {
+  // Limpiar RUT
+  const cleaned = rut.replace(/[^0-9kK]/g, '');
+  
+  if (cleaned.length < 2) return false;
+  
+  const body = cleaned.slice(0, -1);
+  const dv = cleaned.slice(-1).toUpperCase();
+  
+  // Calcular dígito verificador
+  let sum = 0;
+  let multiplier = 2;
+  
+  for (let i = body.length - 1; i >= 0; i--) {
+    sum += parseInt(body[i]) * multiplier;
+    multiplier = multiplier === 7 ? 2 : multiplier + 1;
+  }
+  
+  const calculatedDv = 11 - (sum % 11);
+  const expectedDv = calculatedDv === 11 ? '0' : calculatedDv === 10 ? 'K' : calculatedDv.toString();
+  
+  return dv === expectedDv;
+};
+
 export default function RegisterCliente() {
   const navigate = useNavigate();
   const { setAuth } = useAuthStore();
   const [loading, setLoading] = useState(false);
+  const [rutValue, setRutValue] = useState('');
 
   const {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<RegisterForm>();
 
   const password = watch('password');
+
+  const handleRutChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatRut(e.target.value);
+    setRutValue(formatted);
+    setValue('rut', formatted);
+  };
 
   const onSubmit = async (data: RegisterForm) => {
     try {
@@ -119,6 +170,32 @@ export default function RegisterCliente() {
                 </div>
                 {errors.apellido && (
                   <p className="text-red-500 text-sm mt-1">{errors.apellido.message}</p>
+                )}
+              </div>
+
+              {/* RUT */}
+              <div>
+                <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">
+                  RUT
+                </label>
+                <div className="relative">
+                  <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    type="text"
+                    value={rutValue}
+                    {...register('rut', {
+                      required: 'El RUT es requerido',
+                      validate: (value) =>
+                        validateRut(value) || 'RUT inválido',
+                    })}
+                    onChange={handleRutChange}
+                    className="w-full pl-11 pr-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
+                    placeholder="12.345.678-9"
+                    maxLength={12}
+                  />
+                </div>
+                {errors.rut && (
+                  <p className="text-red-500 text-sm mt-1">{errors.rut.message}</p>
                 )}
               </div>
 
