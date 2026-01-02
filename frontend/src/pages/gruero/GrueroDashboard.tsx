@@ -266,6 +266,8 @@ export default function GrueroDashboard() {
         // IMPORTANTE: El backend emite 'nuevo-servicio' con los datos completos del servicio
         globalSocket.on('nuevo-servicio', (data: Servicio) => {
           console.log('🆕 Nuevo servicio recibido (evento nuevo-servicio):', data);
+          console.log('🔍 Estructura del servicio:', JSON.stringify(data, null, 2));
+          console.log('👤 Cliente:', data.cliente);
           console.log('🎯 Abriendo modal de nueva solicitud');
           setNuevaSolicitud(data);
           setShowNuevaSolicitud(true);
@@ -856,7 +858,7 @@ export default function GrueroDashboard() {
                   <div className="space-y-1 text-xs">
                     <div>
                       <span className="font-semibold">Cliente:</span>{' '}
-                      {servicioActivo.cliente.user.nombre} {servicioActivo.cliente.user.apellido}
+                      {servicioActivo.cliente?.user?.nombre || servicioActivo.cliente?.nombre || 'Cliente'} {servicioActivo.cliente?.user?.apellido || servicioActivo.cliente?.apellido || ''}
                     </div>
                     <div>
                       <span className="font-semibold">Distancia:</span> {servicioActivo.distanciaKm} km
@@ -892,12 +894,14 @@ export default function GrueroDashboard() {
                         </button>
                       )}
                       
-                      <a 
-                        href={`tel:${servicioActivo.cliente.user.telefono}`}
-                        className="bg-orange-600 text-white rounded-lg px-3 py-1.5 text-xs font-semibold flex items-center"
-                      >
-                        <Phone className="h-3 w-3" />
-                      </a>
+                      {(servicioActivo.cliente?.user?.telefono || servicioActivo.cliente?.telefono) && (
+                        <a 
+                          href={`tel:${servicioActivo.cliente?.user?.telefono || servicioActivo.cliente?.telefono}`}
+                          className="bg-orange-600 text-white rounded-lg px-3 py-1.5 text-xs font-semibold flex items-center"
+                        >
+                          <Phone className="h-3 w-3" />
+                        </a>
+                      )}
                       
                       <button 
                         onClick={cancelarServicio}
@@ -994,15 +998,17 @@ export default function GrueroDashboard() {
                     {/* Cliente - Compacto */}
                     <div className="mb-2 pb-2 border-b border-gray-200">
                       <p className="font-semibold text-gray-900 text-xs">
-                        {servicio.cliente.user.nombre} {servicio.cliente.user.apellido}
+                        {servicio.cliente?.user?.nombre || servicio.cliente?.nombre || 'Cliente'} {servicio.cliente?.user?.apellido || servicio.cliente?.apellido || ''}
                       </p>
-                      <a 
-                        href={`tel:${servicio.cliente.user.telefono}`}
-                        className="text-xs text-blue-600 hover:underline flex items-center"
-                      >
-                        <Phone className="h-3 w-3 mr-1" />
-                        {servicio.cliente.user.telefono}
-                      </a>
+                      {(servicio.cliente?.user?.telefono || servicio.cliente?.telefono) && (
+                        <a 
+                          href={`tel:${servicio.cliente?.user?.telefono || servicio.cliente?.telefono}`}
+                          className="text-xs text-blue-600 hover:underline flex items-center"
+                        >
+                          <Phone className="h-3 w-3 mr-1" />
+                          {servicio.cliente?.user?.telefono || servicio.cliente?.telefono}
+                        </a>
+                      )}
                     </div>
 
                     {/* Direcciones - Compactas */}
@@ -1090,15 +1096,17 @@ export default function GrueroDashboard() {
               <div className="bg-blue-50 rounded-lg p-4">
                 <p className="text-xs text-gray-600 mb-1">Cliente</p>
                 <p className="font-bold text-lg text-gray-900">
-                  {nuevaSolicitud.cliente.user.nombre} {nuevaSolicitud.cliente.user.apellido}
+                  {nuevaSolicitud.cliente?.user?.nombre || nuevaSolicitud.cliente?.nombre || 'Cliente'} {nuevaSolicitud.cliente?.user?.apellido || nuevaSolicitud.cliente?.apellido || ''}
                 </p>
-                <a 
-                  href={`tel:${nuevaSolicitud.cliente.user.telefono}`}
-                  className="text-blue-600 text-sm flex items-center mt-1 hover:underline"
-                >
-                  <Phone className="h-4 w-4 mr-1" />
-                  {nuevaSolicitud.cliente.user.telefono}
-                </a>
+                {(nuevaSolicitud.cliente?.user?.telefono || nuevaSolicitud.cliente?.telefono) && (
+                  <a 
+                    href={`tel:${nuevaSolicitud.cliente?.user?.telefono || nuevaSolicitud.cliente?.telefono}`}
+                    className="text-blue-600 text-sm flex items-center mt-1 hover:underline"
+                  >
+                    <Phone className="h-4 w-4 mr-1" />
+                    {nuevaSolicitud.cliente?.user?.telefono || nuevaSolicitud.cliente?.telefono}
+                  </a>
+                )}
               </div>
 
               {/* Origen */}
