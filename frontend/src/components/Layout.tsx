@@ -28,12 +28,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     console.log('🔌 [Layout] Iniciando conexión Socket.IO global para notificaciones');
     console.log('🔌 [Layout] URL de conexión:', API_URL);
     
-    const socket = io(API_URL);
+    // Forzar polling para evitar problemas de WebSocket
+    const socket = io(API_URL, {
+      transports: ['polling', 'websocket'], // Probar polling primero
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5,
+    });
     socketRef.current = socket;
     globalSocket = socket; // Exportar para uso global
 
     socket.on('connect', () => {
       console.log('✅ [Layout] Socket conectado globalmente, ID:', socket.id);
+      console.log('✅ [Layout] Transport usado:', socket.io.engine.transport.name);
 
       // Registrar en sala según el rol
       if (user.role === 'GRUERO') {
@@ -43,6 +50,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         socket.emit('cliente:register', { userId: user.id });
         console.log('🔔 [Layout] Cliente registrado en sala:', user.id);
       }
+    });
+
+    socket.on('connect_error', (error) => {
+      console.error('❌ [Layout] Error de conexión:', error.message);
+    });
+
+    socket.on('reconnect_attempt', (attemptNumber) => {
+      console.log('🔄 [Layout] Intento de reconexión:', attemptNumber);
+    });
+
+    socket.on('reconnect', (attemptNumber) => {
+      console.log('✅ [Layout] Reconectado después de', attemptNumber, 'intentos');
     });
 
     // Listener para nuevas notificaciones (FUNCIONA EN TODAS LAS PÁGINAS)
