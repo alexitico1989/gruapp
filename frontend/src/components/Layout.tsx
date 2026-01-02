@@ -8,8 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import io, { Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://gruapp-production.up.railway.app/api';
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://gruapp-production.up.railway.app';
+const API_URL = import.meta.env.VITE_API_URL || 'https://gruapp-production.up.railway.app';
 
 // Exportar instancia del socket para reutilizarla en otros componentes (evita múltiples conexiones)
 export let globalSocket: Socket | null = null;
@@ -27,11 +26,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     if (!user) return;
 
     console.log('🔌 [Layout] Iniciando conexión Socket.IO global para notificaciones');
-    console.log('🔌 [Layout] API URL (REST):', API_URL);
-    console.log('🔌 [Layout] Socket URL:', SOCKET_URL);
+    console.log('🔌 [Layout] URL de conexión:', API_URL);
     
     // Forzar polling para evitar problemas de WebSocket
-    const socket = io(SOCKET_URL, {
+    const socket = io(API_URL, {
       transports: ['polling', 'websocket'], // Probar polling primero
       reconnection: true,
       reconnectionDelay: 1000,
