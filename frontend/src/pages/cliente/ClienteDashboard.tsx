@@ -472,9 +472,10 @@ export default function ClienteDashboard() {
 
         globalSocket.on('gruero:locationUpdated', (data: { grueroId: string; ubicacion: { lat: number; lng: number } }) => {
           console.log('📍 Ubicación de grúa actualizada:', data);
-          console.log('📍 Grúas actuales antes de actualizar:', gruasDisponibles.map(g => ({ id: g.id, nombre: g.nombre })));
           
           setGruasDisponibles((prev) => {
+            console.log('📍 Grúas actuales antes de actualizar:', prev.map(g => ({ id: g.id, nombre: g.nombre })));
+            
             const gruaActualizada = prev.find(g => g.id === data.grueroId);
             if (gruaActualizada) {
               console.log(`✅ Actualizando ubicación de ${gruaActualizada.nombre}`);
@@ -482,9 +483,17 @@ export default function ClienteDashboard() {
               console.warn(`⚠️ Grúa ${data.grueroId} no encontrada en la lista`);
             }
             
-            return prev.map((grua) =>
+            const nuevasGruas = prev.map((grua) =>
               grua.id === data.grueroId ? { ...grua, ubicacion: data.ubicacion } : grua
             );
+            
+            console.log('📍 Grúas después de actualizar:', nuevasGruas.map(g => ({ 
+              id: g.id, 
+              nombre: g.nombre, 
+              ubicacion: g.ubicacion 
+            })));
+            
+            return nuevasGruas;
           });
         });
 
