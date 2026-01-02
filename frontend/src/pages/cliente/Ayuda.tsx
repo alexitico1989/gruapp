@@ -130,7 +130,7 @@ export default function Ayuda() {
             <h3 className="font-bold text-gray-900 mb-2">Teléfono</h3>
             <p className="text-sm text-gray-600 mb-3">+56 9 6183 3876</p>
             <a
-              href="tel:+56912345678"
+              href="tel:+56961833876"
               className="text-[#ff7a3d] hover:underline text-sm font-semibold"
             >
               Llamar ahora
