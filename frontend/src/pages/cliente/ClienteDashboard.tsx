@@ -798,11 +798,21 @@ export default function ClienteDashboard() {
         toast.success('Servicio completado');
         
         if (socketRef.current) {
-          socketRef.current.emit('servicio:estadoActualizado', {
+          console.log('📤 Emitiendo cliente:estadoActualizado:', {
+            servicioId: servicioActivo.id,
+            status: 'COMPLETADO',
+          });
+          
+          socketRef.current.emit('cliente:estadoActualizado', {
             servicioId: servicioActivo.id,
             status: 'COMPLETADO',
           });
         }
+        
+        // Abrir modal de calificación automáticamente
+        setTimeout(() => {
+          setShowRatingModal(true);
+        }, 500);
       }
     } catch (error: any) {
       console.error('Error al completar servicio:', error);
