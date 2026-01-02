@@ -13,6 +13,18 @@ import ServiceNotification from '../../components/ServiceNotification';
 import RatingModal from '../../components/RatingModal';
 import 'leaflet/dist/leaflet.css';
 
+// CSS para direcciones truncadas
+const style = document.createElement('style');
+style.textContent = `
+  .line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+`;
+document.head.appendChild(style);
+
 const API_URL = import.meta.env.VITE_API_URL || 'https://gruapp-production.up.railway.app/api';
 
 const clientIcon = new Icon({
@@ -677,7 +689,8 @@ export default function ClienteDashboard() {
 
   return (
     <Layout>
-      <div className="flex h-[calc(100vh-64px)]">
+      <div className="flex flex-col h-[calc(100vh-64px)]">
+        {/* Modales */}
         {servicioActivo && servicioActivo.gruero && (
           <ServiceNotification
             isOpen={showNotification}
@@ -723,12 +736,13 @@ export default function ClienteDashboard() {
           />
         )}
 
-        <div className="w-80 bg-white border-r border-gray-200 overflow-y-auto">
-          <div className="p-6">
-            <h2 className="text-xl font-bold text-[#1e3a5f] mb-6">Solicita tu Servicio</h2>
-
-            <div className="mb-4 relative">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Origen</label>
+        {/* Panel Superior - Scroll horizontal en móvil */}
+        <div className="bg-white border-b border-gray-200 overflow-x-auto overflow-y-hidden">
+          <div className="flex gap-3 p-3 md:p-4 min-w-max md:min-w-0">
+            
+            {/* Origen */}
+            <div className="bg-white border-2 border-gray-200 rounded-lg p-3 min-w-[280px] md:min-w-[320px] relative">
+              <label className="block text-xs font-semibold text-gray-700 mb-2">📍 Origen</label>
               <input
                 type="text"
                 value={origen}
@@ -739,28 +753,29 @@ export default function ClienteDashboard() {
                 }}
                 onFocus={() => setMostrarSugerenciasOrigen(true)}
                 onBlur={() => setTimeout(() => setMostrarSugerenciasOrigen(false), 200)}
-                className="input w-full"
-                placeholder="Ej: Av. Providencia 1208 o haz click en el mapa"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                placeholder="Av. Providencia..."
                 disabled={!!servicioActivo}
               />
               {mostrarSugerenciasOrigen && sugerenciasOrigen.length > 0 && (
-                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                <div className="absolute z-50 w-[calc(100%-24px)] mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                   {sugerenciasOrigen.map((sug, idx) => (
                     <button
                       key={idx}
                       onClick={() => seleccionarSugerencia(sug, 'origen')}
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm border-b last:border-0"
+                      className="w-full text-left px-3 py-2 hover:bg-gray-100 text-xs border-b last:border-0"
                     >
-                      <MapPin className="inline h-4 w-4 mr-2 text-green-500" />
-                      <span className="text-xs">{sug.display_name}</span>
+                      <MapPin className="inline h-3 w-3 mr-1 text-green-500" />
+                      <span className="text-xs line-clamp-1">{sug.display_name}</span>
                     </button>
                   ))}
                 </div>
               )}
             </div>
 
-            <div className="mb-6 relative">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Destino</label>
+            {/* Destino */}
+            <div className="bg-white border-2 border-gray-200 rounded-lg p-3 min-w-[280px] md:min-w-[320px] relative">
+              <label className="block text-xs font-semibold text-gray-700 mb-2">🎯 Destino</label>
               <input
                 type="text"
                 value={destino}
@@ -771,29 +786,30 @@ export default function ClienteDashboard() {
                 }}
                 onFocus={() => setMostrarSugerenciasDestino(true)}
                 onBlur={() => setTimeout(() => setMostrarSugerenciasDestino(false), 200)}
-                className="input w-full"
-                placeholder="Ej: Av. Kennedy 5600 o haz click en el mapa"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                placeholder="Av. Kennedy..."
                 disabled={!!servicioActivo}
               />
               {mostrarSugerenciasDestino && sugerenciasDestino.length > 0 && (
-                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                <div className="absolute z-50 w-[calc(100%-24px)] mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                   {sugerenciasDestino.map((sug, idx) => (
                     <button
                       key={idx}
                       onClick={() => seleccionarSugerencia(sug, 'destino')}
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm border-b last:border-0"
+                      className="w-full text-left px-3 py-2 hover:bg-gray-100 text-xs border-b last:border-0"
                     >
-                      <Navigation className="inline h-4 w-4 mr-2 text-orange-500" />
-                      <span className="text-xs">{sug.display_name}</span>
+                      <Navigation className="inline h-3 w-3 mr-1 text-orange-500" />
+                      <span className="text-xs line-clamp-1">{sug.display_name}</span>
                     </button>
                   ))}
                 </div>
               )}
             </div>
 
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-3">Tipo de Vehículo</label>
-              <div className="grid grid-cols-3 gap-2">
+            {/* Tipo de Vehículo */}
+            <div className="bg-white border-2 border-gray-200 rounded-lg p-3 min-w-[240px]">
+              <label className="block text-xs font-semibold text-gray-700 mb-2">🚗 Tipo de Vehículo</label>
+              <div className="grid grid-cols-3 gap-1.5">
                 {tiposVehiculos.map((tipo) => {
                   const IconComponent = tipo.icon;
                   return (
@@ -801,57 +817,107 @@ export default function ClienteDashboard() {
                       key={tipo.id}
                       onClick={() => setTipoGrua(tipo.id)}
                       disabled={!!servicioActivo}
-                      className={`flex flex-col items-center p-3 rounded-lg border-2 transition-all disabled:opacity-50 ${
-                        tipoGrua === tipo.id ? 'border-[#ff7a3d] bg-orange-50' : 'border-gray-200'
+                      className={`flex flex-col items-center p-2 rounded-lg border transition-all disabled:opacity-50 ${
+                        tipoGrua === tipo.id ? 'border-[#ff7a3d] bg-orange-50' : 'border-gray-300'
                       }`}
                     >
-                      <IconComponent className="h-6 w-6 text-[#1e3a5f] mb-1" />
-                      <span className="text-xs font-medium">{tipo.label}</span>
+                      <IconComponent className="h-5 w-5 text-[#1e3a5f] mb-0.5" />
+                      <span className="text-[10px] font-medium text-center">{tipo.label}</span>
                     </button>
                   );
                 })}
               </div>
             </div>
 
+            {/* Resumen / Estado */}
             {servicioActivo ? (
-              <div className="space-y-3">
-                {servicioActivo.status === 'EN_SITIO' && (
-                  <button 
-                    onClick={handleCompletarServicio}
-                    className="w-full bg-green-500 text-white rounded-lg py-3 font-semibold flex items-center justify-center"
-                  >
-                    <CheckCircle className="h-5 w-5 mr-2" />
-                    Marcar como Completado
-                  </button>
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-3 min-w-[280px]">
+                <p className="text-xs font-semibold text-blue-900 mb-2">📦 Servicio: {servicioActivo.status}</p>
+                {servicioActivo.gruero && (
+                  <>
+                    <p className="text-sm font-semibold text-gray-900">
+                      {servicioActivo.gruero.user.nombre} {servicioActivo.gruero.user.apellido}
+                    </p>
+                    <div className="flex gap-2 mt-2">
+                      <button 
+                        onClick={() => setShowNotification(true)}
+                        className="flex-1 bg-[#ff7a3d] text-white rounded-lg py-1.5 text-xs font-semibold"
+                      >
+                        Ver Detalles
+                      </button>
+                      {servicioActivo.status === 'EN_SITIO' && (
+                        <button 
+                          onClick={handleCompletarServicio}
+                          className="flex-1 bg-green-500 text-white rounded-lg py-1.5 text-xs font-semibold"
+                        >
+                          ✓ Completar
+                        </button>
+                      )}
+                    </div>
+                    <button 
+                      onClick={handleCancelarServicio}
+                      className="w-full bg-red-500 text-white rounded-lg py-1.5 text-xs font-semibold mt-2"
+                    >
+                      Cancelar
+                    </button>
+                  </>
                 )}
-                <button onClick={handleCancelarServicio} className="w-full bg-red-500 text-white rounded-lg py-3 font-semibold">
-                  Cancelar Servicio
-                </button>
+              </div>
+            ) : destinoCoords ? (
+              <div className="bg-white border-2 border-gray-200 rounded-lg p-3 min-w-[240px]">
+                <p className="text-xs font-semibold text-gray-700 mb-2">💰 Resumen</p>
+                <div className="space-y-1 mb-2">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-600">Distancia:</span>
+                    <span className="font-semibold">{distanciaKm} km</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-600">Tiempo:</span>
+                    <span className="font-semibold">{duracionEstimada} min</span>
+                  </div>
+                </div>
+                <div className="pt-2 border-t">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-semibold">Total:</span>
+                    <span className="text-lg font-bold text-[#ff7a3d]">
+                      ${precioEstimado.toLocaleString('es-CL')}
+                    </span>
+                  </div>
+                </div>
               </div>
             ) : (
-              <button
-                onClick={handleSolicitarServicio}
-                disabled={loading || !origen || !destino || !tipoGrua}
-                className="w-full bg-[#ff7a3d] text-white rounded-lg py-3 font-semibold disabled:opacity-50 flex items-center justify-center"
-              >
-                {loading ? <><Loader2 className="animate-spin h-5 w-5 mr-2" />Solicitando...</> : 'Solicitar Servicio'}
-              </button>
+              <div className="bg-gray-50 rounded-lg p-3 min-w-[200px] flex items-center justify-center">
+                <div className="text-center">
+                  <Clock className="h-8 w-8 text-gray-400 mx-auto mb-1" />
+                  <p className="text-xs text-gray-600">Sin destino</p>
+                </div>
+              </div>
             )}
 
-            <div className="mt-4 text-center">
-              <p className="text-sm text-gray-600">
-                <span className="font-semibold text-[#1e3a5f]">{gruasDisponibles.length}</span> grúas disponibles
-              </p>
+            {/* Botón Solicitar / Grúas disponibles */}
+            <div className="bg-white border-2 border-gray-200 rounded-lg p-3 min-w-[200px] flex flex-col justify-between">
+              {!servicioActivo && (
+                <>
+                  <button
+                    onClick={handleSolicitarServicio}
+                    disabled={loading || !origen || !destino || !tipoGrua}
+                    className="w-full bg-[#ff7a3d] text-white rounded-lg py-3 font-semibold disabled:opacity-50 flex items-center justify-center text-sm mb-2"
+                  >
+                    {loading ? <><Loader2 className="animate-spin h-4 w-4 mr-2" />Solicitando...</> : '🚛 Solicitar'}
+                  </button>
+                  <div className="text-center">
+                    <p className="text-xs text-gray-600">
+                      <span className="font-semibold text-[#1e3a5f]">{gruasDisponibles.length}</span> grúas disponibles
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
 
-            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <p className="text-xs text-blue-800">
-                💡 <strong>Tip:</strong> Haz click en el mapa para establecer origen/destino o arrastra los marcadores.
-              </p>
-            </div>
           </div>
         </div>
 
+        {/* Mapa - Ocupa el resto de la pantalla */}
         <div className="flex-1 relative">
           <MapContainer 
             center={origenCoords} 
@@ -991,91 +1057,6 @@ export default function ClienteDashboard() {
               </Marker>
             ))}
           </MapContainer>
-        </div>
-
-        <div className="w-80 bg-white border-l border-gray-200 overflow-y-auto">
-          <div className="p-6">
-            <h3 className="text-lg font-bold text-[#1e3a5f] mb-4">Estado</h3>
-
-            {servicioActivo ? (
-              <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mb-6">
-                <span className="text-sm font-semibold block mb-2">Servicio: {servicioActivo.status}</span>
-                {servicioActivo.gruero && (
-                  <div className="mt-3">
-                    <p className="font-semibold">
-                      {servicioActivo.gruero.user.nombre} {servicioActivo.gruero.user.apellido}
-                    </p>
-                    <button 
-                      onClick={() => setShowNotification(true)}
-                      className="w-full bg-[#ff7a3d] text-white rounded-lg py-2 mt-2"
-                    >
-                      Ver Detalles
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="bg-gray-50 p-4 rounded-lg text-center mb-6">
-                <Clock className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-600">No hay servicios activos</p>
-              </div>
-            )}
-
-            {destinoCoords && !servicioActivo && (
-              <div className="bg-white border-2 border-gray-200 rounded-lg p-4 mb-6">
-                <h4 className="font-semibold text-[#1e3a5f] mb-3">Resumen del Viaje</h4>
-                
-                <div className="space-y-2 mb-3 pb-3 border-b">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Distancia por calles:</span>
-                    <span className="font-semibold">{distanciaKm} km</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Tiempo estimado:</span>
-                    <span className="font-semibold">{duracionEstimada} min</span>
-                  </div>
-                </div>
-
-                <div className="space-y-2 mb-3 pb-3 border-b">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Tarifa base:</span>
-                    <span>$25.000</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Distancia ({distanciaKm} km × $1.350):</span>
-                    <span>${(distanciaKm * 1350).toLocaleString('es-CL')}</span>
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-700 font-bold text-lg">Total a pagar:</span>
-                  <span className="text-3xl font-bold text-[#ff7a3d]">
-                    ${precioEstimado.toLocaleString('es-CL')}
-                  </span>
-                </div>
-              </div>
-            )}
-
-            <h3 className="text-lg font-bold text-[#1e3a5f] mb-4">Alertas</h3>
-            <div className="border border-gray-200 rounded-lg p-3">
-              <p className="text-sm font-semibold mb-2">Historial de Servicios</p>
-              {historialServicios.length > 0 ? (
-                <div className="space-y-2">
-                  {historialServicios.slice(0, 3).map((s) => (
-                    <div key={s.id} className="text-xs py-2 border-b last:border-0">
-                      <p className="text-gray-600 truncate">{s.destinoDireccion}</p>
-                      <div className="flex items-center mt-1">
-                        <Star className="h-3 w-3 text-yellow-400 fill-yellow-400 mr-1" />
-                        <span className="text-gray-500">4.0</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-gray-500">No hay historial</p>
-              )}
-            </div>
-          </div>
         </div>
       </div>
     </Layout>
