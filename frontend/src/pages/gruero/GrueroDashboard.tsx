@@ -19,6 +19,25 @@ style.textContent = `
     border: none !important;
   }
   
+  /* Popup compacto */
+  .compact-popup .leaflet-popup-content-wrapper {
+    padding: 4px;
+  }
+  
+  .compact-popup .leaflet-popup-content {
+    margin: 8px;
+    font-size: 12px;
+    line-height: 1.3;
+  }
+  
+  /* Line clamp para direcciones largas */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
   @keyframes fadeIn {
     from {
       opacity: 0;
@@ -888,55 +907,46 @@ export default function GrueroDashboard() {
 
             {serviciosPendientes.map((servicio) => (
               <Marker key={servicio.id} position={[servicio.origenLat, servicio.origenLng]} icon={servicioIcon}>
-                <Popup maxWidth={300}>
-                  <div className="p-2">
-                    <h3 className="font-bold text-[#1e3a5f] mb-2 flex items-center text-sm">
-                      <GiTowTruck className="h-5 w-5 mr-2" />
+                <Popup maxWidth={240} className="compact-popup">
+                  <div className="p-1">
+                    <h3 className="font-bold text-[#1e3a5f] mb-2 flex items-center text-xs">
+                      <GiTowTruck className="h-4 w-4 mr-1" />
                       Servicio Disponible
                     </h3>
                     
-                    <div className="mb-3 pb-2 border-b">
-                      <p className="text-xs text-gray-600 mb-1">Cliente:</p>
-                      <p className="font-semibold text-gray-900 text-sm">
+                    {/* Cliente - Compacto */}
+                    <div className="mb-2 pb-2 border-b border-gray-200">
+                      <p className="font-semibold text-gray-900 text-xs">
                         {servicio.cliente.user.nombre} {servicio.cliente.user.apellido}
                       </p>
                       <a 
                         href={`tel:${servicio.cliente.user.telefono}`}
-                        className="text-xs text-blue-600 hover:underline flex items-center mt-1"
+                        className="text-xs text-blue-600 hover:underline flex items-center"
                       >
                         <Phone className="h-3 w-3 mr-1" />
                         {servicio.cliente.user.telefono}
                       </a>
                     </div>
 
-                    <div className="mb-2">
-                      <div className="flex items-start">
-                        <MapPin className="h-4 w-4 text-green-600 mr-2 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="text-xs text-gray-600">Origen:</p>
-                          <p className="text-xs font-medium text-gray-900">{servicio.origenDireccion}</p>
-                        </div>
+                    {/* Direcciones - Compactas */}
+                    <div className="mb-2 space-y-1">
+                      <div className="flex items-start gap-1">
+                        <MapPin className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
+                        <p className="text-xs text-gray-900 line-clamp-2">{servicio.origenDireccion}</p>
+                      </div>
+                      <div className="flex items-start gap-1">
+                        <Navigation className="h-3 w-3 text-orange-600 mt-0.5 flex-shrink-0" />
+                        <p className="text-xs text-gray-900 line-clamp-2">{servicio.destinoDireccion}</p>
                       </div>
                     </div>
 
-                    <div className="mb-3 pb-2 border-b">
-                      <div className="flex items-start">
-                        <Navigation className="h-4 w-4 text-orange-600 mr-2 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="text-xs text-gray-600">Destino:</p>
-                          <p className="text-xs font-medium text-gray-900">{servicio.destinoDireccion}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-between items-center mb-3">
+                    {/* Info compacta */}
+                    <div className="flex justify-between items-center mb-2 py-1 bg-gray-50 rounded px-2">
                       <div>
-                        <p className="text-xs text-gray-600">Distancia:</p>
-                        <p className="font-semibold text-gray-900 text-sm">{servicio.distanciaKm} km</p>
+                        <p className="text-xs font-semibold text-gray-900">{servicio.distanciaKm} km</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs text-gray-600">Tu ganancia:</p>
-                        <p className="text-base font-bold text-green-600">
+                        <p className="text-sm font-bold text-green-600">
                           ${servicio.totalGruero.toLocaleString('es-CL')}
                         </p>
                       </div>
@@ -945,9 +955,9 @@ export default function GrueroDashboard() {
                     <button
                       onClick={() => aceptarServicio(servicio.id)}
                       disabled={loading}
-                      className="w-full bg-[#ff7a3d] hover:bg-[#e66a2d] text-white rounded-lg py-2 font-semibold disabled:opacity-50 transition-colors text-sm"
+                      className="w-full bg-[#ff7a3d] hover:bg-[#e66a2d] text-white rounded-lg py-1.5 font-semibold disabled:opacity-50 transition-colors text-xs"
                     >
-                      {loading ? 'Aceptando...' : 'Aceptar Servicio'}
+                      {loading ? 'Aceptando...' : 'Aceptar'}
                     </button>
                   </div>
                 </Popup>
