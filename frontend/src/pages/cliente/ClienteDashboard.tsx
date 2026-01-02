@@ -132,12 +132,17 @@ interface RutaInfo {
 }
 
 const tiposVehiculos = [
-  { id: 'AUTOMOVIL', label: 'Automóvil', icon: Car },
-  { id: 'CAMIONETA', label: 'Camioneta', icon: Truck },
-  { id: 'LIVIANO', label: 'Liviano', icon: Car },
-  { id: 'LUJO', label: 'Lujo', icon: Car },
-  { id: 'FURGONETA', label: 'Furgoneta', icon: BusFront },
-  { id: 'MOTO', label: 'Moto', icon: Bike },
+  // Vehículos Livianos
+  { id: 'AUTOMOVIL', label: 'Automóvil', icon: Car, pesado: false },
+  { id: 'CAMIONETA', label: 'SUV/Camioneta', icon: Truck, pesado: false },
+  { id: 'MOTO', label: 'Moto', icon: Bike, pesado: false },
+  { id: 'FURGONETA', label: 'Furgón', icon: BusFront, pesado: false },
+  { id: 'LIVIANO', label: 'Camión Liviano', icon: Truck, pesado: false },
+  // Vehículos Pesados
+  { id: 'MEDIANO', label: 'Camión Mediano', icon: Truck, pesado: true },
+  { id: 'PESADO', label: 'Camión Pesado', icon: Truck, pesado: true },
+  { id: 'BUS', label: 'Bus', icon: BusFront, pesado: true },
+  { id: 'MAQUINARIA', label: 'Maquinaria', icon: Truck, pesado: true },
 ];
 
 const obtenerDireccionDesdeCoordenadas = async (lat: number, lng: number): Promise<string> => {
@@ -374,8 +379,13 @@ export default function ClienteDashboard() {
   };
 
   const calcularPrecio = (distancia: number) => {
-    const tarifaBase = 25000;
-    const tarifaPorKm = 1350;
+    // Verificar si el tipo de vehículo seleccionado es pesado
+    const vehiculoSeleccionado = tiposVehiculos.find(v => v.id === tipoGrua);
+    const esPesado = vehiculoSeleccionado?.pesado || false;
+    
+    // Tarifas diferenciadas
+    const tarifaBase = esPesado ? 60000 : 25000;
+    const tarifaPorKm = esPesado ? 1850 : 1350;
     
     const total = tarifaBase + (distancia * tarifaPorKm);
     
@@ -686,7 +696,7 @@ export default function ClienteDashboard() {
     };
 
     calcularRutaYPrecio();
-  }, [origenCoords, destinoCoords]);
+  }, [origenCoords, destinoCoords, tipoGrua]); // ← Agregar tipoGrua para recalcular cuando cambia
 
   const cargarServicioActivo = async () => {
     try {
@@ -741,6 +751,7 @@ export default function ClienteDashboard() {
         destinoLat: destinoCoords[0],
         destinoLng: destinoCoords[1],
         destinoDireccion: destino,
+        tipoVehiculo: tipoGrua, // ← Enviar como campo separado para filtrado
         observaciones: `Tipo de vehículo: ${tipoGrua}`,
       });
 
@@ -1025,10 +1036,13 @@ export default function ClienteDashboard() {
             </div>
 
             {/* Tipo de Vehículo */}
-            <div className="bg-white border-2 border-gray-200 rounded-lg p-3 min-w-[240px]">
+            <div className="bg-white border-2 border-gray-200 rounded-lg p-3 min-w-[280px]">
               <label className="block text-xs font-semibold text-gray-700 mb-2">🚗 Tipo de Vehículo</label>
-              <div className="grid grid-cols-3 gap-1.5">
-                {tiposVehiculos.map((tipo) => {
+              
+              {/* Vehículos Livianos */}
+              <p className="text-[9px] text-gray-500 mb-1 font-semibold">LIVIANOS ($25.000 base + $1.350/km)</p>
+              <div className="grid grid-cols-3 gap-1.5 mb-3 pb-3 border-b border-gray-200">
+                {tiposVehiculos.filter(v => !v.pesado).map((tipo) => {
                   const IconComponent = tipo.icon;
                   return (
                     <button
@@ -1040,7 +1054,28 @@ export default function ClienteDashboard() {
                       }`}
                     >
                       <IconComponent className="h-5 w-5 text-[#1e3a5f] mb-0.5" />
-                      <span className="text-[10px] font-medium text-center">{tipo.label}</span>
+                      <span className="text-[9px] font-medium text-center leading-tight">{tipo.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              
+              {/* Vehículos Pesados */}
+              <p className="text-[9px] text-gray-500 mb-1 font-semibold">PESADOS ($60.000 base + $1.850/km)</p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {tiposVehiculos.filter(v => v.pesado).map((tipo) => {
+                  const IconComponent = tipo.icon;
+                  return (
+                    <button
+                      key={tipo.id}
+                      onClick={() => setTipoGrua(tipo.id)}
+                      disabled={!!servicioActivo}
+                      className={`flex flex-col items-center p-2 rounded-lg border transition-all disabled:opacity-50 ${
+                        tipoGrua === tipo.id ? 'border-[#ff7a3d] bg-orange-50' : 'border-gray-300'
+                      }`}
+                    >
+                      <IconComponent className="h-5 w-5 text-[#1e3a5f] mb-0.5" />
+                      <span className="text-[9px] font-medium text-center leading-tight">{tipo.label}</span>
                     </button>
                   );
                 })}
