@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { User, Mail, Phone, CreditCard, Calendar, Lock, Trash2, Save } from 'lucide-react';
 import Layout from '../../components/Layout';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
+import { useAuthStore } from '../../store/authStore';
 
 interface PerfilData {
   id: string;
@@ -26,6 +28,8 @@ interface PerfilData {
 }
 
 export default function Perfil() {
+  const navigate = useNavigate();
+  const { logout } = useAuthStore();
   const [perfil, setPerfil] = useState<PerfilData | null>(null);
   const [loading, setLoading] = useState(true);
   const [editando, setEditando] = useState(false);
@@ -151,8 +155,8 @@ export default function Perfil() {
 
       if (response.data.success) {
         toast.success('Cuenta eliminada exitosamente');
-        localStorage.removeItem('token');
-        window.location.href = '/';
+        logout(); // Limpiar estado de autenticación
+        navigate('/'); // Redirigir al inicio
       }
     } catch (error: any) {
       console.error('Error al eliminar cuenta:', error);
