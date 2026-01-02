@@ -128,7 +128,7 @@ export default function GrueroServicios() {
             <div className="bg-white rounded-xl shadow-md p-4 md:p-6 border-l-4 border-orange-500 col-span-2 lg:col-span-1">
               <p className="text-xs md:text-sm text-gray-600 mb-1">Ganancias</p>
               <p className="text-xl md:text-2xl font-bold text-orange-600">
-                ${(resumen.gananciasTotal / 1000).toFixed(0)}k
+                ${resumen.gananciasTotal.toLocaleString('es-CL')}
               </p>
             </div>
           </div>
@@ -271,7 +271,7 @@ export default function GrueroServicios() {
                       <div className="flex items-center text-gray-600">
                         <DollarSign className="h-4 w-4 mr-1" />
                         <span className="text-sm md:text-base font-semibold text-green-600">
-                          ${(servicio.totalGruero / 1000).toFixed(0)}k
+                          ${servicio.totalGruero.toLocaleString('es-CL')}
                         </span>
                       </div>
                       <div className="text-xs text-gray-500">{servicio.distanciaKm} km</div>
