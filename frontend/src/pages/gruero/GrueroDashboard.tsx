@@ -282,25 +282,36 @@ export default function GrueroDashboard() {
         // NUEVO: Escuchar notificaciones genéricas y abrir modal si es nueva solicitud
         globalSocket.on('nueva-notificacion', async (notificacion: any) => {
           console.log('🔔 [GrueroDashboard] Nueva notificación recibida:', notificacion);
+          console.log('🔔 Tipo de notificación:', notificacion.tipo);
+          console.log('🔔 Servicio ID:', notificacion.servicioId);
           
           // Si es una notificación de nueva solicitud, cargar detalles y abrir modal
           if (notificacion.tipo === 'NUEVA_SOLICITUD' && notificacion.servicioId) {
             console.log('📋 Cargando detalles del servicio:', notificacion.servicioId);
+            console.log('📋 Estado actual de showNuevaSolicitud:', showNuevaSolicitud);
             
             try {
               // Cargar detalles completos del servicio
               const response = await api.get(`/servicios/${notificacion.servicioId}`);
+              console.log('📋 Respuesta del servicio:', response.data);
+              
               if (response.data.success && response.data.data) {
-                console.log('✅ Servicio cargado, abriendo modal');
+                console.log('✅ Servicio cargado exitosamente');
+                console.log('✅ Datos del servicio:', response.data.data);
                 setNuevaSolicitud(response.data.data);
                 setShowNuevaSolicitud(true);
+                console.log('✅ Modal debería estar visible ahora');
                 cargarServiciosPendientes();
+              } else {
+                console.warn('⚠️ Respuesta del servicio no exitosa');
               }
             } catch (error) {
               console.error('❌ Error cargando detalles del servicio:', error);
               // Si falla, al menos recargar la lista
               cargarServiciosPendientes();
             }
+          } else {
+            console.log('ℹ️ Notificación no es NUEVA_SOLICITUD o no tiene servicioId');
           }
         });
 

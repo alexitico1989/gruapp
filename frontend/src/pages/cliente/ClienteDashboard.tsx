@@ -819,8 +819,23 @@ export default function ClienteDashboard() {
           });
         }
         
+        // Preparar servicio para calificación con todos los datos
+        setServicioParaCalificar({
+          id: servicioActivo.id,
+          origenDireccion: servicioActivo.origenDireccion,
+          destinoDireccion: servicioActivo.destinoDireccion,
+          distanciaKm: servicioActivo.distanciaKm,
+          totalCliente: servicioActivo.totalCliente,
+          pagado: false, // Aún no está pagado
+          status: 'COMPLETADO',
+          createdAt: servicioActivo.createdAt,
+          gruero: servicioActivo.gruero,
+        } as any);
+        
         // Abrir modal de calificación automáticamente
+        setShowNotification(false);
         setTimeout(() => {
+          console.log('✨ Abriendo modal de calificación');
           setShowRatingModal(true);
         }, 500);
       }
