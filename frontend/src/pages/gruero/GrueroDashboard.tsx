@@ -11,12 +11,40 @@ import io, { Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
 import 'leaflet/dist/leaflet.css';
 
-// CSS para el icono personalizado
+// CSS para el icono personalizado y animaciones
 const style = document.createElement('style');
 style.textContent = `
   .custom-truck-icon {
     background: transparent !important;
     border: none !important;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideUp {
+    from {
+      transform: translateY(50px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  .animate-fadeIn {
+    animation: fadeIn 0.3s ease-out;
+  }
+  
+  .animate-slideUp {
+    animation: slideUp 0.4s ease-out;
   }
 `;
 document.head.appendChild(style);
@@ -107,6 +135,10 @@ export default function GrueroDashboard() {
   const [grueroId, setGrueroId] = useState<string | null>(null);
   const [rastreoActivo, setRastreoActivo] = useState(false);
   const [perfilCargado, setPerfilCargado] = useState(false);
+  
+  // Estado para el pop-up de nueva solicitud
+  const [showNuevaSolicitud, setShowNuevaSolicitud] = useState(false);
+  const [nuevaSolicitud, setNuevaSolicitud] = useState<Servicio | null>(null);
 
   const socketRef = useRef<Socket | null>(null);
 
@@ -191,6 +223,16 @@ export default function GrueroDashboard() {
 
     socket.on('connect', () => {
       console.log('✅ Socket conectado para servicios');
+    });
+
+    // Listener para nueva solicitud de servicio - Mostrar pop-up
+    socket.on('gruero:nuevaSolicitud', (data: Servicio) => {
+      console.log('🆕 Nueva solicitud recibida:', data);
+      setNuevaSolicitud(data);
+      setShowNuevaSolicitud(true);
+      
+      // También actualizar la lista de servicios pendientes
+      cargarServiciosPendientes();
     });
 
     socket.on('cliente:servicioAceptado', () => {
@@ -457,6 +499,10 @@ export default function GrueroDashboard() {
           });
         }
 
+        // Cerrar pop-up si está abierto
+        setShowNuevaSolicitud(false);
+        setNuevaSolicitud(null);
+
         cargarServicioActivo();
         cargarServiciosPendientes();
       }
@@ -466,6 +512,12 @@ export default function GrueroDashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const rechazarServicio = () => {
+    setShowNuevaSolicitud(false);
+    setNuevaSolicitud(null);
+    toast('Solicitud rechazada', { icon: '👋' });
   };
 
   const actualizarEstadoServicio = async (nuevoEstado: string) => {
@@ -634,13 +686,13 @@ export default function GrueroDashboard() {
                   <div className="bg-purple-50 p-3 rounded-lg min-w-[100px]">
                     <p className="text-xs text-gray-600">Hoy</p>
                     <p className="text-lg font-bold text-purple-600">
-                      ${(estadisticas.gananciasHoy / 1000).toFixed(0)}k
+                      ${estadisticas.gananciasHoy.toLocaleString('es-CL')}
                     </p>
                   </div>
                   <div className="bg-orange-50 p-3 rounded-lg min-w-[100px]">
                     <p className="text-xs text-gray-600">Semana</p>
                     <p className="text-lg font-bold text-orange-600">
-                      ${(estadisticas.gananciasSemana / 1000).toFixed(0)}k
+                      ${estadisticas.gananciasSemana.toLocaleString('es-CL')}
                     </p>
                   </div>
                 </>
@@ -724,7 +776,7 @@ export default function GrueroDashboard() {
                         </div>
                         <div className="text-right">
                           <p className="text-base font-bold text-green-600">
-                            ${(servicio.totalGruero / 1000).toFixed(0)}k
+                            ${servicio.totalGruero.toLocaleString('es-CL')}
                           </p>
                         </div>
                       </div>
@@ -830,7 +882,7 @@ export default function GrueroDashboard() {
                       <div className="text-right">
                         <p className="text-xs text-gray-600">Tu ganancia:</p>
                         <p className="text-base font-bold text-green-600">
-                          ${(servicio.totalGruero / 1000).toFixed(0)}k
+                          ${servicio.totalGruero.toLocaleString('es-CL')}
                         </p>
                       </div>
                     </div>
@@ -870,6 +922,104 @@ export default function GrueroDashboard() {
           </MapContainer>
         </div>
       </div>
+
+      {/* Pop-up Modal de Nueva Solicitud */}
+      {showNuevaSolicitud && nuevaSolicitud && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[9999] p-4 animate-fadeIn">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full transform animate-slideUp">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-[#ff7a3d] to-[#ff9d5c] p-6 rounded-t-2xl">
+              <div className="flex items-center justify-center mb-2">
+                <div className="bg-white rounded-full p-3">
+                  <GiTowTruck className="text-[#ff7a3d] text-4xl" />
+                </div>
+              </div>
+              <h2 className="text-2xl font-bold text-white text-center">
+                ¡Nueva Solicitud!
+              </h2>
+              <p className="text-white text-center text-sm mt-1 opacity-90">
+                Un cliente necesita tus servicios
+              </p>
+            </div>
+
+            {/* Contenido */}
+            <div className="p-6 space-y-4">
+              {/* Cliente */}
+              <div className="bg-blue-50 rounded-lg p-4">
+                <p className="text-xs text-gray-600 mb-1">Cliente</p>
+                <p className="font-bold text-lg text-gray-900">
+                  {nuevaSolicitud.cliente.user.nombre} {nuevaSolicitud.cliente.user.apellido}
+                </p>
+                <a 
+                  href={`tel:${nuevaSolicitud.cliente.user.telefono}`}
+                  className="text-blue-600 text-sm flex items-center mt-1 hover:underline"
+                >
+                  <Phone className="h-4 w-4 mr-1" />
+                  {nuevaSolicitud.cliente.user.telefono}
+                </a>
+              </div>
+
+              {/* Origen */}
+              <div className="flex items-start space-x-3">
+                <div className="bg-green-100 rounded-full p-2 flex-shrink-0">
+                  <MapPin className="h-5 w-5 text-green-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-gray-600">Origen</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {nuevaSolicitud.origenDireccion}
+                  </p>
+                </div>
+              </div>
+
+              {/* Destino */}
+              <div className="flex items-start space-x-3">
+                <div className="bg-orange-100 rounded-full p-2 flex-shrink-0">
+                  <Navigation className="h-5 w-5 text-orange-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-gray-600">Destino</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {nuevaSolicitud.destinoDireccion}
+                  </p>
+                </div>
+              </div>
+
+              {/* Distancia y Ganancia */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-gray-50 rounded-lg p-3 text-center">
+                  <p className="text-xs text-gray-600">Distancia</p>
+                  <p className="text-xl font-bold text-gray-900">{nuevaSolicitud.distanciaKm} km</p>
+                </div>
+                <div className="bg-green-50 rounded-lg p-3 text-center">
+                  <p className="text-xs text-gray-600">Tu Ganancia</p>
+                  <p className="text-xl font-bold text-green-600">
+                    ${nuevaSolicitud.totalGruero.toLocaleString('es-CL')}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Botones */}
+            <div className="p-6 pt-0 flex gap-3">
+              <button
+                onClick={rechazarServicio}
+                disabled={loading}
+                className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-300 transition-colors disabled:opacity-50"
+              >
+                Rechazar
+              </button>
+              <button
+                onClick={() => aceptarServicio(nuevaSolicitud.id)}
+                disabled={loading}
+                className="flex-1 bg-gradient-to-r from-[#ff7a3d] to-[#ff9d5c] text-white py-3 rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50"
+              >
+                {loading ? 'Aceptando...' : '¡Aceptar!'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }

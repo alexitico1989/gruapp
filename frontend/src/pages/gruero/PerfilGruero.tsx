@@ -892,19 +892,19 @@ export default function PerfilGruero() {
                 <div className="space-y-3">
                   <div className="flex justify-between items-center pb-3 border-b">
                     <span className="text-sm md:text-base text-gray-600">Hoy</span>
-                    <span className="font-bold text-green-600 text-sm md:text-base">${(estadisticas.gananciasHoy / 1000).toFixed(0)}k</span>
+                    <span className="font-bold text-green-600 text-sm md:text-base">${estadisticas.gananciasHoy.toLocaleString('es-CL')}</span>
                   </div>
                   <div className="flex justify-between items-center pb-3 border-b">
                     <span className="text-sm md:text-base text-gray-600">Esta Semana</span>
-                    <span className="font-bold text-green-600 text-sm md:text-base">${(estadisticas.gananciasSemana / 1000).toFixed(0)}k</span>
+                    <span className="font-bold text-green-600 text-sm md:text-base">${estadisticas.gananciasSemana.toLocaleString('es-CL')}</span>
                   </div>
                   <div className="flex justify-between items-center pb-3 border-b">
                     <span className="text-sm md:text-base text-gray-600">Este Mes</span>
-                    <span className="font-bold text-green-600 text-sm md:text-base">${(estadisticas.gananciasMes / 1000).toFixed(0)}k</span>
+                    <span className="font-bold text-green-600 text-sm md:text-base">${estadisticas.gananciasMes.toLocaleString('es-CL')}</span>
                   </div>
                   <div className="flex justify-between items-center pt-2">
                     <span className="text-sm md:text-base text-gray-900 font-semibold">Total</span>
-                    <span className="font-bold text-lg md:text-xl text-[#ff7a3d]">${(estadisticas.gananciasTotales / 1000).toFixed(0)}k</span>
+                    <span className="font-bold text-lg md:text-xl text-[#ff7a3d]">${estadisticas.gananciasTotales.toLocaleString('es-CL')}</span>
                   </div>
                 </div>
               </div>
