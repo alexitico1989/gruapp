@@ -1153,7 +1153,11 @@ export default function ClienteDashboard() {
             )}
 
             {gruasDisponibles.map((grua) => (
-              <Marker key={grua.id} position={[grua.ubicacion.lat, grua.ubicacion.lng]} icon={gruaIcon}>
+              <Marker 
+                key={`${grua.id}-${grua.ubicacion.lat}-${grua.ubicacion.lng}`} 
+                position={[grua.ubicacion.lat, grua.ubicacion.lng]} 
+                icon={gruaIcon}
+              >
                 <Popup maxWidth={300}>
                   <div className="p-2">
                     <div className="flex gap-3 mb-3">
