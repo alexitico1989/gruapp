@@ -168,8 +168,10 @@ export default function GrueroDashboard() {
     const savedRastreo = sessionStorage.getItem('gpsRastreoActivo');
     
     if (savedRastreo === 'true') {
+      console.log('♻️ Rastreo GPS recuperado - reiniciando watchPosition');
       setRastreoActivo(true);
-      console.log('♻️ Rastreo GPS recuperado - sigue activo');
+      // NO llamar iniciarRastreo() aquí porque grueroId aún no está cargado
+      // El rastreo se iniciará automáticamente en el useEffect de disponibilidad
     }
   }, []);
 
@@ -509,11 +511,18 @@ export default function GrueroDashboard() {
 
   // Activar rastreo GPS automáticamente cuando está disponible
   useEffect(() => {
-    if (disponible && grueroId && !rastreoActivo) {
-      console.log('🌍 Auto-iniciando rastreo GPS porque el gruero está disponible');
-      iniciarRastreo();
+    if (disponible && grueroId) {
+      // Si rastreoActivo es true pero no hay watchId, significa que se recuperó del sessionStorage
+      // y necesitamos reiniciar el watchPosition
+      if (rastreoActivo && gpsWatchId === null) {
+        console.log('🌍 Reiniciando rastreo GPS recuperado del sessionStorage');
+        iniciarRastreo();
+      } else if (!rastreoActivo) {
+        console.log('🌍 Auto-iniciando rastreo GPS porque el gruero está disponible');
+        iniciarRastreo();
+      }
     }
-  }, [disponible, grueroId]);
+  }, [disponible, grueroId, rastreoActivo]);
 
   const cargarServiciosPendientes = async () => {
     try {
