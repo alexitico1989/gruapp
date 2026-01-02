@@ -4,10 +4,10 @@ import { Icon, DivIcon } from 'leaflet';
 import { Navigation, MapPin, CheckCircle, XCircle, Clock, DollarSign, Phone, Loader2 } from 'lucide-react';
 import { GiTowTruck } from 'react-icons/gi';
 import { renderToStaticMarkup } from 'react-dom/server';
-import Layout from '../../components/Layout';
+import Layout, { globalSocket } from '../../components/Layout';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../lib/api';
-import io, { Socket } from 'socket.io-client';
+import { Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
 import 'leaflet/dist/leaflet.css';
 
@@ -219,86 +219,99 @@ export default function GrueroDashboard() {
 
     initGruero();
 
-    const socket = io('https://gruapp-production.up.railway.app');
-    socketRef.current = socket;
+    // Usar el socket global del Layout en lugar de crear uno nuevo
+    console.log('🔌 [Dashboard] Verificando socket global del Layout');
+    
+    // Esperar a que el socket global esté disponible
+    const checkSocket = setInterval(() => {
+      if (globalSocket) {
+        console.log('✅ [Dashboard] Socket global encontrado, configurando listeners');
+        clearInterval(checkSocket);
+        socketRef.current = globalSocket;
 
-    socket.on('connect', () => {
-      console.log('✅ Socket conectado para servicios');
-    });
+        // Escuchar TODOS los eventos para debugging
+        globalSocket.onAny((eventName, ...args) => {
+          console.log(`📡 [Dashboard] Evento recibido: ${eventName}`, args);
+        });
 
-    // Escuchar TODOS los eventos para debugging
-    socket.onAny((eventName, ...args) => {
-      console.log(`📡 Evento recibido: ${eventName}`, args);
-    });
+        // Listener para nueva solicitud de servicio - Mostrar pop-up
+        globalSocket.on('gruero:nuevaSolicitud', (data: Servicio) => {
+          console.log('🆕 Nueva solicitud recibida:', data);
+          setNuevaSolicitud(data);
+          setShowNuevaSolicitud(true);
+          cargarServiciosPendientes();
+        });
 
-    // Listener para nueva solicitud de servicio - Mostrar pop-up
-    socket.on('gruero:nuevaSolicitud', (data: Servicio) => {
-      console.log('🆕 Nueva solicitud recibida:', data);
-      setNuevaSolicitud(data);
-      setShowNuevaSolicitud(true);
-      
-      // También actualizar la lista de servicios pendientes
-      cargarServiciosPendientes();
-    });
+        // Listener alternativo por si el backend usa otro nombre
+        globalSocket.on('nuevoServicio', (data: Servicio) => {
+          console.log('🆕 Nuevo servicio (evento alternativo):', data);
+          setNuevaSolicitud(data);
+          setShowNuevaSolicitud(true);
+          cargarServiciosPendientes();
+        });
 
-    // Listener alternativo por si el backend usa otro nombre
-    socket.on('nuevoServicio', (data: Servicio) => {
-      console.log('🆕 Nuevo servicio (evento alternativo):', data);
-      setNuevaSolicitud(data);
-      setShowNuevaSolicitud(true);
-      cargarServiciosPendientes();
-    });
+        // Otro posible nombre de evento
+        globalSocket.on('servicio:nuevo', (data: Servicio) => {
+          console.log('🆕 Servicio nuevo (evento alternativo 2):', data);
+          setNuevaSolicitud(data);
+          setShowNuevaSolicitud(true);
+          cargarServiciosPendientes();
+        });
 
-    // Otro posible nombre de evento
-    socket.on('servicio:nuevo', (data: Servicio) => {
-      console.log('🆕 Servicio nuevo (evento alternativo 2):', data);
-      setNuevaSolicitud(data);
-      setShowNuevaSolicitud(true);
-      cargarServiciosPendientes();
-    });
+        globalSocket.on('cliente:servicioAceptado', () => {
+          toast.success('¡Servicio aceptado exitosamente!');
+          cargarServicioActivo();
+        });
 
-    socket.on('cliente:servicioAceptado', () => {
-      toast.success('¡Servicio aceptado exitosamente!');
-      cargarServicioActivo();
-    });
+        globalSocket.on('servicio:canceladoNotificacion', (data: { servicioId: string; canceladoPor: string; cliente: any; gruero: any }) => {
+          console.log('🚫 Notificación de cancelación recibida:', data);
+          
+          if (data.canceladoPor === 'CLIENTE') {
+            toast.error(`${data.cliente.nombre} canceló el servicio`, {
+              duration: 5000,
+              icon: '❌',
+            });
+          }
+          
+          setServicioActivo(null);
+          cargarEstadisticas();
+          cargarServiciosPendientes();
+        });
 
-    socket.on('servicio:canceladoNotificacion', (data: { servicioId: string; canceladoPor: string; cliente: any; gruero: any }) => {
-      console.log('🚫 Notificación de cancelación recibida:', data);
-      
-      if (data.canceladoPor === 'CLIENTE') {
-        toast.error(`${data.cliente.nombre} canceló el servicio`, {
-          duration: 5000,
-          icon: '❌',
+        globalSocket.on('cliente:estadoActualizado', (data: { servicioId: string; status: string }) => {
+          console.log('📢 Estado actualizado por cliente:', data);
+          
+          if (data.status === 'COMPLETADO') {
+            toast.success('¡Servicio completado por el cliente!', {
+              icon: '🎉',
+              duration: 4000,
+            });
+            setServicioActivo(null);
+            cargarEstadisticas();
+            cargarServiciosPendientes();
+          } else {
+            cargarServicioActivo();
+          }
+        });
+
+        globalSocket.on('error', (error: any) => {
+          console.error('Socket error:', error);
         });
       }
-      
-      setServicioActivo(null);
-      cargarEstadisticas();
-      cargarServiciosPendientes();
-    });
-
-    socket.on('cliente:estadoActualizado', (data: { servicioId: string; status: string }) => {
-      console.log('📢 Estado actualizado por cliente:', data);
-      
-      if (data.status === 'COMPLETADO') {
-        toast.success('¡Servicio completado por el cliente!', {
-          icon: '🎉',
-          duration: 4000,
-        });
-        setServicioActivo(null);
-        cargarEstadisticas();
-        cargarServiciosPendientes();
-      } else {
-        cargarServicioActivo();
-      }
-    });
-
-    socket.on('error', (error: any) => {
-      console.error('Socket error:', error);
-    });
+    }, 100);
 
     return () => {
-      socket.disconnect();
+      clearInterval(checkSocket);
+      // NO desconectar el socket global, solo limpiar listeners
+      if (socketRef.current) {
+        socketRef.current.off('gruero:nuevaSolicitud');
+        socketRef.current.off('nuevoServicio');
+        socketRef.current.off('servicio:nuevo');
+        socketRef.current.off('cliente:servicioAceptado');
+        socketRef.current.off('servicio:canceladoNotificacion');
+        socketRef.current.off('cliente:estadoActualizado');
+        socketRef.current.off('error');
+      }
       // NO detener rastreo GPS aquí - debe persistir entre cambios de sección
     };
   }, []);

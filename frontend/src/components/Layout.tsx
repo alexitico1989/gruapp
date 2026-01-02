@@ -10,6 +10,9 @@ import toast from 'react-hot-toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://gruapp-production.up.railway.app';
 
+// Exportar instancia del socket para reutilizarla en otros componentes (evita múltiples conexiones)
+export let globalSocket: Socket | null = null;
+
 export default function Layout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -23,8 +26,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     if (!user) return;
 
     console.log('🔌 [Layout] Iniciando conexión Socket.IO global para notificaciones');
+    console.log('🔌 [Layout] URL de conexión:', API_URL);
+    
     const socket = io(API_URL);
     socketRef.current = socket;
+    globalSocket = socket; // Exportar para uso global
 
     socket.on('connect', () => {
       console.log('✅ [Layout] Socket conectado globalmente, ID:', socket.id);
@@ -75,6 +81,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return () => {
       console.log('🔌 [Layout] Desconectando Socket.IO global');
       socket.disconnect();
+      globalSocket = null;
     };
   }, [user, agregarNotificacion]);
 
