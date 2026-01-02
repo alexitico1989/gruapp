@@ -505,6 +505,35 @@ export default function ClienteDashboard() {
           });
         });
 
+        // NUEVO: Escuchar notificaciones genéricas y abrir modal según el tipo
+        globalSocket.on('nueva-notificacion', (notificacion: any) => {
+          console.log('🔔 Nueva notificación (para modal):', notificacion);
+          
+          // Si es una notificación de servicio aceptado o cambio de estado, abrir modal
+          if (notificacion.tipo === 'SERVICIO_ACEPTADO' || 
+              notificacion.tipo === 'EN_CAMINO' || 
+              notificacion.tipo === 'EN_SITIO') {
+            console.log('📱 Abriendo modal por notificación tipo:', notificacion.tipo);
+            cargarServicioActivo().then(() => {
+              setShowNotification(true);
+            });
+          }
+          
+          // Si es completado, abrir modal de calificación
+          if (notificacion.tipo === 'COMPLETADO') {
+            console.log('🎉 Servicio completado - Abriendo modal de calificación');
+            cargarServicioActivo().then((servicio) => {
+              if (servicio && servicio.gruero) {
+                setServicioParaCalificar(servicio);
+                setShowNotification(false);
+                setTimeout(() => {
+                  setShowRatingModal(true);
+                }, 300);
+              }
+            });
+          }
+        });
+
         globalSocket.on('cliente:estadoActualizado', (data: { servicioId: string; status: string; servicio: any; gruero: any }) => {
           console.log('📢 Estado actualizado recibido:', data);
           console.log('📢 Servicio ID del evento:', data.servicioId);
@@ -652,8 +681,10 @@ export default function ClienteDashboard() {
       const response = await api.get('/servicios/activo');
       if (response.data.success && response.data.data) {
         setServicioActivo(response.data.data);
+        return response.data.data; // Retornar el servicio
       } else {
         setServicioActivo(null);
+        return null;
       }
     } catch (error: any) {
       if (error.response?.status === 404) {
@@ -661,6 +692,7 @@ export default function ClienteDashboard() {
       } else {
         console.error('Error al cargar servicio activo:', error);
       }
+      return null;
     }
   };
 
