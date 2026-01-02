@@ -405,11 +405,30 @@ export default function GrueroDashboard() {
         console.log('📍 Ubicación actualizada:', latitude, longitude);
         setUbicacionActual(nuevaUbicacion);
         
+        console.log('🔍 Verificando socket:', {
+          socketExists: !!socketRef.current,
+          socketConnected: socketRef.current?.connected,
+          grueroId: grueroId,
+        });
+        
         if (socketRef.current && grueroId) {
+          console.log('📤 Emitiendo gruero:updateLocation con:', {
+            grueroId,
+            lat: latitude,
+            lng: longitude,
+          });
+          
           socketRef.current.emit('gruero:updateLocation', {
             grueroId,
             lat: latitude,
             lng: longitude,
+          });
+          
+          console.log('✅ Evento gruero:updateLocation emitido');
+        } else {
+          console.warn('⚠️ No se puede emitir ubicación:', {
+            noSocket: !socketRef.current,
+            noGrueroId: !grueroId,
           });
         }
       },
