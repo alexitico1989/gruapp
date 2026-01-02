@@ -264,12 +264,19 @@ export default function GrueroDashboard() {
         });
 
         // IMPORTANTE: El backend emite 'nuevo-servicio' con los datos completos del servicio
-        globalSocket.on('nuevo-servicio', (data: Servicio) => {
+        globalSocket.on('nuevo-servicio', (data: any) => {
           console.log('🆕 Nuevo servicio recibido (evento nuevo-servicio):', data);
           console.log('🔍 Estructura del servicio:', JSON.stringify(data, null, 2));
-          console.log('👤 Cliente:', data.cliente);
+          
+          // El backend envía { servicio: {...}, distancia: X }
+          // Necesitamos extraer el objeto servicio
+          const servicioData = data.servicio || data;
+          
+          console.log('👤 Cliente:', servicioData.cliente);
+          console.log('💰 Total gruero:', servicioData.totalGruero);
           console.log('🎯 Abriendo modal de nueva solicitud');
-          setNuevaSolicitud(data);
+          
+          setNuevaSolicitud(servicioData);
           setShowNuevaSolicitud(true);
           cargarServiciosPendientes();
         });
