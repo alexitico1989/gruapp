@@ -74,11 +74,7 @@ export default function RegisterCliente() {
   } = useForm<RegisterForm>();
 
   const password = watch('password');
-
-  const handleRutChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatRut(e.target.value);
-    setValue('rut', formatted, { shouldValidate: true });
-  };
+  const rutValue = watch('rut');
 
   const onSubmit = async (data: RegisterForm) => {
     try {
@@ -182,18 +178,21 @@ export default function RegisterCliente() {
                     type="text"
                     {...register('rut', {
                       required: 'El RUT es requerido',
-                      validate: (value) =>
-                        validateRut(value) || 'RUT inválido',
-                      onChange: handleRutChange,
+                      validate: (value) => {
+                        // Limpiar el valor antes de validar
+                        const cleaned = value.replace(/[^0-9kK]/g, '');
+                        if (cleaned.length < 2) return 'RUT muy corto';
+                        return validateRut(value) || 'RUT inválido';
+                      },
                     })}
                     className="w-full pl-11 pr-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
-                    placeholder="12.345.678-9"
-                    maxLength={12}
+                    placeholder="12.345.678-9 o 12345678-9"
                   />
                 </div>
                 {errors.rut && (
                   <p className="text-red-500 text-sm mt-1">{errors.rut.message}</p>
                 )}
+                <p className="text-xs text-gray-500 mt-1">Ejemplo: 12.345.678-9</p>
               </div>
 
               {/* Email */}
