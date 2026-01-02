@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents } from 'react-leaflet';
-import { Icon, LatLngBounds } from 'leaflet';
+import { Icon, LatLngBounds, DivIcon } from 'leaflet';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { MapPin, Navigation, Truck, Clock, Star, Phone, Loader2, Car, BusFront, Bike, CheckCircle, User } from 'lucide-react';
 import { GiTowTruck } from 'react-icons/gi';
 import Layout, { globalSocket } from '../../components/Layout';
@@ -13,7 +14,7 @@ import ServiceNotification from '../../components/ServiceNotification';
 import RatingModal from '../../components/RatingModal';
 import 'leaflet/dist/leaflet.css';
 
-// CSS para direcciones truncadas
+// CSS para direcciones truncadas y ícono personalizado
 const style = document.createElement('style');
 style.textContent = `
   .line-clamp-1 {
@@ -22,10 +23,46 @@ style.textContent = `
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+  
+  .custom-truck-icon {
+    background: transparent !important;
+    border: none !important;
+  }
 `;
 document.head.appendChild(style);
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://gruapp-production.up.railway.app/api';
+
+// Ícono de grúa personalizado con círculo naranja
+const createTruckIcon = () => {
+  const iconMarkup = renderToStaticMarkup(
+    <div
+      style={{
+        width: '50px',
+        height: '50px',
+        borderRadius: '50%',
+        backgroundColor: '#ff7a3d',
+        border: '3px solid white',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <GiTowTruck style={{ fontSize: '28px', color: 'white' }} />
+    </div>
+  );
+
+  return new DivIcon({
+    html: iconMarkup,
+    className: 'custom-truck-icon',
+    iconSize: [50, 50],
+    iconAnchor: [25, 25],
+    popupAnchor: [0, -25],
+  });
+};
+
+const gruaIcon = createTruckIcon();
 
 const clientIcon = new Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
@@ -38,15 +75,6 @@ const clientIcon = new Icon({
 
 const destinationIcon = new Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
-
-const gruaIcon = new Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
   iconSize: [25, 41],
   iconAnchor: [12, 41],
