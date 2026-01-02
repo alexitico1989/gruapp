@@ -257,6 +257,16 @@ function FitBoundsToRoute({ rutaCompleta }: { rutaCompleta: [number, number][] }
   return null;
 }
 
+function RecenterMap({ position }: { position: [number, number] }) {
+  const map = useMap();
+
+  useEffect(() => {
+    map.setView(position, map.getZoom());
+  }, [position, map]);
+
+  return null;
+}
+
 export default function ClienteDashboard() {
   const { user } = useAuthStore();
   const { agregarNotificacion } = useNotificationStore();
@@ -1006,6 +1016,8 @@ export default function ClienteDashboard() {
             scrollWheelZoom={true}
           >
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+            
+            <RecenterMap position={origenCoords} />
             
             {rutaCompleta.length > 0 && <FitBoundsToRoute rutaCompleta={rutaCompleta} />}
             
