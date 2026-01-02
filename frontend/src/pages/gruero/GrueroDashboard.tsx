@@ -139,6 +139,7 @@ export default function GrueroDashboard() {
   // Estado para el pop-up de nueva solicitud
   const [showNuevaSolicitud, setShowNuevaSolicitud] = useState(false);
   const [nuevaSolicitud, setNuevaSolicitud] = useState<Servicio | null>(null);
+  const [serviciosAnteriores, setServiciosAnteriores] = useState<string[]>([]);
 
   const socketRef = useRef<Socket | null>(null);
 
@@ -225,6 +226,11 @@ export default function GrueroDashboard() {
       console.log('✅ Socket conectado para servicios');
     });
 
+    // Escuchar TODOS los eventos para debugging
+    socket.onAny((eventName, ...args) => {
+      console.log(`📡 Evento recibido: ${eventName}`, args);
+    });
+
     // Listener para nueva solicitud de servicio - Mostrar pop-up
     socket.on('gruero:nuevaSolicitud', (data: Servicio) => {
       console.log('🆕 Nueva solicitud recibida:', data);
@@ -232,6 +238,22 @@ export default function GrueroDashboard() {
       setShowNuevaSolicitud(true);
       
       // También actualizar la lista de servicios pendientes
+      cargarServiciosPendientes();
+    });
+
+    // Listener alternativo por si el backend usa otro nombre
+    socket.on('nuevoServicio', (data: Servicio) => {
+      console.log('🆕 Nuevo servicio (evento alternativo):', data);
+      setNuevaSolicitud(data);
+      setShowNuevaSolicitud(true);
+      cargarServiciosPendientes();
+    });
+
+    // Otro posible nombre de evento
+    socket.on('servicio:nuevo', (data: Servicio) => {
+      console.log('🆕 Servicio nuevo (evento alternativo 2):', data);
+      setNuevaSolicitud(data);
+      setShowNuevaSolicitud(true);
       cargarServiciosPendientes();
     });
 
@@ -446,7 +468,27 @@ export default function GrueroDashboard() {
     try {
       const response = await api.get('/servicios/pendientes');
       if (response.data.success) {
-        setServiciosPendientes(response.data.data);
+        const serviciosNuevos = response.data.data;
+        
+        // Detectar si hay un servicio nuevo
+        if (disponible && serviciosAnteriores.length > 0 && serviciosNuevos.length > 0) {
+          const idsAnteriores = serviciosAnteriores;
+          const nuevoServicio = serviciosNuevos.find((s: Servicio) => !idsAnteriores.includes(s.id));
+          
+          if (nuevoServicio && !servicioActivo) {
+            console.log('🆕 Nuevo servicio detectado:', nuevoServicio);
+            setNuevaSolicitud(nuevoServicio);
+            setShowNuevaSolicitud(true);
+            
+            // Reproducir sonido de notificación (opcional)
+            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBCxsvNW3jD0JFm+67ueUTAwUYLPn7KNUEgZDnN/vunYbCDmLze6rYhUGP5PY77t2GQk+isvyu3cuCDaGze+qYxQHP5HU8MJ2JQczhM3vr2EVCzGDzPCxbSMGMoLM769iEAYsf8rvrWMRBy1+yu6rYBIJL4DN761gEQsugMvtrWERCi+AzO+tYRIKL4DN761hEg==');
+            audio.play().catch(() => {}); // Ignorar si falla
+          }
+        }
+        
+        // Actualizar lista de IDs anteriores
+        setServiciosAnteriores(serviciosNuevos.map((s: Servicio) => s.id));
+        setServiciosPendientes(serviciosNuevos);
       }
     } catch (error: any) {
       if (error.response?.status !== 404) {
