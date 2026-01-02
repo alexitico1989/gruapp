@@ -446,6 +446,14 @@ export default function ClienteDashboard() {
         globalSocket.on('cliente:gruasDisponibles', (gruas: Grua[]) => {
           console.log('📍 Grúas recibidas del servidor:', gruas);
           console.log('📊 Cantidad de grúas:', gruas.length);
+          
+          // Mostrar las ubicaciones recibidas
+          if (gruas.length > 0) {
+            gruas.forEach(grua => {
+              console.log(`🚛 ${grua.nombre}: [${grua.ubicacion.lat}, ${grua.ubicacion.lng}]`);
+            });
+          }
+          
           setGruasDisponibles(gruas);
         });
 
@@ -611,11 +619,13 @@ export default function ClienteDashboard() {
         console.log('📤 Solicitando grúas disponibles al servidor...');
         globalSocket.emit('cliente:getGruasDisponibles');
 
+        // Solicitar grúas cada 10 segundos para mantener ubicaciones actualizadas
         const interval = setInterval(() => {
           if (globalSocket.connected) {
+            console.log('🔄 Actualizando ubicaciones de grúas...');
             globalSocket.emit('cliente:getGruasDisponibles');
           }
-        }, 10000);
+        }, 10000); // 10 segundos
 
         return () => {
           clearInterval(interval);
