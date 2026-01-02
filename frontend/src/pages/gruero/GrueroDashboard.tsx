@@ -352,9 +352,15 @@ export default function GrueroDashboard() {
             });
           }
           
+          // Cerrar modal si está abierto y el servicio cancelado es el que está en el modal
+          if (nuevaSolicitud && nuevaSolicitud.id === data.servicioId) {
+            setShowNuevaSolicitud(false);
+            setNuevaSolicitud(null);
+          }
+          
           setServicioActivo(null);
           cargarEstadisticas();
-          cargarServiciosPendientes();
+          cargarServiciosPendientes(); // ← Recargar servicios pendientes para actualizar el panel
         });
 
         globalSocket.on('cliente:estadoActualizado', (data: { servicioId: string; status: string }) => {
@@ -675,6 +681,10 @@ export default function GrueroDashboard() {
   };
 
   const rechazarServicio = () => {
+    if (nuevaSolicitud) {
+      // Remover de la lista de servicios pendientes
+      setServiciosPendientes(prev => prev.filter(s => s.id !== nuevaSolicitud.id));
+    }
     setShowNuevaSolicitud(false);
     setNuevaSolicitud(null);
     toast('Solicitud rechazada', { icon: '👋' });
@@ -932,7 +942,7 @@ export default function GrueroDashboard() {
                       <div className="flex justify-between items-start mb-2">
                         <div className="text-xs">
                           <p className="font-semibold">
-                            {servicio.cliente.user.nombre} {servicio.cliente.user.apellido}
+                            {servicio.cliente?.user?.nombre || servicio.cliente?.nombre || 'Cliente'} {servicio.cliente?.user?.apellido || servicio.cliente?.apellido || ''}
                           </p>
                           <p className="text-gray-600">{servicio.distanciaKm} km</p>
                         </div>
@@ -1078,98 +1088,98 @@ export default function GrueroDashboard() {
         </div>
       </div>
 
-      {/* Pop-up Modal de Nueva Solicitud */}
+      {/* Pop-up Modal de Nueva Solicitud - MÁS COMPACTO */}
       {showNuevaSolicitud && nuevaSolicitud && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[9999] p-4 animate-fadeIn">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full transform animate-slideUp">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-[#ff7a3d] to-[#ff9d5c] p-6 rounded-t-2xl">
-              <div className="flex items-center justify-center mb-2">
-                <div className="bg-white rounded-full p-3">
-                  <GiTowTruck className="text-[#ff7a3d] text-4xl" />
+          <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full transform animate-slideUp">
+            {/* Header - Más compacto */}
+            <div className="bg-gradient-to-r from-[#ff7a3d] to-[#ff9d5c] p-4 rounded-t-xl">
+              <div className="flex items-center justify-center mb-1">
+                <div className="bg-white rounded-full p-2">
+                  <GiTowTruck className="text-[#ff7a3d] text-3xl" />
                 </div>
               </div>
-              <h2 className="text-2xl font-bold text-white text-center">
+              <h2 className="text-xl font-bold text-white text-center">
                 ¡Nueva Solicitud!
               </h2>
-              <p className="text-white text-center text-sm mt-1 opacity-90">
+              <p className="text-white text-center text-xs mt-1 opacity-90">
                 Un cliente necesita tus servicios
               </p>
             </div>
 
-            {/* Contenido */}
-            <div className="p-6 space-y-4">
+            {/* Contenido - Más compacto */}
+            <div className="p-4 space-y-3">
               {/* Cliente */}
-              <div className="bg-blue-50 rounded-lg p-4">
+              <div className="bg-blue-50 rounded-lg p-3">
                 <p className="text-xs text-gray-600 mb-1">Cliente</p>
-                <p className="font-bold text-lg text-gray-900">
+                <p className="font-bold text-base text-gray-900">
                   {nuevaSolicitud.cliente?.user?.nombre || nuevaSolicitud.cliente?.nombre || 'Cliente'} {nuevaSolicitud.cliente?.user?.apellido || nuevaSolicitud.cliente?.apellido || ''}
                 </p>
                 {(nuevaSolicitud.cliente?.user?.telefono || nuevaSolicitud.cliente?.telefono) && (
                   <a 
                     href={`tel:${nuevaSolicitud.cliente?.user?.telefono || nuevaSolicitud.cliente?.telefono}`}
-                    className="text-blue-600 text-sm flex items-center mt-1 hover:underline"
+                    className="text-blue-600 text-xs flex items-center mt-1 hover:underline"
                   >
-                    <Phone className="h-4 w-4 mr-1" />
+                    <Phone className="h-3 w-3 mr-1" />
                     {nuevaSolicitud.cliente?.user?.telefono || nuevaSolicitud.cliente?.telefono}
                   </a>
                 )}
               </div>
 
               {/* Origen */}
-              <div className="flex items-start space-x-3">
-                <div className="bg-green-100 rounded-full p-2 flex-shrink-0">
-                  <MapPin className="h-5 w-5 text-green-600" />
+              <div className="flex items-start space-x-2">
+                <div className="bg-green-100 rounded-full p-1.5 flex-shrink-0">
+                  <MapPin className="h-4 w-4 text-green-600" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-gray-600">Origen</p>
-                  <p className="text-sm font-semibold text-gray-900">
+                  <p className="text-xs font-semibold text-gray-900 line-clamp-2">
                     {nuevaSolicitud.origenDireccion}
                   </p>
                 </div>
               </div>
 
               {/* Destino */}
-              <div className="flex items-start space-x-3">
-                <div className="bg-orange-100 rounded-full p-2 flex-shrink-0">
-                  <Navigation className="h-5 w-5 text-orange-600" />
+              <div className="flex items-start space-x-2">
+                <div className="bg-orange-100 rounded-full p-1.5 flex-shrink-0">
+                  <Navigation className="h-4 w-4 text-orange-600" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-gray-600">Destino</p>
-                  <p className="text-sm font-semibold text-gray-900">
+                  <p className="text-xs font-semibold text-gray-900 line-clamp-2">
                     {nuevaSolicitud.destinoDireccion}
                   </p>
                 </div>
               </div>
 
               {/* Distancia y Ganancia */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-gray-50 rounded-lg p-3 text-center">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-gray-50 rounded-lg p-2 text-center">
                   <p className="text-xs text-gray-600">Distancia</p>
-                  <p className="text-xl font-bold text-gray-900">{nuevaSolicitud.distanciaKm} km</p>
+                  <p className="text-lg font-bold text-gray-900">{nuevaSolicitud.distanciaKm} km</p>
                 </div>
-                <div className="bg-green-50 rounded-lg p-3 text-center">
+                <div className="bg-green-50 rounded-lg p-2 text-center">
                   <p className="text-xs text-gray-600">Tu Ganancia</p>
-                  <p className="text-xl font-bold text-green-600">
+                  <p className="text-lg font-bold text-green-600">
                     ${nuevaSolicitud.totalGruero.toLocaleString('es-CL')}
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Botones */}
-            <div className="p-6 pt-0 flex gap-3">
+            {/* Botones - Más compactos */}
+            <div className="p-4 pt-0 flex gap-2">
               <button
                 onClick={rechazarServicio}
                 disabled={loading}
-                className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-300 transition-colors disabled:opacity-50"
+                className="flex-1 bg-gray-200 text-gray-700 py-2.5 rounded-lg font-bold hover:bg-gray-300 transition-colors disabled:opacity-50 text-sm"
               >
                 Rechazar
               </button>
               <button
                 onClick={() => aceptarServicio(nuevaSolicitud.id)}
                 disabled={loading}
-                className="flex-1 bg-gradient-to-r from-[#ff7a3d] to-[#ff9d5c] text-white py-3 rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50"
+                className="flex-1 bg-gradient-to-r from-[#ff7a3d] to-[#ff9d5c] text-white py-2.5 rounded-lg font-bold hover:shadow-lg transition-all disabled:opacity-50 text-sm"
               >
                 {loading ? 'Aceptando...' : '¡Aceptar!'}
               </button>

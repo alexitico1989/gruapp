@@ -1008,7 +1008,9 @@ export default function ClienteDashboard() {
             {servicioActivo ? (
               <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-3 min-w-[280px]">
                 <p className="text-xs font-semibold text-blue-900 mb-2">📦 Servicio: {servicioActivo.status}</p>
-                {servicioActivo.gruero && (
+                
+                {/* Si tiene gruero asignado */}
+                {servicioActivo.gruero ? (
                   <>
                     <p className="text-sm font-semibold text-gray-900">
                       {servicioActivo.gruero.user.nombre} {servicioActivo.gruero.user.apellido}
@@ -1034,6 +1036,20 @@ export default function ClienteDashboard() {
                       className="w-full bg-red-500 text-white rounded-lg py-1.5 text-xs font-semibold mt-2"
                     >
                       Cancelar
+                    </button>
+                  </>
+                ) : (
+                  /* Si no tiene gruero (SOLICITADO) */
+                  <>
+                    <div className="flex items-center justify-center py-2">
+                      <Loader2 className="animate-spin h-6 w-6 text-blue-600 mr-2" />
+                      <p className="text-sm text-gray-700">Buscando gruero...</p>
+                    </div>
+                    <button 
+                      onClick={handleCancelarServicio}
+                      className="w-full bg-red-500 text-white rounded-lg py-2 text-xs font-semibold mt-2"
+                    >
+                      Cancelar Solicitud
                     </button>
                   </>
                 )}
