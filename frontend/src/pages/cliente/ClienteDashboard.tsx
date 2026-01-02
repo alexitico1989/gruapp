@@ -604,15 +604,17 @@ export default function ClienteDashboard() {
           setServicioParaCalificar(null);
           setShowNotification(false);
           setShowRatingModal(false);
-          setOrigen('');
           setDestino('');
           setTipoGrua('');
-          setOrigenCoords([-33.4489, -70.6693]);
           setDestinoCoords(null);
           setRutaCompleta([]);
           setPrecioEstimado(0);
           setDistanciaKm(0);
           setDuracionEstimada(0);
+          
+          // Obtener ubicación actual en lugar de resetear a Santiago
+          obtenerUbicacionActual();
+          
           cargarHistorial();
         });
 
@@ -755,6 +757,43 @@ export default function ClienteDashboard() {
     }
   };
 
+  const obtenerUbicacionActual = () => {
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          const coords: [number, number] = [latitude, longitude];
+          
+          console.log('📍 Ubicación actual obtenida para reset:', coords);
+          setOrigenCoords(coords);
+          
+          // Obtener dirección de la ubicación actual
+          const direccion = await obtenerDireccionDesdeCoordenadas(latitude, longitude);
+          setOrigen(direccion);
+        },
+        (error) => {
+          console.error('❌ Error obteniendo ubicación:', error);
+          // Si falla, usar Santiago por defecto
+          setOrigenCoords([-33.4489, -70.6693]);
+          obtenerDireccionDesdeCoordenadas(-33.4489, -70.6693).then(direccion => {
+            setOrigen(direccion);
+          });
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 0,
+        }
+      );
+    } else {
+      // Si no hay geolocalización, usar Santiago
+      setOrigenCoords([-33.4489, -70.6693]);
+      obtenerDireccionDesdeCoordenadas(-33.4489, -70.6693).then(direccion => {
+        setOrigen(direccion);
+      });
+    }
+  };
+
   const handleCancelarServicio = async () => {
     if (!servicioActivo) return;
 
@@ -777,15 +816,17 @@ export default function ClienteDashboard() {
         setServicioParaCalificar(null);
         setShowNotification(false);
         setShowRatingModal(false);
-        setOrigen('');
         setDestino('');
         setTipoGrua('');
-        setOrigenCoords([-33.4489, -70.6693]);
         setDestinoCoords(null);
         setRutaCompleta([]);
         setPrecioEstimado(0);
         setDistanciaKm(0);
         setDuracionEstimada(0);
+        
+        // Obtener ubicación actual en lugar de resetear a Santiago
+        obtenerUbicacionActual();
+        
         cargarHistorial();
       }
     } catch (error: any) {
@@ -850,15 +891,17 @@ export default function ClienteDashboard() {
     setServicioParaCalificar(null);
     
     setServicioActivo(null);
-    setOrigen('');
     setDestino('');
     setTipoGrua('');
-    setOrigenCoords([-33.4489, -70.6693]);
     setDestinoCoords(null);
     setRutaCompleta([]);
     setPrecioEstimado(0);
     setDistanciaKm(0);
     setDuracionEstimada(0);
+    
+    // Obtener ubicación actual en lugar de resetear a Santiago
+    obtenerUbicacionActual();
+    
     cargarHistorial();
   };
 
