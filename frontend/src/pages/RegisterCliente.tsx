@@ -64,7 +64,6 @@ export default function RegisterCliente() {
   const navigate = useNavigate();
   const { setAuth } = useAuthStore();
   const [loading, setLoading] = useState(false);
-  const [rutValue, setRutValue] = useState('');
 
   const {
     register,
@@ -78,8 +77,7 @@ export default function RegisterCliente() {
 
   const handleRutChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatRut(e.target.value);
-    setRutValue(formatted);
-    setValue('rut', formatted);
+    setValue('rut', formatted, { shouldValidate: true });
   };
 
   const onSubmit = async (data: RegisterForm) => {
@@ -182,13 +180,12 @@ export default function RegisterCliente() {
                   <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                   <input
                     type="text"
-                    value={rutValue}
                     {...register('rut', {
                       required: 'El RUT es requerido',
                       validate: (value) =>
                         validateRut(value) || 'RUT inválido',
+                      onChange: handleRutChange,
                     })}
-                    onChange={handleRutChange}
                     className="w-full pl-11 pr-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
                     placeholder="12.345.678-9"
                     maxLength={12}
