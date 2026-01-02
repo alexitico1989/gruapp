@@ -279,6 +279,31 @@ export default function GrueroDashboard() {
           cargarServiciosPendientes();
         });
 
+        // NUEVO: Escuchar notificaciones genéricas y abrir modal si es nueva solicitud
+        globalSocket.on('nueva-notificacion', async (notificacion: any) => {
+          console.log('🔔 [GrueroDashboard] Nueva notificación recibida:', notificacion);
+          
+          // Si es una notificación de nueva solicitud, cargar detalles y abrir modal
+          if (notificacion.tipo === 'NUEVA_SOLICITUD' && notificacion.servicioId) {
+            console.log('📋 Cargando detalles del servicio:', notificacion.servicioId);
+            
+            try {
+              // Cargar detalles completos del servicio
+              const response = await api.get(`/servicios/${notificacion.servicioId}`);
+              if (response.data.success && response.data.data) {
+                console.log('✅ Servicio cargado, abriendo modal');
+                setNuevaSolicitud(response.data.data);
+                setShowNuevaSolicitud(true);
+                cargarServiciosPendientes();
+              }
+            } catch (error) {
+              console.error('❌ Error cargando detalles del servicio:', error);
+              // Si falla, al menos recargar la lista
+              cargarServiciosPendientes();
+            }
+          }
+        });
+
         globalSocket.on('cliente:servicioAceptado', () => {
           toast.success('¡Servicio aceptado exitosamente!');
           cargarServicioActivo();
