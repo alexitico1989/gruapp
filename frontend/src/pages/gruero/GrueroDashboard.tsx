@@ -263,6 +263,15 @@ export default function GrueroDashboard() {
           cargarServiciosPendientes();
         });
 
+        // IMPORTANTE: El backend emite 'nuevo-servicio' con los datos completos del servicio
+        globalSocket.on('nuevo-servicio', (data: Servicio) => {
+          console.log('🆕 Nuevo servicio recibido (evento nuevo-servicio):', data);
+          console.log('🎯 Abriendo modal de nueva solicitud');
+          setNuevaSolicitud(data);
+          setShowNuevaSolicitud(true);
+          cargarServiciosPendientes();
+        });
+
         // Listener alternativo por si el backend usa otro nombre
         globalSocket.on('nuevoServicio', (data: Servicio) => {
           console.log('🆕 Nuevo servicio (evento alternativo):', data);
@@ -284,34 +293,38 @@ export default function GrueroDashboard() {
           console.log('🔔 [GrueroDashboard] Nueva notificación recibida:', notificacion);
           console.log('🔔 Tipo de notificación:', notificacion.tipo);
           console.log('🔔 Servicio ID:', notificacion.servicioId);
+          console.log('🔔 Datos completos:', notificacion);
           
-          // Si es una notificación de nueva solicitud, cargar detalles y abrir modal
-          if (notificacion.tipo === 'NUEVA_SOLICITUD' && notificacion.servicioId) {
-            console.log('📋 Cargando detalles del servicio:', notificacion.servicioId);
-            console.log('📋 Estado actual de showNuevaSolicitud:', showNuevaSolicitud);
+          // Aceptar NUEVO_SERVICIO o NUEVA_SOLICITUD
+          if (notificacion.tipo === 'NUEVA_SOLICITUD' || notificacion.tipo === 'NUEVO_SERVICIO') {
+            console.log('📋 Detectada nueva solicitud de servicio');
             
-            try {
-              // Cargar detalles completos del servicio
-              const response = await api.get(`/servicios/${notificacion.servicioId}`);
-              console.log('📋 Respuesta del servicio:', response.data);
+            // Si tiene servicioId, cargar detalles
+            if (notificacion.servicioId) {
+              console.log('📋 Cargando detalles del servicio:', notificacion.servicioId);
               
-              if (response.data.success && response.data.data) {
-                console.log('✅ Servicio cargado exitosamente');
-                console.log('✅ Datos del servicio:', response.data.data);
-                setNuevaSolicitud(response.data.data);
-                setShowNuevaSolicitud(true);
-                console.log('✅ Modal debería estar visible ahora');
+              try {
+                const response = await api.get(`/servicios/${notificacion.servicioId}`);
+                console.log('📋 Respuesta del servicio:', response.data);
+                
+                if (response.data.success && response.data.data) {
+                  console.log('✅ Servicio cargado exitosamente');
+                  setNuevaSolicitud(response.data.data);
+                  setShowNuevaSolicitud(true);
+                  cargarServiciosPendientes();
+                }
+              } catch (error) {
+                console.error('❌ Error cargando detalles del servicio:', error);
                 cargarServiciosPendientes();
-              } else {
-                console.warn('⚠️ Respuesta del servicio no exitosa');
               }
-            } catch (error) {
-              console.error('❌ Error cargando detalles del servicio:', error);
-              // Si falla, al menos recargar la lista
+            } 
+            // Si no tiene servicioId, solo recargar la lista (el modal se abrirá con el listener de 'nuevo-servicio')
+            else {
+              console.log('📋 Sin servicioId, recargando lista de pendientes');
               cargarServiciosPendientes();
             }
           } else {
-            console.log('ℹ️ Notificación no es NUEVA_SOLICITUD o no tiene servicioId');
+            console.log('ℹ️ Notificación tipo:', notificacion.tipo, '(no es nueva solicitud)');
           }
         });
 
