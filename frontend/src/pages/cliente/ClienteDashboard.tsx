@@ -3,15 +3,17 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents 
 import { Icon, LatLngBounds } from 'leaflet';
 import { MapPin, Navigation, Truck, Clock, Star, Phone, Loader2, Car, BusFront, Bike, CheckCircle, User } from 'lucide-react';
 import { GiTowTruck } from 'react-icons/gi';
-import Layout from '../../components/Layout';
+import Layout, { globalSocket } from '../../components/Layout';
 import { useAuthStore } from '../../store/authStore';
 import { useNotificationStore } from '../../store/notificationStore';
 import api from '../../lib/api';
-import io, { Socket } from 'socket.io-client';
+import { Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
 import ServiceNotification from '../../components/ServiceNotification';
 import RatingModal from '../../components/RatingModal';
 import 'leaflet/dist/leaflet.css';
+
+const API_URL = import.meta.env.VITE_API_URL || 'https://gruapp-production.up.railway.app/api';
 
 const clientIcon = new Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
@@ -330,172 +332,160 @@ export default function ClienteDashboard() {
   };
 
   useEffect(() => {
-    console.log('🔌 Iniciando conexión Socket.IO...');
-    const socket = io('http://localhost:5000');
-    socketRef.current = socket;
+    console.log('🔌 [ClienteDashboard] Verificando socket global del Layout');
+    
+    // Esperar a que el socket global esté disponible
+    const checkSocket = setInterval(() => {
+      if (globalSocket) {
+        console.log('✅ [ClienteDashboard] Socket global encontrado, configurando listeners');
+        clearInterval(checkSocket);
+        socketRef.current = globalSocket;
 
-    socket.on('connect', () => {
-      console.log('✅ Cliente Socket conectado, ID:', socket.id);
-      
-      // ✅ REGISTRAR CLIENTE EN SU SALA (para notificaciones)
-      if (user?.id) {
-        socket.emit('cliente:register', { userId: user.id });
-        console.log('🔔 Registrando cliente en sala:', user.id);
-      }
-    });
-
-    socket.on('cliente:registered', (data) => {
-      console.log('✅ Cliente registrado en sala de notificaciones:', data);
-    });
-
-    // Listener para nuevas notificaciones
-    socket.on('nueva-notificacion', (notificacion) => {
-      console.log('🔔 Nueva notificación recibida:', notificacion);
-      agregarNotificacion(notificacion);
-      
-      // Mostrar toast según el tipo
-      if (notificacion.tipo === 'SERVICIO_ACEPTADO') {
-        toast.success(notificacion.mensaje, { icon: '✅', duration: 5000 });
-      } else if (notificacion.tipo === 'EN_CAMINO') {
-        toast(notificacion.mensaje, { icon: '🚛', duration: 5000 });
-      } else if (notificacion.tipo === 'EN_SITIO') {
-        toast(notificacion.mensaje, { icon: '📍', duration: 5000 });
-      } else if (notificacion.tipo === 'COMPLETADO') {
-        toast.success(notificacion.mensaje, { icon: '🎉', duration: 5000 });
-      } else if (notificacion.tipo === 'CANCELADO') {
-        toast.error(notificacion.mensaje, { icon: '❌', duration: 5000 });
-      }
-    });
-
-    socket.on('cliente:gruasDisponibles', (gruas: Grua[]) => {
-      console.log('📍 Grúas recibidas del servidor:', gruas);
-      console.log('📊 Cantidad de grúas:', gruas.length);
-      setGruasDisponibles(gruas);
-    });
-
-    socket.on('gruero:disponible', (grua: Grua) => {
-      console.log('🚛 Nueva grúa disponible (evento en tiempo real):', grua);
-      setGruasDisponibles((prev) => {
-        const existe = prev.find(g => g.id === grua.id);
-        if (existe) {
-          console.log('⚠️ Grúa ya existe en la lista');
-          return prev;
-        }
-        console.log('➕ Agregando grúa a la lista');
-        return [...prev, grua];
-      });
-      toast.success(`${grua.nombre} está disponible`, { icon: '🚛' });
-    });
-
-    socket.on('gruero:statusUpdated', (data: { grueroId: string; status: string }) => {
-      console.log('📡 Estado de grúa actualizado:', data);
-      if (data.status === 'OFFLINE' || data.status === 'OCUPADO') {
-        setGruasDisponibles((prev) => prev.filter(g => g.id !== data.grueroId));
-      }
-    });
-
-    socket.on('gruero:locationUpdated', (data: { grueroId: string; ubicacion: { lat: number; lng: number } }) => {
-      console.log('📍 Ubicación de grúa actualizada:', data);
-      setGruasDisponibles((prev) =>
-        prev.map((grua) =>
-          grua.id === data.grueroId ? { ...grua, ubicacion: data.ubicacion } : grua
-        )
-      );
-    });
-
-    socket.on('cliente:servicioAceptado', (data: { servicioId: string; gruero: any }) => {
-      console.log('✅ Servicio aceptado recibido:', data);
-      cargarServicioActivo().then(() => {
-        console.log('🔔 Abriendo modal por servicio aceptado');
-        setShowNotification(true);
-      });
-    });
-
-    socket.on('cliente:estadoActualizado', (data: { servicioId: string; status: string; servicio: any; gruero: any }) => {
-      console.log('📢 Estado actualizado recibido:', data);
-      console.log('📢 Servicio ID del evento:', data.servicioId);
-      
-      cargarServicioActivo().then(() => {
-        console.log('🔔 Procesando cambio de estado:', data.status);
-        
-        if (data.status === 'COMPLETADO') {
-          console.log('🎉 Servicio completado - Preparando modal de calificación');
-          console.log('📦 Datos del servicio:', data.servicio);
-          console.log('👤 Datos del gruero:', data.gruero);
-          
-          setServicioParaCalificar({
-            id: data.servicio.id,
-            origenDireccion: data.servicio.origenDireccion,
-            destinoDireccion: data.servicio.destinoDireccion,
-            distanciaKm: data.servicio.distanciaKm,
-            totalCliente: data.servicio.totalCliente,
-            pagado: data.servicio.pagado || false,
-            status: 'COMPLETADO',
-            createdAt: new Date().toISOString(),
-            gruero: {
-              patente: data.gruero.patente,
-              marca: data.gruero.marca,
-              modelo: data.gruero.modelo,
-              capacidadToneladas: data.gruero.capacidad,
-              calificacionPromedio: data.gruero.calificacion,
-              user: {
-                nombre: data.gruero.nombre,
-                apellido: data.gruero.apellido,
-                telefono: data.gruero.telefono,
-              },
-            },
-          } as any);
-          
-          setShowNotification(false);
-          setTimeout(() => {
-            console.log('✨ Abriendo modal de calificación');
-            setShowRatingModal(true);
-          }, 300);
-        } else {
-          setTimeout(() => {
-            setShowNotification(true);
-          }, 100);
-        }
-      });
-    });
-
-    socket.on('servicio:canceladoNotificacion', (data: { servicioId: string; canceladoPor: string; cliente: any; gruero: any }) => {
-      console.log('🚫 Servicio cancelado recibido:', data);
-      
-      if (data.canceladoPor === 'GRUERO') {
-        toast.error(`${data.gruero.nombre} canceló el servicio`, {
-          duration: 5000,
-          icon: '❌',
+        globalSocket.on('cliente:gruasDisponibles', (gruas: Grua[]) => {
+          console.log('📍 Grúas recibidas del servidor:', gruas);
+          console.log('📊 Cantidad de grúas:', gruas.length);
+          setGruasDisponibles(gruas);
         });
+
+        globalSocket.on('gruero:disponible', (grua: Grua) => {
+          console.log('🚛 Nueva grúa disponible (evento en tiempo real):', grua);
+          setGruasDisponibles((prev) => {
+            const existe = prev.find(g => g.id === grua.id);
+            if (existe) {
+              console.log('⚠️ Grúa ya existe en la lista');
+              return prev;
+            }
+            console.log('➕ Agregando grúa a la lista');
+            return [...prev, grua];
+          });
+          toast.success(`${grua.nombre} está disponible`, { icon: '🚛' });
+        });
+
+        globalSocket.on('gruero:statusUpdated', (data: { grueroId: string; status: string }) => {
+          console.log('📡 Estado de grúa actualizado:', data);
+          if (data.status === 'OFFLINE' || data.status === 'OCUPADO') {
+            setGruasDisponibles((prev) => prev.filter(g => g.id !== data.grueroId));
+          }
+        });
+
+        globalSocket.on('gruero:locationUpdated', (data: { grueroId: string; ubicacion: { lat: number; lng: number } }) => {
+          console.log('📍 Ubicación de grúa actualizada:', data);
+          setGruasDisponibles((prev) =>
+            prev.map((grua) =>
+              grua.id === data.grueroId ? { ...grua, ubicacion: data.ubicacion } : grua
+            )
+          );
+        });
+
+        globalSocket.on('cliente:servicioAceptado', (data: { servicioId: string; gruero: any }) => {
+          console.log('✅ Servicio aceptado recibido:', data);
+          cargarServicioActivo().then(() => {
+            console.log('🔔 Abriendo modal por servicio aceptado');
+            setShowNotification(true);
+          });
+        });
+
+        globalSocket.on('cliente:estadoActualizado', (data: { servicioId: string; status: string; servicio: any; gruero: any }) => {
+          console.log('📢 Estado actualizado recibido:', data);
+          console.log('📢 Servicio ID del evento:', data.servicioId);
+          
+          cargarServicioActivo().then(() => {
+            console.log('🔔 Procesando cambio de estado:', data.status);
+            
+            if (data.status === 'COMPLETADO') {
+              console.log('🎉 Servicio completado - Preparando modal de calificación');
+              console.log('📦 Datos del servicio:', data.servicio);
+              console.log('👤 Datos del gruero:', data.gruero);
+              
+              setServicioParaCalificar({
+                id: data.servicio.id,
+                origenDireccion: data.servicio.origenDireccion,
+                destinoDireccion: data.servicio.destinoDireccion,
+                distanciaKm: data.servicio.distanciaKm,
+                totalCliente: data.servicio.totalCliente,
+                pagado: data.servicio.pagado || false,
+                status: 'COMPLETADO',
+                createdAt: new Date().toISOString(),
+                gruero: {
+                  patente: data.gruero.patente,
+                  marca: data.gruero.marca,
+                  modelo: data.gruero.modelo,
+                  capacidadToneladas: data.gruero.capacidad,
+                  calificacionPromedio: data.gruero.calificacion,
+                  user: {
+                    nombre: data.gruero.nombre,
+                    apellido: data.gruero.apellido,
+                    telefono: data.gruero.telefono,
+                  },
+                },
+              } as any);
+              
+              setShowNotification(false);
+              setTimeout(() => {
+                console.log('✨ Abriendo modal de calificación');
+                setShowRatingModal(true);
+              }, 300);
+            } else {
+              setTimeout(() => {
+                setShowNotification(true);
+              }, 100);
+            }
+          });
+        });
+
+        globalSocket.on('servicio:canceladoNotificacion', (data: { servicioId: string; canceladoPor: string; cliente: any; gruero: any }) => {
+          console.log('🚫 Servicio cancelado recibido:', data);
+          
+          if (data.canceladoPor === 'GRUERO') {
+            toast.error(`${data.gruero.nombre} canceló el servicio`, {
+              duration: 5000,
+              icon: '❌',
+            });
+          }
+          
+          setServicioActivo(null);
+          setServicioParaCalificar(null);
+          setShowNotification(false);
+          setShowRatingModal(false);
+          setOrigen('');
+          setDestino('');
+          setTipoGrua('');
+          setOrigenCoords([-33.4489, -70.6693]);
+          setDestinoCoords(null);
+          setRutaCompleta([]);
+          setPrecioEstimado(0);
+          setDistanciaKm(0);
+          setDuracionEstimada(0);
+          cargarHistorial();
+        });
+
+        console.log('📤 Solicitando grúas disponibles al servidor...');
+        globalSocket.emit('cliente:getGruasDisponibles');
+
+        const interval = setInterval(() => {
+          if (globalSocket.connected) {
+            globalSocket.emit('cliente:getGruasDisponibles');
+          }
+        }, 10000);
+
+        return () => {
+          clearInterval(interval);
+          // NO desconectar el socket global, solo limpiar listeners
+          if (socketRef.current) {
+            socketRef.current.off('cliente:gruasDisponibles');
+            socketRef.current.off('gruero:disponible');
+            socketRef.current.off('gruero:statusUpdated');
+            socketRef.current.off('gruero:locationUpdated');
+            socketRef.current.off('cliente:servicioAceptado');
+            socketRef.current.off('cliente:estadoActualizado');
+            socketRef.current.off('servicio:canceladoNotificacion');
+          }
+        };
       }
-      
-      setServicioActivo(null);
-      setServicioParaCalificar(null);
-      setShowNotification(false);
-      setShowRatingModal(false);
-      setOrigen('');
-      setDestino('');
-      setTipoGrua('');
-      setOrigenCoords([-33.4489, -70.6693]);
-      setDestinoCoords(null);
-      setRutaCompleta([]);
-      setPrecioEstimado(0);
-      setDistanciaKm(0);
-      setDuracionEstimada(0);
-      cargarHistorial();
-    });
-
-    console.log('📤 Solicitando grúas disponibles al servidor...');
-    socket.emit('cliente:getGruasDisponibles');
-
-    const interval = setInterval(() => {
-      socket.emit('cliente:getGruasDisponibles');
-    }, 10000);
+    }, 100);
 
     return () => {
-      console.log('🔌 Desconectando Socket.IO...');
-      socket.disconnect();
-      clearInterval(interval);
+      clearInterval(checkSocket);
     };
   }, [agregarNotificacion, user]);
 
@@ -942,7 +932,10 @@ export default function ClienteDashboard() {
                       <div className="flex-shrink-0">
                         {grua.fotoGruero ? (
                           <img
-                            src={`http://localhost:5000${grua.fotoGruero}`}
+                            src={grua.fotoGruero?.startsWith('http') 
+                              ? grua.fotoGruero 
+                              : `${API_URL.replace('/api', '')}${grua.fotoGruero}`
+                            }
                             alt="Foto Gruero"
                             className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
                           />
@@ -956,7 +949,10 @@ export default function ClienteDashboard() {
                       <div className="flex-shrink-0">
                         {grua.fotoGrua ? (
                           <img
-                            src={`http://localhost:5000${grua.fotoGrua}`}
+                            src={grua.fotoGrua?.startsWith('http') 
+                              ? grua.fotoGrua 
+                              : `${API_URL.replace('/api', '')}${grua.fotoGrua}`
+                            }
                             alt="Foto Grúa"
                             className="w-16 h-16 rounded-lg object-cover border-2 border-gray-200"
                           />
