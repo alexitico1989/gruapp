@@ -7,6 +7,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
+import { rutValidator } from '../utils/rutValidator';
 
 interface RegisterForm {
   nombre: string;
@@ -18,52 +19,11 @@ interface RegisterForm {
   telefono: string;
 }
 
-// Función para formatear RUT
-const formatRut = (value: string) => {
-  // Eliminar todo excepto números y K
-  const cleaned = value.replace(/[^0-9kK]/g, '');
-  
-  if (cleaned.length === 0) return '';
-  
-  // Separar dígito verificador
-  const body = cleaned.slice(0, -1);
-  const dv = cleaned.slice(-1).toUpperCase();
-  
-  // Formatear con puntos
-  const formatted = body.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-  
-  return body.length > 0 ? `${formatted}-${dv}` : '';
-};
-
-// Función para validar RUT chileno
-const validateRut = (rut: string) => {
-  // Limpiar RUT
-  const cleaned = rut.replace(/[^0-9kK]/g, '');
-  
-  if (cleaned.length < 2) return false;
-  
-  const body = cleaned.slice(0, -1);
-  const dv = cleaned.slice(-1).toUpperCase();
-  
-  // Calcular dígito verificador
-  let sum = 0;
-  let multiplier = 2;
-  
-  for (let i = body.length - 1; i >= 0; i--) {
-    sum += parseInt(body[i]) * multiplier;
-    multiplier = multiplier === 7 ? 2 : multiplier + 1;
-  }
-  
-  const calculatedDv = 11 - (sum % 11);
-  const expectedDv = calculatedDv === 11 ? '0' : calculatedDv === 10 ? 'K' : calculatedDv.toString();
-  
-  return dv === expectedDv;
-};
-
 export default function RegisterCliente() {
   const navigate = useNavigate();
   const { setAuth } = useAuthStore();
   const [loading, setLoading] = useState(false);
+  const [rutValue, setRutValue] = useState('');
 
   const {
     register,
@@ -74,7 +34,12 @@ export default function RegisterCliente() {
   } = useForm<RegisterForm>();
 
   const password = watch('password');
-  const rutValue = watch('rut');
+
+  const handleRutChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rutFormateado = rutValidator.formatearInput(e.target.value);
+    setRutValue(rutFormateado);
+    setValue('rut', rutFormateado, { shouldValidate: true });
+  };
 
   const onSubmit = async (data: RegisterForm) => {
     try {
@@ -176,23 +141,20 @@ export default function RegisterCliente() {
                   <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                   <input
                     type="text"
+                    value={rutValue}
                     {...register('rut', {
                       required: 'El RUT es requerido',
-                      validate: (value) => {
-                        // Limpiar el valor antes de validar
-                        const cleaned = value.replace(/[^0-9kK]/g, '');
-                        if (cleaned.length < 2) return 'RUT muy corto';
-                        return validateRut(value) || 'RUT inválido';
-                      },
+                      validate: (value) => rutValidator.validar(value) || rutValidator.mensajeError(value),
                     })}
+                    onChange={handleRutChange}
                     className="w-full pl-11 pr-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
-                    placeholder="12.345.678-9 o 12345678-9"
+                    placeholder="12.345.678-9"
+                    maxLength={12}
                   />
                 </div>
                 {errors.rut && (
                   <p className="text-red-500 text-sm mt-1">{errors.rut.message}</p>
                 )}
-                <p className="text-xs text-gray-500 mt-1">Ejemplo: 12.345.678-9</p>
               </div>
 
               {/* Email */}
