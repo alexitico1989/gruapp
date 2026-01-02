@@ -152,7 +152,7 @@ export default function Perfil() {
       if (response.data.success) {
         toast.success('Cuenta eliminada exitosamente');
         localStorage.removeItem('token');
-        window.location.href = '/login';
+        window.location.href = '/';
       }
     } catch (error: any) {
       console.error('Error al eliminar cuenta:', error);
