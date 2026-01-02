@@ -116,7 +116,7 @@ export default function Ayuda() {
           <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 text-center">
             <Mail className="h-12 w-12 text-[#1e3a5f] mx-auto mb-4" />
             <h3 className="font-bold text-gray-900 mb-2">Email</h3>
-            <p className="text-sm text-gray-600 mb-3">soporte@gruaschile.cl</p>
+            <p className="text-sm text-gray-600 mb-3">contacto@gruappchile.cl</p>
             <a
               href="mailto:soporte@gruaschile.cl"
               className="text-[#ff7a3d] hover:underline text-sm font-semibold"
@@ -128,7 +128,7 @@ export default function Ayuda() {
           <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 text-center">
             <Phone className="h-12 w-12 text-[#1e3a5f] mx-auto mb-4" />
             <h3 className="font-bold text-gray-900 mb-2">Teléfono</h3>
-            <p className="text-sm text-gray-600 mb-3">+56 9 1234 5678</p>
+            <p className="text-sm text-gray-600 mb-3">+56 9 6183 3876</p>
             <a
               href="tel:+56912345678"
               className="text-[#ff7a3d] hover:underline text-sm font-semibold"
@@ -142,7 +142,7 @@ export default function Ayuda() {
             <h3 className="font-bold text-gray-900 mb-2">WhatsApp</h3>
             <p className="text-sm text-gray-600 mb-3">Atención inmediata</p>
             <a
-              href="https://wa.me/56912345678"
+              href="https://wa.me/56961833876"
               target="_blank"
               rel="noopener noreferrer"
               className="text-[#ff7a3d] hover:underline text-sm font-semibold"
