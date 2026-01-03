@@ -298,6 +298,7 @@ export default function ClienteDashboard() {
   const [showNotification, setShowNotification] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [servicioParaCalificar, setServicioParaCalificar] = useState<Servicio | null>(null);
+  const [grueroPosition, setGrueroPosition] = useState<[number, number] | null>(null); // ← NUEVO: posición del gruero en tiempo real
 
   const debounceTimerOrigen = useRef<ReturnType<typeof setTimeout>>();
   const debounceTimerDestino = useRef<ReturnType<typeof setTimeout>>();
@@ -621,11 +622,23 @@ export default function ClienteDashboard() {
           setPrecioEstimado(0);
           setDistanciaKm(0);
           setDuracionEstimada(0);
+          setGrueroPosition(null); // ← Limpiar posición del gruero
           
           // Obtener ubicación actual en lugar de resetear a Santiago
           obtenerUbicacionActual();
           
           cargarHistorial();
+        });
+
+        // NUEVO: Listener para actualizaciones de ubicación del gruero en tiempo real
+        globalSocket.on('gruero:locationUpdated', (data: { grueroId: string; latitud: number; longitud: number }) => {
+          console.log('📍 Ubicación del gruero actualizada:', data);
+          
+          // Solo actualizar si hay un servicio activo y el gruero es el asignado
+          if (servicioActivo && servicioActivo.gruero && servicioActivo.gruero.id === data.grueroId) {
+            console.log('🚗 Actualizando posición del gruero en el mapa');
+            setGrueroPosition([data.latitud, data.longitud]);
+          }
         });
 
         console.log('📤 Solicitando grúas disponibles al servidor...');
@@ -702,15 +715,25 @@ export default function ClienteDashboard() {
     try {
       const response = await api.get('/servicios/activo');
       if (response.data.success && response.data.data) {
-        setServicioActivo(response.data.data);
-        return response.data.data; // Retornar el servicio
+        const servicio = response.data.data;
+        setServicioActivo(servicio);
+        
+        // Si el servicio tiene gruero asignado, inicializar su posición
+        if (servicio.gruero && servicio.gruero.latitud && servicio.gruero.longitud) {
+          console.log('📍 Inicializando posición del gruero:', servicio.gruero.latitud, servicio.gruero.longitud);
+          setGrueroPosition([servicio.gruero.latitud, servicio.gruero.longitud]);
+        }
+        
+        return servicio; // Retornar el servicio
       } else {
         setServicioActivo(null);
+        setGrueroPosition(null);
         return null;
       }
     } catch (error: any) {
       if (error.response?.status === 404) {
         setServicioActivo(null);
+        setGrueroPosition(null);
       } else {
         console.error('Error al cargar servicio activo:', error);
       }
@@ -834,6 +857,7 @@ export default function ClienteDashboard() {
         setPrecioEstimado(0);
         setDistanciaKm(0);
         setDuracionEstimada(0);
+        setGrueroPosition(null); // ← Limpiar posición del gruero
         
         // Obtener ubicación actual en lugar de resetear a Santiago
         obtenerUbicacionActual();
@@ -909,6 +933,7 @@ export default function ClienteDashboard() {
     setPrecioEstimado(0);
     setDistanciaKm(0);
     setDuracionEstimada(0);
+    setGrueroPosition(null); // ← Limpiar posición del gruero
     
     // Obtener ubicación actual en lugar de resetear a Santiago
     obtenerUbicacionActual();
@@ -1331,6 +1356,34 @@ export default function ClienteDashboard() {
                 </Popup>
               </Marker>
             ))}
+
+            {/* Marcador del Gruero Asignado - Posición en Tiempo Real */}
+            {servicioActivo && servicioActivo.gruero && grueroPosition && (
+              <Marker 
+                position={grueroPosition} 
+                icon={gruaIcon}
+              >
+                <Popup>
+                  <div className="text-sm">
+                    <p className="font-semibold text-[#ff7a3d]">Tu Gruero</p>
+                    <p className="font-medium">{servicioActivo.gruero.user.nombre} {servicioActivo.gruero.user.apellido}</p>
+                    <p className="text-xs text-gray-600">{servicioActivo.gruero.patente}</p>
+                    <p className="text-xs text-gray-600">{servicioActivo.gruero.marca} {servicioActivo.gruero.modelo}</p>
+                    <div className="mt-2 text-xs">
+                      <span className={`px-2 py-1 rounded-full font-semibold ${
+                        servicioActivo.status === 'EN_CAMINO' ? 'bg-blue-100 text-blue-700' :
+                        servicioActivo.status === 'EN_SITIO' ? 'bg-green-100 text-green-700' :
+                        'bg-orange-100 text-orange-700'
+                      }`}>
+                        {servicioActivo.status === 'EN_CAMINO' ? '🚗 En camino' :
+                         servicioActivo.status === 'EN_SITIO' ? '📍 En el sitio' :
+                         '✓ Aceptado'}
+                      </span>
+                    </div>
+                  </div>
+                </Popup>
+              </Marker>
+            )}
           </MapContainer>
         </div>
       </div>
