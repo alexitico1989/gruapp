@@ -990,13 +990,13 @@ export default function ClienteDashboard() {
           />
         )}
 
-        {/* Panel Superior - Scroll horizontal en móvil */}
-        <div className="bg-white border-b border-gray-200 overflow-x-auto overflow-y-hidden">
-          <div className="flex gap-3 p-3 md:p-4 min-w-max md:min-w-0">
+        {/* Panel Superior - Compacto y con scroll horizontal */}
+        <div className="bg-white border-b border-gray-200 overflow-x-auto overflow-y-hidden shrink-0">
+          <div className="flex gap-3 p-3 md:p-3 min-w-max md:min-w-0 md:flex-wrap md:justify-center">
             
             {/* Origen */}
-            <div className="bg-white border-2 border-gray-200 rounded-lg p-3 min-w-[280px] md:min-w-[320px] relative">
-              <label className="block text-xs font-semibold text-gray-700 mb-2">📍 Origen</label>
+            <div className="bg-white border-2 border-gray-200 rounded-lg p-2.5 min-w-[280px] md:min-w-[240px] md:w-auto relative">
+              <label className="block text-xs font-semibold text-gray-700 mb-1.5">📍 Origen</label>
               <input
                 type="text"
                 value={origen}
@@ -1028,8 +1028,8 @@ export default function ClienteDashboard() {
             </div>
 
             {/* Destino */}
-            <div className="bg-white border-2 border-gray-200 rounded-lg p-3 min-w-[280px] md:min-w-[320px] relative">
-              <label className="block text-xs font-semibold text-gray-700 mb-2">🎯 Destino</label>
+            <div className="bg-white border-2 border-gray-200 rounded-lg p-2.5 min-w-[280px] md:min-w-[240px] md:w-auto relative">
+              <label className="block text-xs font-semibold text-gray-700 mb-1.5">🎯 Destino</label>
               <input
                 type="text"
                 value={destino}
@@ -1060,56 +1060,61 @@ export default function ClienteDashboard() {
               )}
             </div>
 
-            {/* Tipo de Vehículo */}
-            <div className="bg-white border-2 border-gray-200 rounded-lg p-3 min-w-[280px]">
-              <label className="block text-xs font-semibold text-gray-700 mb-2">🚗 Tipo de Vehículo</label>
+            {/* Tipo de Vehículo - Selector Desplegable */}
+            <div className="bg-white border-2 border-gray-200 rounded-lg p-2.5 min-w-[280px] md:min-w-[240px] md:w-auto">
+              <label className="block text-xs font-semibold text-gray-700 mb-1.5">🚗 Tipo de Vehículo</label>
               
-              {/* Vehículos Livianos */}
-              <p className="text-[9px] text-gray-500 mb-1 font-semibold">LIVIANOS ($25.000 base + $1.350/km)</p>
-              <div className="grid grid-cols-3 gap-1.5 mb-3 pb-3 border-b border-gray-200">
-                {tiposVehiculos.filter(v => !v.pesado).map((tipo) => {
-                  const IconComponent = tipo.icon;
-                  return (
-                    <button
-                      key={tipo.id}
-                      onClick={() => setTipoGrua(tipo.id)}
-                      disabled={!!servicioActivo}
-                      className={`flex flex-col items-center p-2 rounded-lg border transition-all disabled:opacity-50 ${
-                        tipoGrua === tipo.id ? 'border-[#ff7a3d] bg-orange-50' : 'border-gray-300'
-                      }`}
-                    >
-                      <IconComponent className="h-5 w-5 text-[#1e3a5f] mb-0.5" />
-                      <span className="text-[9px] font-medium text-center leading-tight">{tipo.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
+              <select
+                value={tipoGrua}
+                onChange={(e) => setTipoGrua(e.target.value)}
+                disabled={!!servicioActivo}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm font-medium bg-white hover:border-[#ff7a3d] focus:border-[#ff7a3d] focus:ring-2 focus:ring-orange-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <option value="">Seleccionar tipo...</option>
+                
+                <optgroup label="🚙 LIVIANOS ($25.000 + $1.350/km)">
+                  {tiposVehiculos.filter(v => !v.pesado).map((tipo) => (
+                    <option key={tipo.id} value={tipo.id}>
+                      {tipo.label}
+                    </option>
+                  ))}
+                </optgroup>
+                
+                <optgroup label="🚚 PESADOS ($60.000 + $1.850/km)">
+                  {tiposVehiculos.filter(v => v.pesado).map((tipo) => (
+                    <option key={tipo.id} value={tipo.id}>
+                      {tipo.label}
+                    </option>
+                  ))}
+                </optgroup>
+              </select>
               
-              {/* Vehículos Pesados */}
-              <p className="text-[9px] text-gray-500 mb-1 font-semibold">PESADOS ($60.000 base + $1.850/km)</p>
-              <div className="grid grid-cols-2 gap-1.5">
-                {tiposVehiculos.filter(v => v.pesado).map((tipo) => {
-                  const IconComponent = tipo.icon;
-                  return (
-                    <button
-                      key={tipo.id}
-                      onClick={() => setTipoGrua(tipo.id)}
-                      disabled={!!servicioActivo}
-                      className={`flex flex-col items-center p-2 rounded-lg border transition-all disabled:opacity-50 ${
-                        tipoGrua === tipo.id ? 'border-[#ff7a3d] bg-orange-50' : 'border-gray-300'
-                      }`}
-                    >
-                      <IconComponent className="h-5 w-5 text-[#1e3a5f] mb-0.5" />
-                      <span className="text-[9px] font-medium text-center leading-tight">{tipo.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
+              {/* Mostrar vehículo seleccionado con icono */}
+              {tipoGrua && (
+                <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded-lg flex items-center gap-2">
+                  {(() => {
+                    const vehiculoSeleccionado = tiposVehiculos.find(v => v.id === tipoGrua);
+                    if (!vehiculoSeleccionado) return null;
+                    const IconComponent = vehiculoSeleccionado.icon;
+                    return (
+                      <>
+                        <IconComponent className="h-5 w-5 text-[#ff7a3d]" />
+                        <div className="flex-1">
+                          <p className="text-xs font-semibold text-gray-900">{vehiculoSeleccionado.label}</p>
+                          <p className="text-[10px] text-gray-600">
+                            {vehiculoSeleccionado.pesado ? '💰 Tarifa Pesado' : '💰 Tarifa Estándar'}
+                          </p>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
             </div>
 
             {/* Resumen / Estado */}
             {servicioActivo ? (
-              <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-3 min-w-[280px]">
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-2.5 min-w-[280px] md:min-w-[240px] md:w-auto">
                 <p className="text-xs font-semibold text-blue-900 mb-2">📦 Servicio: {servicioActivo.status}</p>
                 
                 {/* Si tiene gruero asignado */}
@@ -1158,7 +1163,7 @@ export default function ClienteDashboard() {
                 )}
               </div>
             ) : destinoCoords ? (
-              <div className="bg-white border-2 border-gray-200 rounded-lg p-3 min-w-[240px]">
+              <div className="bg-white border-2 border-gray-200 rounded-lg p-2.5 min-w-[240px] md:min-w-[200px] md:w-auto">
                 <p className="text-xs font-semibold text-gray-700 mb-2">💰 Resumen</p>
                 <div className="space-y-1 mb-2">
                   <div className="flex justify-between text-xs">
@@ -1189,7 +1194,7 @@ export default function ClienteDashboard() {
             )}
 
             {/* Botón Solicitar / Grúas disponibles */}
-            <div className="bg-white border-2 border-gray-200 rounded-lg p-3 min-w-[200px] flex flex-col justify-between">
+            <div className="bg-white border-2 border-gray-200 rounded-lg p-2.5 min-w-[200px] md:min-w-[180px] md:w-auto flex flex-col justify-between">
               {!servicioActivo && (
                 <>
                   <button
