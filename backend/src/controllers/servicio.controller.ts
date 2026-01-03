@@ -9,7 +9,7 @@ import { NotificacionController } from './notificacion.controller';
 const prisma = new PrismaClient();
 
 // Configuración de radio máximo (en kilómetros)
-const RADIO_MAXIMO_KM = 10;
+const RADIO_MAXIMO_KM = 20;
 
 // Definir qué tipos de vehículo son pesados
 const VEHICULOS_PESADOS = ['MEDIANO', 'PESADO', 'BUS', 'MAQUINARIA'];
