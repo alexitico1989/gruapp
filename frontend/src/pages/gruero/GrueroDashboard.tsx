@@ -831,7 +831,7 @@ export default function GrueroDashboard() {
                   <div className="space-y-1 text-xs">
                     <div>
                       <span className="font-semibold">Cliente:</span>{' '}
-                      {servicio Activo.cliente?.user?.nombre || 'Cliente'} {servicioActivo.cliente?.user?.apellido || ''}
+                      {servicioActivo.cliente?.user?.nombre || 'Cliente'} {servicioActivo.cliente?.user?.apellido || ''}
                     </div>
                     <div>
                       <span className="font-semibold">Distancia:</span> {servicioActivo.distanciaKm} km
