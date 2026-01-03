@@ -34,6 +34,7 @@ export interface Servicio {
   destinoLat: number;
   destinoLng: number;
   destinoDireccion: string;
+  tipoVehiculo: string; // ← AGREGADO
   distanciaKm: number;
   tarifaBase: number;
   tarifaDistancia: number;
@@ -145,5 +146,21 @@ export interface CreateServicioData {
   destinoLat: number;
   destinoLng: number;
   destinoDireccion: string;
+  tipoVehiculo?: string; // ← AGREGADO (opcional porque tiene default en BD)
   observaciones?: string;
+}
+
+// Alias para mantener compatibilidad
+export interface CreateServicioDTO extends CreateServicioData {}
+
+// Interface para cálculos de pricing
+export interface PricingCalculation {
+  distanciaKm: number;
+  tarifaBase: number;
+  tarifaDistancia: number;
+  subtotal: number;
+  comisionPlataforma: number;
+  comisionMP: number;
+  totalCliente: number;
+  totalGruero: number;
 }
