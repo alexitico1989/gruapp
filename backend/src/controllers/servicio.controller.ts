@@ -926,16 +926,37 @@ export class ServicioController {
               user: true,
             },
           },
+          gruero: {
+            include: {
+              user: true,
+            },
+          },
         },
       });
       
       // Notificar cambio de estado via Socket.io
       const io = (req as any).app.get('io');
       if (io) {
+        // ✅ CORREGIDO: Emitir al cliente
         io.to(`cliente-${servicioActualizado.cliente.userId}`).emit('servicio-actualizado', {
           servicio: servicioActualizado,
           nuevoEstado: status,
         });
+        
+        // ✅ NUEVO: Si hay gruero asignado, también notificarle
+        if (servicioActualizado.gruero) {
+          console.log(`📤 Emitiendo cliente:estadoActualizado al gruero ${servicioActualizado.gruero.user.id}`);
+          io.to(`gruero-${servicioActualizado.gruero.user.id}`).emit('cliente:estadoActualizado', {
+            servicioId: servicioActualizado.id,
+            status: status,
+          });
+          
+          // ✅ También emitir evento alternativo por compatibilidad
+          io.to(`gruero-${servicioActualizado.gruero.user.id}`).emit('servicio-actualizado', {
+            servicio: servicioActualizado,
+            nuevoEstado: status,
+          });
+        }
         
         // Guardar notificación en la base de datos
         const mensajes: Record<string, string> = {
