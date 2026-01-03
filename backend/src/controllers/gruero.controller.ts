@@ -47,7 +47,9 @@ export class GrueroController {
           marca: gruero.marca,
           modelo: gruero.modelo,
           anio: gruero.anio,
+          tipoGrua: gruero.tipoGrua,
           capacidadToneladas: gruero.capacidadToneladas,
+          tiposVehiculosAtiende: gruero.tiposVehiculosAtiende,
           status: gruero.status,
           latitud: gruero.latitud,
           longitud: gruero.longitud,
@@ -119,7 +121,7 @@ export class GrueroController {
   static async updateVehiculo(req: Request, res: Response) {
     try {
       const userId = req.user?.userId;
-      const { patente, marca, modelo, anio, capacidadToneladas } = req.body;
+      const { patente, marca, modelo, anio, capacidadToneladas, tipoGrua, tiposVehiculosAtiende } = req.body;
 
       const gruero = await prisma.gruero.findUnique({
         where: { userId },
@@ -132,6 +134,33 @@ export class GrueroController {
         });
       }
 
+      // Validar tiposVehiculosAtiende si se proporciona
+      if (tiposVehiculosAtiende) {
+        if (!Array.isArray(tiposVehiculosAtiende)) {
+          return res.status(400).json({
+            success: false,
+            message: 'tiposVehiculosAtiende debe ser un array',
+          });
+        }
+
+        if (tiposVehiculosAtiende.length === 0) {
+          return res.status(400).json({
+            success: false,
+            message: 'Debes seleccionar al menos un tipo de vehículo',
+          });
+        }
+
+        const tiposValidos = ['AUTOMOVIL', 'CAMIONETA', 'MEDIANO', 'PESADO', 'MOTO', 'BUS', 'MAQUINARIA'];
+        const tiposInvalidos = tiposVehiculosAtiende.filter(tipo => !tiposValidos.includes(tipo));
+        
+        if (tiposInvalidos.length > 0) {
+          return res.status(400).json({
+            success: false,
+            message: `Tipos de vehículo inválidos: ${tiposInvalidos.join(', ')}`,
+          });
+        }
+      }
+
       const grueroUpdated = await prisma.gruero.update({
         where: { id: gruero.id },
         data: {
@@ -140,6 +169,8 @@ export class GrueroController {
           ...(modelo && { modelo }),
           ...(anio && { anio: parseInt(anio) }),
           ...(capacidadToneladas && { capacidadToneladas: parseFloat(capacidadToneladas) }),
+          ...(tipoGrua && { tipoGrua }),
+          ...(tiposVehiculosAtiende && { tiposVehiculosAtiende: JSON.stringify(tiposVehiculosAtiende) }),
         },
       });
 
@@ -509,6 +540,12 @@ export class GrueroController {
             inicioMes.setDate(1);
             inicioMes.setHours(0, 0, 0, 0);
             where.solicitadoAt = { gte: inicioMes };
+            break;
+          case 'año':
+            const inicioAño = new Date();
+            inicioAño.setMonth(0, 1);
+            inicioAño.setHours(0, 0, 0, 0);
+            where.solicitadoAt = { gte: inicioAño };
             break;
         }
       }
