@@ -167,7 +167,7 @@ export class ServicioController {
     radioKm: number = RADIO_MAXIMO_KM,
     tipoVehiculo?: string
   ) {
-    // Construir filtro para tipo de vehículo
+    // Construir filtro base (sin tipo de vehículo por ahora)
     const whereCondition: any = {
       status: 'DISPONIBLE',
       verificado: true,
@@ -176,14 +176,7 @@ export class ServicioController {
       longitud: { not: null },
     };
     
-    // Si se especifica tipo de vehículo, filtrar grueros que lo atiendan
-    if (tipoVehiculo) {
-      whereCondition.tiposVehiculosAtiende = {
-        has: tipoVehiculo, // ← Filtrar por array de tipos
-      };
-    }
-    
-    // Obtener grueros que cumplen los criterios
+    // Obtener grueros que cumplen los criterios base
     const gruerosDisponibles = await prisma.gruero.findMany({
       where: whereCondition,
       include: {
@@ -198,10 +191,24 @@ export class ServicioController {
       },
     });
     
-    console.log(`🔍 Grueros disponibles que atienden ${tipoVehiculo}:`, gruerosDisponibles.length);
+    // Filtrar por tipo de vehículo en memoria (porque es un campo JSON string)
+    let gruerosFiltrados = gruerosDisponibles;
+    if (tipoVehiculo) {
+      gruerosFiltrados = gruerosDisponibles.filter(gruero => {
+        try {
+          const tipos = JSON.parse(gruero.tiposVehiculosAtiende);
+          return Array.isArray(tipos) && tipos.includes(tipoVehiculo);
+        } catch (error) {
+          console.error('Error parseando tiposVehiculosAtiende:', error);
+          return false;
+        }
+      });
+    }
+    
+    console.log(`🔍 Grueros disponibles que atienden ${tipoVehiculo}:`, gruerosFiltrados.length);
     
     // Filtrar por distancia y agregar campo de distancia
-    const gruerosCercanos = gruerosDisponibles
+    const gruerosCercanos = gruerosFiltrados
       .map(gruero => ({
         ...gruero,
         userId: gruero.user.id,
@@ -420,9 +427,14 @@ export class ServicioController {
       // Filtrar por distancia Y por tipo de vehículo que atiende el gruero
       const serviciosCercanos = todosLosServicios
         .filter(servicio => {
-          // Verificar si el gruero atiende este tipo de vehículo
-          const atiendeVehiculo = gruero.tiposVehiculosAtiende.includes(servicio.tipoVehiculo);
-          return atiendeVehiculo;
+          // Verificar si el gruero atiende este tipo de vehículo (parsear JSON)
+          try {
+            const tipos = JSON.parse(gruero.tiposVehiculosAtiende);
+            return Array.isArray(tipos) && tipos.includes(servicio.tipoVehiculo);
+          } catch (error) {
+            console.error('Error parseando tiposVehiculosAtiende:', error);
+            return false;
+          }
         })
         .map(servicio => ({
           ...servicio,
@@ -769,8 +781,16 @@ export class ServicioController {
         });
       }
       
-      // Verificar que el gruero atiende este tipo de vehículo
-      if (!gruero.tiposVehiculosAtiende.includes(servicio.tipoVehiculo)) {
+      // Verificar que el gruero atiende este tipo de vehículo (parsear JSON)
+      let atiendeVehiculo = false;
+      try {
+        const tipos = JSON.parse(gruero.tiposVehiculosAtiende);
+        atiendeVehiculo = Array.isArray(tipos) && tipos.includes(servicio.tipoVehiculo);
+      } catch (error) {
+        console.error('Error parseando tiposVehiculosAtiende:', error);
+      }
+      
+      if (!atiendeVehiculo) {
         return res.status(400).json({
           success: false,
           message: `No puedes aceptar este servicio. Tu grúa no está configurada para atender vehículos tipo ${servicio.tipoVehiculo}`,
