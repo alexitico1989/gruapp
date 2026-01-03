@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
-import { useNavigate } from 'react-router-dom';
+import { X, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -52,7 +52,6 @@ interface Estadisticas {
 }
 
 export default function AdminReclamos() {
-  const navigate = useNavigate();
   const [reclamos, setReclamos] = useState<Reclamo[]>([]);
   const [estadisticas, setEstadisticas] = useState<Estadisticas | null>(null);
   const [loading, setLoading] = useState(true);
@@ -373,8 +372,228 @@ export default function AdminReclamos() {
         </table>
       </div>
 
-      {/* Aquí se pueden añadir los modales para ver detalle, resolver y rechazar */}
-      {/* Modales responsive: tamaño máximo 90vh, scroll si excede pantalla */}
+      {/* Modal de Detalle */}
+      {showModal && reclamoSeleccionado && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={() => setShowModal(false)}></div>
+
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="flex items-start justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">Detalle del Reclamo</h3>
+                  <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+
+                <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+                  {/* Información básica */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Tipo</p>
+                      <p className="mt-1 text-sm text-gray-900">{getTipoLabel(reclamoSeleccionado.tipo)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Prioridad</p>
+                      <span className={`inline-block mt-1 px-2 py-1 text-xs font-semibold rounded-full ${getPrioridadBadge(reclamoSeleccionado.prioridad)}`}>
+                        {reclamoSeleccionado.prioridad}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Estado</p>
+                      <span className={`inline-block mt-1 px-2 py-1 text-xs font-semibold rounded-full ${getEstadoBadge(reclamoSeleccionado.estado)}`}>
+                        {reclamoSeleccionado.estado.replace('_', ' ')}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Fecha</p>
+                      <p className="mt-1 text-sm text-gray-900">{formatDate(reclamoSeleccionado.createdAt)}</p>
+                    </div>
+                  </div>
+
+                  {/* Reportado por */}
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Reportado por</p>
+                    <p className="mt-1 text-sm text-gray-900">
+                      {reclamoSeleccionado.reportadoPor === 'CLIENTE' ? '👤 Cliente: ' : '🚛 Gruero: '}
+                      {reclamoSeleccionado.reportadoPor === 'CLIENTE'
+                        ? `${reclamoSeleccionado.servicio.cliente.user.nombre} ${reclamoSeleccionado.servicio.cliente.user.apellido}`
+                        : reclamoSeleccionado.servicio.gruero
+                        ? `${reclamoSeleccionado.servicio.gruero.user.nombre} ${reclamoSeleccionado.servicio.gruero.user.apellido}`
+                        : 'N/A'}
+                    </p>
+                  </div>
+
+                  {/* Descripción */}
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Descripción</p>
+                    <p className="mt-1 text-sm text-gray-900 whitespace-pre-wrap">{reclamoSeleccionado.descripcion}</p>
+                  </div>
+
+                  {/* Información del servicio */}
+                  <div className="border-t pt-4">
+                    <p className="text-sm font-medium text-gray-900 mb-2">Información del Servicio</p>
+                    <div className="space-y-2 text-sm">
+                      <p><span className="font-medium">Origen:</span> {reclamoSeleccionado.servicio.origenDireccion}</p>
+                      <p><span className="font-medium">Destino:</span> {reclamoSeleccionado.servicio.destinoDireccion}</p>
+                      <p><span className="font-medium">Tipo de vehículo:</span> {reclamoSeleccionado.servicio.tipoVehiculo}</p>
+                      <p><span className="font-medium">Estado del servicio:</span> {reclamoSeleccionado.servicio.status}</p>
+                    </div>
+                  </div>
+
+                  {/* Resolución */}
+                  {reclamoSeleccionado.resolucion && (
+                    <div className="border-t pt-4">
+                      <p className="text-sm font-medium text-gray-500">Resolución</p>
+                      <p className="mt-1 text-sm text-gray-900 whitespace-pre-wrap">{reclamoSeleccionado.resolucion}</p>
+                      {reclamoSeleccionado.resueltoAt && (
+                        <p className="mt-1 text-xs text-gray-500">Resuelto el {formatDate(reclamoSeleccionado.resueltoAt)}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-2">
+                {reclamoSeleccionado.estado === 'PENDIENTE' && (
+                  <>
+                    <button
+                      onClick={() => {
+                        setShowModal(false);
+                        setShowResolverModal(true);
+                      }}
+                      className="w-full sm:w-auto inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none sm:text-sm"
+                    >
+                      <CheckCircle className="h-5 w-5 mr-2" />
+                      Resolver
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowModal(false);
+                        setShowRechazarModal(true);
+                      }}
+                      className="w-full sm:w-auto mt-3 sm:mt-0 inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none sm:text-sm"
+                    >
+                      <XCircle className="h-5 w-5 mr-2" />
+                      Rechazar
+                    </button>
+                    <button
+                      onClick={() => handleCambiarEstado(reclamoSeleccionado.id, 'EN_REVISION')}
+                      className="w-full sm:w-auto mt-3 sm:mt-0 inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:text-sm"
+                    >
+                      <AlertTriangle className="h-5 w-5 mr-2" />
+                      Poner en Revisión
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="w-full sm:w-auto mt-3 sm:mt-0 inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:text-sm"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Resolver */}
+      {showResolverModal && reclamoSeleccionado && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={() => setShowResolverModal(false)}></div>
+
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="flex items-start justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">Resolver Reclamo</h3>
+                  <button onClick={() => setShowResolverModal(false)} className="text-gray-400 hover:text-gray-600">
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Resolución del reclamo
+                  </label>
+                  <textarea
+                    value={resolucion}
+                    onChange={(e) => setResolucion(e.target.value)}
+                    rows={4}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500"
+                    placeholder="Describe cómo se resolvió el reclamo..."
+                  />
+                </div>
+              </div>
+
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-2">
+                <button
+                  onClick={handleResolver}
+                  className="w-full sm:w-auto inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none sm:text-sm"
+                >
+                  Resolver Reclamo
+                </button>
+                <button
+                  onClick={() => setShowResolverModal(false)}
+                  className="w-full sm:w-auto mt-3 sm:mt-0 inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:text-sm"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Rechazar */}
+      {showRechazarModal && reclamoSeleccionado && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={() => setShowRechazarModal(false)}></div>
+
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="flex items-start justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">Rechazar Reclamo</h3>
+                  <button onClick={() => setShowRechazarModal(false)} className="text-gray-400 hover:text-gray-600">
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Motivo del rechazo
+                  </label>
+                  <textarea
+                    value={motivoRechazo}
+                    onChange={(e) => setMotivoRechazo(e.target.value)}
+                    rows={4}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-red-500"
+                    placeholder="Explica por qué se rechaza el reclamo..."
+                  />
+                </div>
+              </div>
+
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-2">
+                <button
+                  onClick={handleRechazar}
+                  className="w-full sm:w-auto inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none sm:text-sm"
+                >
+                  Rechazar Reclamo
+                </button>
+                <button
+                  onClick={() => setShowRechazarModal(false)}
+                  className="w-full sm:w-auto mt-3 sm:mt-0 inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:text-sm"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
