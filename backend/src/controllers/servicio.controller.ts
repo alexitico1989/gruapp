@@ -11,6 +11,9 @@ const prisma = new PrismaClient();
 // Configuración de radio máximo (en kilómetros)
 const RADIO_MAXIMO_KM = 10;
 
+// Definir qué tipos de vehículo son pesados
+const VEHICULOS_PESADOS = ['MEDIANO', 'PESADO', 'BUS', 'MAQUINARIA'];
+
 export class ServicioController {
   /**
    * Crear una nueva solicitud de servicio
@@ -43,8 +46,17 @@ export class ServicioController {
       // Convertir distancia a km
       const distanciaKm = RoutingService.metersToKm(route.distance);
       
-      // Calcular pricing
-      const pricing = PricingService.calculatePricing(distanciaKm);
+      // Determinar si el vehículo es pesado
+      const tipoVehiculo = data.tipoVehiculo || 'AUTOMOVIL';
+      const esPesado = VEHICULOS_PESADOS.includes(tipoVehiculo);
+      
+      // Calcular pricing con tarifas diferenciadas
+      const pricing = esPesado 
+        ? PricingService.calculatePricingPesado(distanciaKm)  // Tarifas pesados
+        : PricingService.calculatePricing(distanciaKm);       // Tarifas livianos
+      
+      console.log(`🚗 Tipo de vehículo: ${tipoVehiculo} | Pesado: ${esPesado}`);
+      console.log(`💰 Pricing calculado:`, pricing);
       
       // Crear el servicio
       const servicio = await prisma.servicio.create({
@@ -56,6 +68,7 @@ export class ServicioController {
           destinoLat: data.destinoLat,
           destinoLng: data.destinoLng,
           destinoDireccion: data.destinoDireccion,
+          tipoVehiculo: tipoVehiculo, // ← Guardar tipo de vehículo
           distanciaKm: pricing.distanciaKm,
           tarifaBase: pricing.tarifaBase,
           tarifaDistancia: pricing.tarifaDistancia,
@@ -82,16 +95,17 @@ export class ServicioController {
         },
       });
       
-      // Buscar grueros disponibles SOLO dentro del radio máximo
+      // Buscar grueros disponibles FILTRADOS por distancia Y tipo de vehículo
       const gruerosCercanos = await ServicioController.getGruerosCercanos(
         data.origenLat,
         data.origenLng,
-        RADIO_MAXIMO_KM
+        RADIO_MAXIMO_KM,
+        tipoVehiculo // ← Pasar tipo de vehículo para filtrar
       );
       
-      console.log(`📍 Grueros cercanos encontrados (< ${RADIO_MAXIMO_KM}km):`, gruerosCercanos.length);
+      console.log(`📍 Grueros cercanos que atienden ${tipoVehiculo} (< ${RADIO_MAXIMO_KM}km):`, gruerosCercanos.length);
       
-      // Emitir notificación SOLO a grueros cercanos via Socket.io
+      // Emitir notificación SOLO a grueros cercanos que atienden este tipo de vehículo
       const io = (req as any).app.get('io');
       if (io && gruerosCercanos.length > 0) {
         gruerosCercanos.forEach(async (gruero) => {
@@ -99,23 +113,21 @@ export class ServicioController {
             servicio,
             distancia: gruero.distancia,
           });
-          console.log(`🔔 Notificación enviada a gruero ${gruero.user.nombre} (${gruero.distancia}km)`);
+          console.log(`🔔 Notificación enviada a gruero ${gruero.user.nombre} (${gruero.distancia}km) - Atiende ${tipoVehiculo}`);
           
           // Guardar notificación en la base de datos
           const notificacion = await NotificacionController.crearNotificacion(
             gruero.userId,
             'NUEVO_SERVICIO',
             'Nuevo servicio disponible',
-            `Servicio disponible a ${gruero.distancia}km de distancia`,
-            { servicioId: servicio.id, distancia: gruero.distancia }
+            `Servicio de ${tipoVehiculo} disponible a ${gruero.distancia}km de distancia`,
+            { servicioId: servicio.id, distancia: gruero.distancia, tipoVehiculo }
           );
 
           // Emitir notificación en tiempo real
           if (notificacion && io) {
             const salaGruero = `gruero-${gruero.userId}`;
             console.log('📤 [Backend] Emitiendo a sala:', salaGruero);
-            console.log('📤 [Backend] User ID:', gruero.userId);
-            console.log('📤 [Backend] Notificación:', notificacion);
             io.to(salaGruero).emit('nueva-notificacion', notificacion);
             console.log('✅ [Backend] Notificación emitida');
           }
@@ -128,6 +140,8 @@ export class ServicioController {
         data: {
           servicio,
           gruerosCercanos: gruerosCercanos.length,
+          tipoVehiculo,
+          esPesado,
           ruta: {
             distanciaKm: pricing.distanciaKm,
             duracionMinutos: RoutingService.secondsToMinutes(route.duration),
@@ -145,18 +159,33 @@ export class ServicioController {
   }
 
   /**
-   * Obtener grueros cercanos dentro del radio máximo
+   * Obtener grueros cercanos dentro del radio máximo QUE ATIENDAN el tipo de vehículo
    */
-  static async getGruerosCercanos(lat: number, lng: number, radioKm: number = RADIO_MAXIMO_KM) {
-    // Obtener todos los grueros disponibles, verificados y con ubicación
+  static async getGruerosCercanos(
+    lat: number, 
+    lng: number, 
+    radioKm: number = RADIO_MAXIMO_KM,
+    tipoVehiculo?: string
+  ) {
+    // Construir filtro para tipo de vehículo
+    const whereCondition: any = {
+      status: 'DISPONIBLE',
+      verificado: true,
+      cuentaSuspendida: false,
+      latitud: { not: null },
+      longitud: { not: null },
+    };
+    
+    // Si se especifica tipo de vehículo, filtrar grueros que lo atiendan
+    if (tipoVehiculo) {
+      whereCondition.tiposVehiculosAtiende = {
+        has: tipoVehiculo, // ← Filtrar por array de tipos
+      };
+    }
+    
+    // Obtener grueros que cumplen los criterios
     const gruerosDisponibles = await prisma.gruero.findMany({
-      where: {
-        status: 'DISPONIBLE',
-        verificado: true,
-        cuentaSuspendida: false,
-        latitud: { not: null },
-        longitud: { not: null },
-      },
+      where: whereCondition,
       include: {
         user: {
           select: {
@@ -168,6 +197,8 @@ export class ServicioController {
         },
       },
     });
+    
+    console.log(`🔍 Grueros disponibles que atienden ${tipoVehiculo}:`, gruerosDisponibles.length);
     
     // Filtrar por distancia y agregar campo de distancia
     const gruerosCercanos = gruerosDisponibles
@@ -336,7 +367,7 @@ export class ServicioController {
   }
 
   /**
-   * Obtener servicios pendientes (para grueros) - FILTRADOS POR DISTANCIA
+   * Obtener servicios pendientes (para grueros) - FILTRADOS POR DISTANCIA Y TIPO DE VEHÍCULO
    */
   static async getServiciosPendientes(req: Request, res: Response) {
     try {
@@ -386,8 +417,13 @@ export class ServicioController {
         },
       });
       
-      // Filtrar SOLO los servicios dentro del radio máximo
+      // Filtrar por distancia Y por tipo de vehículo que atiende el gruero
       const serviciosCercanos = todosLosServicios
+        .filter(servicio => {
+          // Verificar si el gruero atiende este tipo de vehículo
+          const atiendeVehiculo = gruero.tiposVehiculosAtiende.includes(servicio.tipoVehiculo);
+          return atiendeVehiculo;
+        })
         .map(servicio => ({
           ...servicio,
           distancia: calcularDistancia(
@@ -398,9 +434,9 @@ export class ServicioController {
           ),
         }))
         .filter(servicio => servicio.distancia <= RADIO_MAXIMO_KM)
-        .sort((a, b) => a.distancia - b.distancia); // Ordenar por más cercano
+        .sort((a, b) => a.distancia - b.distancia);
       
-      console.log(`📍 Servicios cercanos para gruero (< ${RADIO_MAXIMO_KM}km):`, serviciosCercanos.length);
+      console.log(`📍 Servicios cercanos para gruero que puede atender (< ${RADIO_MAXIMO_KM}km):`, serviciosCercanos.length);
       
       return res.status(200).json({
         success: true,
@@ -730,6 +766,14 @@ export class ServicioController {
         return res.status(400).json({
           success: false,
           message: 'Este servicio ya no está disponible',
+        });
+      }
+      
+      // Verificar que el gruero atiende este tipo de vehículo
+      if (!gruero.tiposVehiculosAtiende.includes(servicio.tipoVehiculo)) {
+        return res.status(400).json({
+          success: false,
+          message: `No puedes aceptar este servicio. Tu grúa no está configurada para atender vehículos tipo ${servicio.tipoVehiculo}`,
         });
       }
       
