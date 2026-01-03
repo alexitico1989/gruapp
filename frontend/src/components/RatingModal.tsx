@@ -35,12 +35,19 @@ export default function RatingModal({
   const [comentario, setComentario] = useState('');
   const [loading, setLoading] = useState(false);
   const [pagando, setPagando] = useState(false);
+  const [calificado, setCalificado] = useState(false); // ← NUEVO: track si ya calificó
 
   if (!isOpen) return null;
 
   const handleSubmit = async () => {
     if (rating === 0) {
       toast.error('Por favor selecciona una calificación');
+      return;
+    }
+
+    // ← NUEVO: Prevenir si ya calificó
+    if (calificado) {
+      toast.error('Ya has calificado este servicio');
       return;
     }
 
@@ -52,12 +59,16 @@ export default function RatingModal({
       });
 
       if (response.data.success) {
+        setCalificado(true); // ← NUEVO: Marcar como calificado
         toast.success('¡Gracias por tu calificación!');
         
         if (!servicio.pagado) {
           toast('Ahora procede con el pago', { icon: '💳' });
         } else {
-          onClose();
+          // Esperar un momento antes de cerrar para que vea el mensaje de éxito
+          setTimeout(() => {
+            onClose();
+          }, 1500);
         }
       }
     } catch (error: any) {
@@ -87,7 +98,7 @@ export default function RatingModal({
     }
   };
 
-  const puedeCalificar = rating > 0;
+  const puedeCalificar = rating > 0 && !calificado; // ← MODIFICADO: también verificar calificado
 
   return (
     <>
@@ -179,10 +190,11 @@ export default function RatingModal({
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     key={star}
-                    onClick={() => setRating(star)}
-                    onMouseEnter={() => setHoveredRating(star)}
+                    onClick={() => !calificado && setRating(star)} // ← MODIFICADO: deshabilitar si ya calificó
+                    onMouseEnter={() => !calificado && setHoveredRating(star)} // ← MODIFICADO
                     onMouseLeave={() => setHoveredRating(0)}
-                    className="transition-transform hover:scale-110"
+                    disabled={calificado} // ← NUEVO
+                    className={`transition-transform ${!calificado ? 'hover:scale-110 cursor-pointer' : 'cursor-not-allowed opacity-50'}`}
                   >
                     <Star
                       className={`h-10 w-10 ${
@@ -203,6 +215,7 @@ export default function RatingModal({
                   {rating === 3 && '⭐ Bueno'}
                   {rating === 2 && '⭐ Regular'}
                   {rating === 1 && '⭐ Necesita mejorar'}
+                  {calificado && ' - ✓ Calificado'}
                 </p>
               )}
 
@@ -210,9 +223,10 @@ export default function RatingModal({
               <textarea
                 value={comentario}
                 onChange={(e) => setComentario(e.target.value)}
+                disabled={calificado} // ← NUEVO: deshabilitar textarea si ya calificó
                 placeholder="Comentario opcional..."
                 rows={2}
-                className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent resize-none mb-3"
+                className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent resize-none mb-3 disabled:bg-gray-100 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -223,17 +237,17 @@ export default function RatingModal({
                   {/* Botón Calificar */}
                   <button
                     onClick={handleSubmit}
-                    disabled={loading || rating === 0}
+                    disabled={loading || rating === 0 || calificado} // ← MODIFICADO: agregar calificado
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-sm"
                   >
                     <Star className="h-4 w-4 mr-2" />
-                    {loading ? 'Enviando...' : 'Calificar Servicio'}
+                    {loading ? 'Enviando...' : calificado ? '✓ Calificado' : 'Calificar Servicio'}
                   </button>
 
                   {/* Botón Pagar (obligatorio) */}
                   <button
                     onClick={handlePagar}
-                    disabled={pagando || !puedeCalificar}
+                    disabled={pagando || !calificado} // ← MODIFICADO: solo habilitar si ya calificó
                     className="w-full bg-[#ff7a3d] hover:bg-[#e66a2d] text-white font-semibold py-3 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-sm"
                   >
                     {pagando ? (
@@ -251,10 +265,10 @@ export default function RatingModal({
 
                   {/* Mensaje obligatorio */}
                   <p className="text-xs text-center mt-2 text-gray-600">
-                    {!puedeCalificar ? (
-                      '💡 Selecciona las estrellas para continuar'
+                    {!calificado ? (
+                      rating === 0 ? '💡 Selecciona las estrellas para continuar' : '👆 Haz clic en "Calificar Servicio"'
                     ) : (
-                      '⚠️ Debes calificar y pagar para finalizar'
+                      '💳 Ahora procede con el pago'
                     )}
                   </p>
                 </>
@@ -263,11 +277,11 @@ export default function RatingModal({
                   {/* Si ya está pagado, solo calificar y cerrar */}
                   <button
                     onClick={handleSubmit}
-                    disabled={loading || rating === 0}
+                    disabled={loading || rating === 0 || calificado} // ← MODIFICADO
                     className="w-full bg-[#ff7a3d] hover:bg-[#e66a2d] text-white font-semibold py-3 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-sm"
                   >
                     <Star className="h-4 w-4 mr-2" />
-                    {loading ? 'Enviando...' : 'Enviar Calificación'}
+                    {loading ? 'Enviando...' : calificado ? '✓ Calificado' : 'Enviar Calificación'}
                   </button>
                   
                   <button
