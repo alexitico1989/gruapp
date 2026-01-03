@@ -34,6 +34,9 @@ export default function AdminClientes() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     fetchClientes();
@@ -55,6 +58,33 @@ export default function AdminClientes() {
       toast.error('Error al cargar clientes');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEliminar = async (id: string) => {
+    try {
+      setActionLoading(true);
+      const token = localStorage.getItem('adminToken');
+      const response = await axios.delete(
+        `${API_URL}/admin/clientes/${id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        toast.success('Cuenta de cliente eliminada permanentemente');
+        setShowDeleteModal(false);
+        setSelectedCliente(null);
+        fetchClientes();
+      }
+    } catch (error: any) {
+      console.error('Error al eliminar:', error);
+      if (error.response?.data?.serviciosActivos) {
+        toast.error(`No se puede eliminar: tiene ${error.response.data.serviciosActivos} servicios activos`);
+      } else {
+        toast.error(error.response?.data?.message || 'Error al eliminar cliente');
+      }
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -195,12 +225,15 @@ export default function AdminClientes() {
                 <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Último Servicio
                 </th>
+                <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Acciones
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredClientes.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
                     {searchTerm ? 'No se encontraron clientes' : 'No hay clientes registrados'}
                   </td>
                 </tr>
@@ -208,8 +241,7 @@ export default function AdminClientes() {
                 filteredClientes.map((cliente) => (
                   <tr 
                     key={cliente.id} 
-                    onClick={() => navigate(`/admin/clientes/${cliente.id}`)}
-                    className="hover:bg-gray-50 cursor-pointer transition"
+                    className="hover:bg-gray-50 transition"
                   >
                     <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -299,6 +331,32 @@ export default function AdminClientes() {
                         <span className="text-sm text-gray-400">Sin servicios</span>
                       )}
                     </td>
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-end space-x-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/admin/clientes/${cliente.id}`);
+                          }}
+                          className="text-blue-600 hover:text-blue-900"
+                          title="Ver detalle"
+                        >
+                          👁️
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedCliente(cliente);
+                            setShowDeleteModal(true);
+                          }}
+                          disabled={actionLoading}
+                          className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                          title="Eliminar Cuenta"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))
               )}
@@ -317,8 +375,7 @@ export default function AdminClientes() {
           filteredClientes.map((cliente) => (
             <div
               key={cliente.id}
-              onClick={() => navigate(`/admin/clientes/${cliente.id}`)}
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 active:bg-gray-50 transition"
+              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4"
             >
               {/* Header */}
               <div className="flex items-start justify-between mb-3">
@@ -391,7 +448,7 @@ export default function AdminClientes() {
               </div>
 
               {/* Último Servicio */}
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center justify-between text-sm mb-3">
                 <span className="text-gray-500">Último servicio:</span>
                 {cliente.servicios.length > 0 ? (
                   <span className="font-medium text-gray-900">
@@ -402,16 +459,79 @@ export default function AdminClientes() {
                 )}
               </div>
 
-              {/* Ver Detalle Indicator */}
-              <div className="mt-3 pt-3 border-t border-gray-100 text-center">
-                <span className="text-xs text-blue-600 font-medium">
-                  Toca para ver detalle completo →
-                </span>
+              {/* Acciones */}
+              <div className="flex gap-2 pt-3 border-t border-gray-100">
+                <button
+                  onClick={() => navigate(`/admin/clientes/${cliente.id}`)}
+                  className="flex-1 bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-2 rounded-lg text-sm font-medium transition"
+                >
+                  👁️ Ver Detalle
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedCliente(cliente);
+                    setShowDeleteModal(true);
+                  }}
+                  disabled={actionLoading}
+                  className="bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1.5 rounded-lg text-xs font-medium transition disabled:opacity-50"
+                >
+                  🗑️ Eliminar
+                </button>
               </div>
             </div>
           ))
         )}
       </div>
+
+      {/* Modal Eliminar Cuenta */}
+      {showDeleteModal && selectedCliente && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-5 md:p-6">
+            <div className="text-center mb-4">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-4xl">⚠️</span>
+              </div>
+              <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2">
+                ¿Eliminar cuenta permanentemente?
+              </h3>
+              <p className="text-sm text-gray-600 mb-2">
+                {selectedCliente.user.nombre} {selectedCliente.user.apellido}
+              </p>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-left">
+                <p className="text-sm text-red-800 font-semibold mb-2">
+                  ⚠️ Esta acción NO se puede deshacer
+                </p>
+                <ul className="text-xs text-red-700 space-y-1">
+                  <li>✗ Se eliminará el usuario y toda su información</li>
+                  <li>✗ Se eliminarán todos sus servicios históricos</li>
+                  <li>✗ Se eliminarán todas sus calificaciones</li>
+                  <li>✗ No podrá recuperarse la cuenta</li>
+                </ul>
+              </div>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setSelectedCliente(null);
+                }}
+                className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleEliminar(selectedCliente.id)}
+                disabled={actionLoading}
+                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 font-medium"
+              >
+                {actionLoading ? 'Eliminando...' : 'Sí, Eliminar Permanentemente'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

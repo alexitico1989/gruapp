@@ -40,6 +40,7 @@ export default function AdminGrueros() {
   const [filter, setFilter] = useState<'TODOS' | 'PENDIENTE' | 'APROBADO' | 'RECHAZADO'>('PENDIENTE');
   const [selectedGruero, setSelectedGruero] = useState<Gruero | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [motivoRechazo, setMotivoRechazo] = useState('');
   const [motivoSuspension, setMotivoSuspension] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
@@ -176,6 +177,33 @@ export default function AdminGrueros() {
     } catch (error: any) {
       console.error('Error al reactivar:', error);
       toast.error(error.response?.data?.message || 'Error al reactivar gruero');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleEliminar = async (id: string) => {
+    try {
+      setActionLoading(true);
+      const token = localStorage.getItem('adminToken');
+      const response = await axios.delete(
+        `${API_URL}/admin/grueros/${id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        toast.success('Cuenta de gruero eliminada permanentemente');
+        setShowDeleteModal(false);
+        setSelectedGruero(null);
+        fetchGrueros();
+      }
+    } catch (error: any) {
+      console.error('Error al eliminar:', error);
+      if (error.response?.data?.serviciosActivos) {
+        toast.error(`No se puede eliminar: tiene ${error.response.data.serviciosActivos} servicios activos`);
+      } else {
+        toast.error(error.response?.data?.message || 'Error al eliminar gruero');
+      }
     } finally {
       setActionLoading(false);
     }
@@ -398,6 +426,18 @@ export default function AdminGrueros() {
                             🔄
                           </button>
                         )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedGruero(gruero);
+                            setShowDeleteModal(true);
+                          }}
+                          disabled={actionLoading}
+                          className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                          title="Eliminar Cuenta"
+                        >
+                          🗑️
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -472,7 +512,7 @@ export default function AdminGrueros() {
               </div>
 
               {/* Acciones */}
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <button
                   onClick={() => navigate(`/admin/grueros/${gruero.id}`)}
                   className="flex-1 bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-2 rounded-lg text-sm font-medium transition"
@@ -522,13 +562,23 @@ export default function AdminGrueros() {
                     🔄
                   </button>
                 )}
+                <button
+                  onClick={() => {
+                    setSelectedGruero(gruero);
+                    setShowDeleteModal(true);
+                  }}
+                  disabled={actionLoading}
+                  className="bg-red-50 text-red-600 hover:bg-red-100 px-3 py-2 rounded-lg text-sm font-medium transition disabled:opacity-50"
+                >
+                  🗑️ Eliminar
+                </button>
               </div>
             </div>
           ))
         )}
       </div>
 
-      {/* Modal */}
+      {/* Modal Rechazar/Suspender */}
       {showModal && selectedGruero && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-md w-full p-5 md:p-6">
@@ -571,6 +621,55 @@ export default function AdminGrueros() {
                 className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 font-medium"
               >
                 {actionLoading ? 'Procesando...' : 'Confirmar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Eliminar Cuenta */}
+      {showDeleteModal && selectedGruero && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-5 md:p-6">
+            <div className="text-center mb-4">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-4xl">⚠️</span>
+              </div>
+              <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2">
+                ¿Eliminar cuenta permanentemente?
+              </h3>
+              <p className="text-sm text-gray-600 mb-2">
+                {selectedGruero.user.nombre} {selectedGruero.user.apellido}
+              </p>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-left">
+                <p className="text-sm text-red-800 font-semibold mb-2">
+                  ⚠️ Esta acción NO se puede deshacer
+                </p>
+                <ul className="text-xs text-red-700 space-y-1">
+                  <li>✗ Se eliminará el usuario y toda su información</li>
+                  <li>✗ Se eliminarán todos sus servicios históricos</li>
+                  <li>✗ Se eliminarán todas sus calificaciones</li>
+                  <li>✗ No podrá recuperarse la cuenta</li>
+                </ul>
+              </div>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setSelectedGruero(null);
+                }}
+                className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleEliminar(selectedGruero.id)}
+                disabled={actionLoading}
+                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 font-medium"
+              >
+                {actionLoading ? 'Eliminando...' : 'Sí, Eliminar Permanentemente'}
               </button>
             </div>
           </div>

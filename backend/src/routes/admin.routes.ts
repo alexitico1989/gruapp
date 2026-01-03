@@ -144,6 +144,17 @@ router.patch(
 );
 
 /**
+ * DELETE /api/admin/grueros/:id
+ * Eliminar cuenta de un gruero permanentemente
+ */
+router.delete(
+  '/grueros/:id',
+  AuthMiddleware.authenticate,
+  AuthMiddleware.authorize('ADMIN'),
+  AdminController.eliminarGruero
+);
+
+/**
  * GET /api/admin/clientes/:id/servicios
  * Obtener historial de servicios de un cliente
  */
@@ -185,6 +196,17 @@ router.patch(
   AuthMiddleware.authenticate,
   AuthMiddleware.authorize('ADMIN'),
   AdminController.reactivarCliente
+);
+
+/**
+ * DELETE /api/admin/clientes/:id
+ * Eliminar cuenta de un cliente permanentemente
+ */
+router.delete(
+  '/clientes/:id',
+  AuthMiddleware.authenticate,
+  AuthMiddleware.authorize('ADMIN'),
+  AdminController.eliminarCliente
 );
 
 /**
