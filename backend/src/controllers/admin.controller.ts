@@ -2127,11 +2127,6 @@ static async marcarServiciosPagados(req: Request, res: Response): Promise<void> 
         where: { userId: cliente.userId },
       });
 
-      // 3. Reclamos
-      await prisma.reclamo.deleteMany({
-        where: { clienteId: id },
-      });
-
       // 4. Servicios (los completados/cancelados)
       await prisma.servicio.deleteMany({
         where: { clienteId: id },
