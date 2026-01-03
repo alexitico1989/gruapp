@@ -170,8 +170,6 @@ export default function GrueroDashboard() {
     if (savedRastreo === 'true') {
       console.log('♻️ Rastreo GPS recuperado - reiniciando watchPosition');
       setRastreoActivo(true);
-      // NO llamar iniciarRastreo() aquí porque grueroId aún no está cargado
-      // El rastreo se iniciará automáticamente en el useEffect de disponibilidad
     }
   }, []);
 
@@ -206,7 +204,6 @@ export default function GrueroDashboard() {
           console.log('✅ Gruero ID:', grueroData.id);
           setGrueroId(grueroData.id);
           
-          // Recuperar estado de disponibilidad desde sessionStorage si existe
           const savedDisponible = sessionStorage.getItem('grueroDisponible');
           if (savedDisponible !== null) {
             setDisponible(savedDisponible === 'true');
@@ -223,7 +220,6 @@ export default function GrueroDashboard() {
             setUbicacionActual([grueroData.latitud, grueroData.longitud]);
           }
 
-          // Solo mostrar toast de bienvenida si acaba de iniciar sesión
           const justLoggedIn = sessionStorage.getItem('justLoggedIn');
           if (justLoggedIn === 'true') {
             toast.success(`Bienvenido ${grueroData.user.nombre}!`);
@@ -232,7 +228,6 @@ export default function GrueroDashboard() {
         }
       } catch (error: any) {
         console.error('❌ Error obteniendo perfil gruero:', error);
-        console.error('❌ Error response:', error.response?.data);
         toast.error('Error al cargar perfil de gruero');
         setPerfilCargado(true);
       }
@@ -240,22 +235,18 @@ export default function GrueroDashboard() {
 
     initGruero();
 
-    // Usar el socket global del Layout en lugar de crear uno nuevo
     console.log('🔌 [Dashboard] Verificando socket global del Layout');
     
-    // Esperar a que el socket global esté disponible
     const checkSocket = setInterval(() => {
       if (globalSocket) {
         console.log('✅ [Dashboard] Socket global encontrado, configurando listeners');
         clearInterval(checkSocket);
         socketRef.current = globalSocket;
 
-        // Escuchar TODOS los eventos para debugging
         globalSocket.onAny((eventName, ...args) => {
           console.log(`📡 [Dashboard] Evento recibido: ${eventName}`, args);
         });
 
-        // Listener para nueva solicitud de servicio - Mostrar pop-up
         globalSocket.on('gruero:nuevaSolicitud', (data: Servicio) => {
           console.log('🆕 Nueva solicitud recibida:', data);
           setNuevaSolicitud(data);
@@ -263,77 +254,47 @@ export default function GrueroDashboard() {
           cargarServiciosPendientes();
         });
 
-        // IMPORTANTE: El backend emite 'nuevo-servicio' con los datos completos del servicio
         globalSocket.on('nuevo-servicio', (data: any) => {
-          console.log('🆕 Nuevo servicio recibido (evento nuevo-servicio):', data);
-          console.log('🔍 Estructura del servicio:', JSON.stringify(data, null, 2));
-          
-          // El backend envía { servicio: {...}, distancia: X }
-          // Necesitamos extraer el objeto servicio
+          console.log('🆕 Nuevo servicio recibido:', data);
           const servicioData = data.servicio || data;
-          
-          console.log('👤 Cliente:', servicioData.cliente);
-          console.log('💰 Total gruero:', servicioData.totalGruero);
-          console.log('🎯 Abriendo modal de nueva solicitud');
-          
           setNuevaSolicitud(servicioData);
           setShowNuevaSolicitud(true);
           cargarServiciosPendientes();
         });
 
-        // Listener alternativo por si el backend usa otro nombre
         globalSocket.on('nuevoServicio', (data: Servicio) => {
-          console.log('🆕 Nuevo servicio (evento alternativo):', data);
+          console.log('🆕 Nuevo servicio (alternativo):', data);
           setNuevaSolicitud(data);
           setShowNuevaSolicitud(true);
           cargarServiciosPendientes();
         });
 
-        // Otro posible nombre de evento
         globalSocket.on('servicio:nuevo', (data: Servicio) => {
-          console.log('🆕 Servicio nuevo (evento alternativo 2):', data);
+          console.log('🆕 Servicio nuevo (alternativo 2):', data);
           setNuevaSolicitud(data);
           setShowNuevaSolicitud(true);
           cargarServiciosPendientes();
         });
 
-        // NUEVO: Escuchar notificaciones genéricas y abrir modal si es nueva solicitud
         globalSocket.on('nueva-notificacion', async (notificacion: any) => {
-          console.log('🔔 [GrueroDashboard] Nueva notificación recibida:', notificacion);
-          console.log('🔔 Tipo de notificación:', notificacion.tipo);
-          console.log('🔔 Servicio ID:', notificacion.servicioId);
-          console.log('🔔 Datos completos:', notificacion);
+          console.log('🔔 [GrueroDashboard] Nueva notificación:', notificacion);
           
-          // Aceptar NUEVO_SERVICIO o NUEVA_SOLICITUD
           if (notificacion.tipo === 'NUEVA_SOLICITUD' || notificacion.tipo === 'NUEVO_SERVICIO') {
-            console.log('📋 Detectada nueva solicitud de servicio');
-            
-            // Si tiene servicioId, cargar detalles
             if (notificacion.servicioId) {
-              console.log('📋 Cargando detalles del servicio:', notificacion.servicioId);
-              
               try {
                 const response = await api.get(`/servicios/${notificacion.servicioId}`);
-                console.log('📋 Respuesta del servicio:', response.data);
-                
                 if (response.data.success && response.data.data) {
-                  console.log('✅ Servicio cargado exitosamente');
                   setNuevaSolicitud(response.data.data);
                   setShowNuevaSolicitud(true);
                   cargarServiciosPendientes();
                 }
               } catch (error) {
-                console.error('❌ Error cargando detalles del servicio:', error);
+                console.error('❌ Error cargando servicio:', error);
                 cargarServiciosPendientes();
               }
-            } 
-            // Si no tiene servicioId, solo recargar la lista (el modal se abrirá con el listener de 'nuevo-servicio')
-            else {
-              console.log('📋 Sin servicioId, recargando lista de pendientes');
+            } else {
               cargarServiciosPendientes();
             }
-          } else {
-            console.log('ℹ️ Notificación tipo:', notificacion.tipo, '(no es nueva solicitud)');
           }
         });
 
@@ -342,8 +303,8 @@ export default function GrueroDashboard() {
           cargarServicioActivo();
         });
 
-        globalSocket.on('servicio:canceladoNotificacion', (data: { servicioId: string; canceladoPor: string; cliente: any; gruero: any }) => {
-          console.log('🚫 Notificación de cancelación recibida:', data);
+        globalSocket.on('servicio:canceladoNotificacion', (data: { servicioId: string; canceladoPor: string; cliente: any }) => {
+          console.log('🚫 Notificación de cancelación:', data);
           
           if (data.canceladoPor === 'CLIENTE') {
             toast.error(`${data.cliente.nombre} canceló el servicio`, {
@@ -352,7 +313,6 @@ export default function GrueroDashboard() {
             });
           }
           
-          // Cerrar modal si está abierto y el servicio cancelado es el que está en el modal
           if (nuevaSolicitud && nuevaSolicitud.id === data.servicioId) {
             setShowNuevaSolicitud(false);
             setNuevaSolicitud(null);
@@ -360,9 +320,10 @@ export default function GrueroDashboard() {
           
           setServicioActivo(null);
           cargarEstadisticas();
-          cargarServiciosPendientes(); // ← Recargar servicios pendientes para actualizar el panel
+          cargarServiciosPendientes();
         });
 
+        // ✅ CORREGIDO: Listener mejorado
         globalSocket.on('cliente:estadoActualizado', (data: { servicioId: string; status: string }) => {
           console.log('📢 Estado actualizado por cliente:', data);
           
@@ -371,11 +332,45 @@ export default function GrueroDashboard() {
               icon: '🎉',
               duration: 4000,
             });
+            
             setServicioActivo(null);
             cargarEstadisticas();
             cargarServiciosPendientes();
+            
+            if (disponible && grueroId && socketRef.current) {
+              console.log('🔄 Actualizando estado del gruero a DISPONIBLE');
+              socketRef.current.emit('gruero:updateStatus', {
+                grueroId,
+                status: 'DISPONIBLE',
+              });
+            }
           } else {
             cargarServicioActivo();
+          }
+        });
+
+        // ✅ NUEVO: Listener adicional
+        globalSocket.on('servicio-actualizado', (data: any) => {
+          console.log('📢 Servicio actualizado:', data);
+          
+          if (data.nuevoEstado === 'COMPLETADO' || data.servicio?.status === 'COMPLETADO') {
+            console.log('✅ Cliente completó - cerrando panel');
+            
+            toast.success('¡El cliente marcó el servicio como completado!', {
+              icon: '🎉',
+              duration: 4000,
+            });
+            
+            setServicioActivo(null);
+            cargarEstadisticas();
+            cargarServiciosPendientes();
+            
+            if (disponible && grueroId && socketRef.current) {
+              socketRef.current.emit('gruero:updateStatus', {
+                grueroId,
+                status: 'DISPONIBLE',
+              });
+            }
           }
         });
 
@@ -387,7 +382,6 @@ export default function GrueroDashboard() {
 
     return () => {
       clearInterval(checkSocket);
-      // NO desconectar el socket global, solo limpiar listeners
       if (socketRef.current) {
         socketRef.current.off('gruero:nuevaSolicitud');
         socketRef.current.off('nuevoServicio');
@@ -395,22 +389,22 @@ export default function GrueroDashboard() {
         socketRef.current.off('cliente:servicioAceptado');
         socketRef.current.off('servicio:canceladoNotificacion');
         socketRef.current.off('cliente:estadoActualizado');
+        socketRef.current.off('servicio-actualizado'); // ✅ NUEVO
         socketRef.current.off('error');
       }
-      // NO detener rastreo GPS aquí - debe persistir entre cambios de sección
     };
-  }, []);
+  }, [disponible, grueroId]);
 
   useEffect(() => {
     if (grueroId && socketRef.current && user) {
-      console.log('📡 Registrando gruero en Socket para servicios:', grueroId);
+      console.log('📡 Registrando gruero en Socket:', grueroId);
       socketRef.current.emit('gruero:register', {
         grueroId,
         userId: user.id,
       });
 
       socketRef.current.on('gruero:registered', (data) => {
-        console.log('✅ Gruero registrado en Socket:', data);
+        console.log('✅ Gruero registrado:', data);
       });
     }
   }, [grueroId, user]);
@@ -422,19 +416,18 @@ export default function GrueroDashboard() {
     }
 
     if (!grueroId) {
-      console.error('❌ No hay grueroId disponible para rastreo');
-      toast.error('Error: ID de gruero no disponible. Recarga la página.');
+      console.error('❌ No hay grueroId para rastreo');
+      toast.error('Error: ID de gruero no disponible');
       return;
     }
 
-    // Si ya está rastreando, no iniciar de nuevo
     if (gpsWatchId !== null) {
-      console.log('✅ Rastreo GPS ya está activo, no se reinicia');
+      console.log('✅ Rastreo GPS ya activo');
       setRastreoActivo(true);
       return;
     }
 
-    console.log('🌍 Iniciando rastreo GPS para gruero:', grueroId);
+    console.log('🌍 Iniciando rastreo GPS:', grueroId);
     toast.success('Rastreo GPS activado');
     setRastreoActivo(true);
     sessionStorage.setItem('gpsRastreoActivo', 'true');
@@ -471,30 +464,11 @@ export default function GrueroDashboard() {
         console.log('📍 Ubicación actualizada:', latitude, longitude);
         setUbicacionActual(nuevaUbicacion);
         
-        console.log('🔍 Verificando socket:', {
-          socketExists: !!socketRef.current,
-          socketConnected: socketRef.current?.connected,
-          grueroId: grueroId,
-        });
-        
         if (socketRef.current && grueroId) {
-          console.log('📤 Emitiendo gruero:updateLocation con:', {
-            grueroId,
-            lat: latitude,
-            lng: longitude,
-          });
-          
           socketRef.current.emit('gruero:updateLocation', {
             grueroId,
             lat: latitude,
             lng: longitude,
-          });
-          
-          console.log('✅ Evento gruero:updateLocation emitido');
-        } else {
-          console.warn('⚠️ No se puede emitir ubicación:', {
-            noSocket: !socketRef.current,
-            noGrueroId: !grueroId,
           });
         }
       },
@@ -517,7 +491,7 @@ export default function GrueroDashboard() {
       gpsWatchId = null;
       sessionStorage.removeItem('gpsRastreoActivo');
       setRastreoActivo(false);
-      console.log('🛑 Rastreo GPS detenido completamente');
+      console.log('🛑 Rastreo GPS detenido');
       toast.success('Rastreo GPS desactivado');
     }
   };
@@ -529,7 +503,7 @@ export default function GrueroDashboard() {
     }
 
     if (!grueroId) {
-      toast.error('Error: ID de gruero no disponible. Recarga la página.');
+      toast.error('Error: ID de gruero no disponible');
       return;
     }
 
@@ -538,13 +512,11 @@ export default function GrueroDashboard() {
 
     try {
       setLoading(true);
-      console.log('🔄 Actualizando disponibilidad a:', nuevoStatus);
+      console.log('🔄 Actualizando disponibilidad:', nuevoStatus);
       
       const response = await api.patch('/gruero/disponibilidad', {
         status: nuevoStatus,
       });
-
-      console.log('✅ Respuesta disponibilidad:', response.data);
 
       if (response.data.success) {
         setDisponible(nuevoEstado);
@@ -558,7 +530,7 @@ export default function GrueroDashboard() {
         }
 
         if (nuevoEstado) {
-          toast.success('¡Ahora estás disponible para servicios!');
+          toast.success('¡Ahora estás disponible!');
         } else {
           toast.success('Te has puesto fuera de línea');
           detenerRastreo();
@@ -566,23 +538,19 @@ export default function GrueroDashboard() {
       }
     } catch (error: any) {
       console.error('❌ Error al cambiar disponibilidad:', error);
-      console.error('❌ Error response:', error.response?.data);
       toast.error(error.response?.data?.message || 'Error al cambiar disponibilidad');
     } finally {
       setLoading(false);
     }
   };
 
-  // Activar rastreo GPS automáticamente cuando está disponible
   useEffect(() => {
     if (disponible && grueroId) {
-      // Si rastreoActivo es true pero no hay watchId, significa que se recuperó del sessionStorage
-      // y necesitamos reiniciar el watchPosition
       if (rastreoActivo && gpsWatchId === null) {
-        console.log('🌍 Reiniciando rastreo GPS recuperado del sessionStorage');
+        console.log('🌍 Reiniciando rastreo GPS');
         iniciarRastreo();
       } else if (!rastreoActivo) {
-        console.log('🌍 Auto-iniciando rastreo GPS porque el gruero está disponible');
+        console.log('🌍 Auto-iniciando rastreo GPS');
         iniciarRastreo();
       }
     }
@@ -594,23 +562,19 @@ export default function GrueroDashboard() {
       if (response.data.success) {
         const serviciosNuevos = response.data.data;
         
-        // Detectar si hay un servicio nuevo
         if (disponible && serviciosAnteriores.length > 0 && serviciosNuevos.length > 0) {
-          const idsAnteriores = serviciosAnteriores;
-          const nuevoServicio = serviciosNuevos.find((s: Servicio) => !idsAnteriores.includes(s.id));
+          const nuevoServicio = serviciosNuevos.find((s: Servicio) => !serviciosAnteriores.includes(s.id));
           
           if (nuevoServicio && !servicioActivo) {
             console.log('🆕 Nuevo servicio detectado:', nuevoServicio);
             setNuevaSolicitud(nuevoServicio);
             setShowNuevaSolicitud(true);
             
-            // Reproducir sonido de notificación (opcional)
             const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBCxsvNW3jD0JFm+67ueUTAwUYLPn7KNUEgZDnN/vunYbCDmLze6rYhUGP5PY77t2GQk+isvyu3cuCDaGze+qYxQHP5HU8MJ2JQczhM3vr2EVCzGDzPCxbSMGMoLM769iEAYsf8rvrWMRBy1+yu6rYBIJL4DN761gEQsugMvtrWERCi+AzO+tYRIKL4DN761hEg==');
-            audio.play().catch(() => {}); // Ignorar si falla
+            audio.play().catch(() => {});
           }
         }
         
-        // Actualizar lista de IDs anteriores
         setServiciosAnteriores(serviciosNuevos.map((s: Servicio) => s.id));
         setServiciosPendientes(serviciosNuevos);
       }
@@ -665,10 +629,8 @@ export default function GrueroDashboard() {
           });
         }
 
-        // Cerrar pop-up si está abierto
         setShowNuevaSolicitud(false);
         setNuevaSolicitud(null);
-
         cargarServicioActivo();
         cargarServiciosPendientes();
       }
@@ -682,7 +644,6 @@ export default function GrueroDashboard() {
 
   const rechazarServicio = () => {
     if (nuevaSolicitud) {
-      // Remover de la lista de servicios pendientes
       setServiciosPendientes(prev => prev.filter(s => s.id !== nuevaSolicitud.id));
     }
     setShowNuevaSolicitud(false);
@@ -702,10 +663,6 @@ export default function GrueroDashboard() {
         toast.success(`Estado actualizado: ${nuevoEstado}`);
         
         if (socketRef.current && grueroId) {
-          console.log('📤 Emitiendo servicio:estadoActualizado', {
-            servicioId: servicioActivo.id,
-            status: nuevoEstado,
-          });
           socketRef.current.emit('servicio:estadoActualizado', {
             servicioId: servicioActivo.id,
             status: nuevoEstado,
@@ -789,10 +746,9 @@ export default function GrueroDashboard() {
   return (
     <Layout>
       <div className="flex flex-col h-[calc(100vh-64px)]">
-        {/* Panel Superior - Info del Gruero (Compacto) */}
+        {/* Panel Superior */}
         <div className="bg-white border-b border-gray-200 overflow-x-auto">
           <div className="p-3 md:p-4">
-            {/* Contenedor horizontal con scroll */}
             <div className="flex gap-3 md:gap-4 min-w-max">
               {/* Estado de Disponibilidad */}
               <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2d5a8f] rounded-lg p-3 text-white min-w-[200px]">
@@ -875,7 +831,7 @@ export default function GrueroDashboard() {
                   <div className="space-y-1 text-xs">
                     <div>
                       <span className="font-semibold">Cliente:</span>{' '}
-                      {servicioActivo.cliente?.user?.nombre || servicioActivo.cliente?.nombre || 'Cliente'} {servicioActivo.cliente?.user?.apellido || servicioActivo.cliente?.apellido || ''}
+                      {servicio Activo.cliente?.user?.nombre || 'Cliente'} {servicioActivo.cliente?.user?.apellido || ''}
                     </div>
                     <div>
                       <span className="font-semibold">Distancia:</span> {servicioActivo.distanciaKm} km
@@ -884,7 +840,6 @@ export default function GrueroDashboard() {
                       ${servicioActivo.totalGruero.toLocaleString('es-CL')}
                     </div>
                     
-                    {/* Botones de Estado - Compactos */}
                     <div className="flex gap-2 mt-2">
                       {servicioActivo.status === 'ACEPTADO' && (
                         <button
@@ -911,9 +866,9 @@ export default function GrueroDashboard() {
                         </button>
                       )}
                       
-                      {(servicioActivo.cliente?.user?.telefono || servicioActivo.cliente?.telefono) && (
+                      {servicioActivo.cliente?.user?.telefono && (
                         <a 
-                          href={`tel:${servicioActivo.cliente?.user?.telefono || servicioActivo.cliente?.telefono}`}
+                          href={`tel:${servicioActivo.cliente.user.telefono}`}
                           className="bg-orange-600 text-white rounded-lg px-3 py-1.5 text-xs font-semibold flex items-center"
                         >
                           <Phone className="h-3 w-3" />
@@ -931,7 +886,7 @@ export default function GrueroDashboard() {
                 </div>
               )}
 
-              {/* Servicios Disponibles */}
+              {/* Servicios Pendientes */}
               {disponible && !servicioActivo && serviciosPendientes.length > 0 && (
                 <div className="flex gap-3">
                   {serviciosPendientes.map((servicio) => (
@@ -942,7 +897,7 @@ export default function GrueroDashboard() {
                       <div className="flex justify-between items-start mb-2">
                         <div className="text-xs">
                           <p className="font-semibold">
-                            {servicio.cliente?.user?.nombre || servicio.cliente?.nombre || 'Cliente'} {servicio.cliente?.user?.apellido || servicio.cliente?.apellido || ''}
+                            {servicio.cliente?.user?.nombre || 'Cliente'} {servicio.cliente?.user?.apellido || ''}
                           </p>
                           <p className="text-gray-600">{servicio.distanciaKm} km</p>
                         </div>
@@ -974,7 +929,7 @@ export default function GrueroDashboard() {
           </div>
         </div>
 
-        {/* Mapa - Ocupa el resto de la pantalla */}
+        {/* Mapa */}
         <div className="flex-1 relative">
           <MapContainer center={ubicacionActual} zoom={13} className="h-full w-full" scrollWheelZoom={true}>
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
@@ -1012,23 +967,21 @@ export default function GrueroDashboard() {
                       Servicio Disponible
                     </h3>
                     
-                    {/* Cliente - Compacto */}
                     <div className="mb-2 pb-2 border-b border-gray-200">
                       <p className="font-semibold text-gray-900 text-xs">
-                        {servicio.cliente?.user?.nombre || servicio.cliente?.nombre || 'Cliente'} {servicio.cliente?.user?.apellido || servicio.cliente?.apellido || ''}
+                        {servicio.cliente?.user?.nombre || 'Cliente'} {servicio.cliente?.user?.apellido || ''}
                       </p>
-                      {(servicio.cliente?.user?.telefono || servicio.cliente?.telefono) && (
+                      {servicio.cliente?.user?.telefono && (
                         <a 
-                          href={`tel:${servicio.cliente?.user?.telefono || servicio.cliente?.telefono}`}
+                          href={`tel:${servicio.cliente.user.telefono}`}
                           className="text-xs text-blue-600 hover:underline flex items-center"
                         >
                           <Phone className="h-3 w-3 mr-1" />
-                          {servicio.cliente?.user?.telefono || servicio.cliente?.telefono}
+                          {servicio.cliente.user.telefono}
                         </a>
                       )}
                     </div>
 
-                    {/* Direcciones - Compactas */}
                     <div className="mb-2 space-y-1">
                       <div className="flex items-start gap-1">
                         <MapPin className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
@@ -1040,7 +993,6 @@ export default function GrueroDashboard() {
                       </div>
                     </div>
 
-                    {/* Info compacta */}
                     <div className="flex justify-between items-center mb-2 py-1 bg-gray-50 rounded px-2">
                       <div>
                         <p className="text-xs font-semibold text-gray-900">{servicio.distanciaKm} km</p>
@@ -1088,11 +1040,10 @@ export default function GrueroDashboard() {
         </div>
       </div>
 
-      {/* Pop-up Modal de Nueva Solicitud - MÁS COMPACTO */}
+      {/* Modal Nueva Solicitud */}
       {showNuevaSolicitud && nuevaSolicitud && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[9999] p-4 animate-fadeIn">
           <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full transform animate-slideUp">
-            {/* Header - Más compacto */}
             <div className="bg-gradient-to-r from-[#ff7a3d] to-[#ff9d5c] p-4 rounded-t-xl">
               <div className="flex items-center justify-center mb-1">
                 <div className="bg-white rounded-full p-2">
@@ -1107,26 +1058,23 @@ export default function GrueroDashboard() {
               </p>
             </div>
 
-            {/* Contenido - Más compacto */}
             <div className="p-4 space-y-3">
-              {/* Cliente */}
               <div className="bg-blue-50 rounded-lg p-3">
                 <p className="text-xs text-gray-600 mb-1">Cliente</p>
                 <p className="font-bold text-base text-gray-900">
-                  {nuevaSolicitud.cliente?.user?.nombre || nuevaSolicitud.cliente?.nombre || 'Cliente'} {nuevaSolicitud.cliente?.user?.apellido || nuevaSolicitud.cliente?.apellido || ''}
+                  {nuevaSolicitud.cliente?.user?.nombre || 'Cliente'} {nuevaSolicitud.cliente?.user?.apellido || ''}
                 </p>
-                {(nuevaSolicitud.cliente?.user?.telefono || nuevaSolicitud.cliente?.telefono) && (
+                {nuevaSolicitud.cliente?.user?.telefono && (
                   <a 
-                    href={`tel:${nuevaSolicitud.cliente?.user?.telefono || nuevaSolicitud.cliente?.telefono}`}
+                    href={`tel:${nuevaSolicitud.cliente.user.telefono}`}
                     className="text-blue-600 text-xs flex items-center mt-1 hover:underline"
                   >
                     <Phone className="h-3 w-3 mr-1" />
-                    {nuevaSolicitud.cliente?.user?.telefono || nuevaSolicitud.cliente?.telefono}
+                    {nuevaSolicitud.cliente.user.telefono}
                   </a>
                 )}
               </div>
 
-              {/* Origen */}
               <div className="flex items-start space-x-2">
                 <div className="bg-green-100 rounded-full p-1.5 flex-shrink-0">
                   <MapPin className="h-4 w-4 text-green-600" />
@@ -1139,7 +1087,6 @@ export default function GrueroDashboard() {
                 </div>
               </div>
 
-              {/* Destino */}
               <div className="flex items-start space-x-2">
                 <div className="bg-orange-100 rounded-full p-1.5 flex-shrink-0">
                   <Navigation className="h-4 w-4 text-orange-600" />
@@ -1152,7 +1099,6 @@ export default function GrueroDashboard() {
                 </div>
               </div>
 
-              {/* Distancia y Ganancia */}
               <div className="grid grid-cols-2 gap-2">
                 <div className="bg-gray-50 rounded-lg p-2 text-center">
                   <p className="text-xs text-gray-600">Distancia</p>
@@ -1167,7 +1113,6 @@ export default function GrueroDashboard() {
               </div>
             </div>
 
-            {/* Botones - Más compactos */}
             <div className="p-4 pt-0 flex gap-2">
               <button
                 onClick={rechazarServicio}
