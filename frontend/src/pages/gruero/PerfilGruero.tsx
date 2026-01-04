@@ -201,30 +201,33 @@ export default function PerfilGruero() {
   };
 
   const handleUpdateVehiculo = async () => {
-    // Validar que haya al menos un tipo seleccionado
-    if (formVehiculo.tiposVehiculosAtiende.length === 0) {
-      toast.error('Debes seleccionar al menos un tipo de vehículo');
-      return;
-    }
+  // Validar que haya al menos un tipo seleccionado
+  if (formVehiculo.tiposVehiculosAtiende.length === 0) {
+    toast.error('Debes seleccionar al menos un tipo de vehículo');
+    return;
+  }
 
-    try {
-      const response = await api.patch('/gruero/vehiculo', {
-        ...formVehiculo,
-        anio: parseInt(formVehiculo.anio),
-        capacidadToneladas: parseFloat(formVehiculo.capacidadToneladas),
-        tiposVehiculosAtiende: formVehiculo.tiposVehiculosAtiende, // Enviar como array
-      });
-      
-      if (response.data.success) {
-        toast.success('Información del vehículo actualizada');
-        setEditandoVehiculo(false);
-        cargarDatos();
-      }
-    } catch (error: any) {
-      console.error('Error actualizando vehículo:', error);
-      toast.error(error.response?.data?.message || 'Error al actualizar vehículo');
+  try {
+    const response = await api.patch('/gruero/vehiculo', {
+      patente: formVehiculo.patente,
+      marca: formVehiculo.marca,
+      modelo: formVehiculo.modelo,
+      anio: parseInt(formVehiculo.anio),
+      capacidadToneladas: parseFloat(formVehiculo.capacidadToneladas),
+      tipoGrua: formVehiculo.tipoGrua,
+      tiposVehiculosAtiende: formVehiculo.tiposVehiculosAtiende, // Ya es un array
+    });
+    
+    if (response.data.success) {
+      toast.success('Información del vehículo actualizada');
+      setEditandoVehiculo(false);
+      cargarDatos();
     }
-  };
+  } catch (error: any) {
+    console.error('Error actualizando vehículo:', error);
+    toast.error(error.response?.data?.message || 'Error al actualizar vehículo');
+  }
+};
 
   const handleUploadFotoGruero = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
