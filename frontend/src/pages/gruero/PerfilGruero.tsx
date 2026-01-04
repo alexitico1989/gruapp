@@ -95,15 +95,15 @@ export default function PerfilGruero() {
   const [showEliminarCuenta, setShowEliminarCuenta] = useState(false);
   const [passwordEliminar, setPasswordEliminar] = useState('');
 
-  // Tipos de vehículos - EXACTAMENTE IGUALES al ClienteDashboard
+  // Tipos de vehículos - NOMBRES REALES DE LA BASE DE DATOS
   const TIPOS_VEHICULOS = [
     { value: 'AUTOMOVIL', label: 'Automóvil', icon: '🚗' },
-    { value: 'CAMIONETA', label: 'SUV/Camioneta', icon: '🚙' },
+    { value: 'SUV', label: 'SUV/Camioneta', icon: '🚙' },
     { value: 'MOTO', label: 'Moto', icon: '🏍️' },
-    { value: 'FURGONETA', label: 'Furgón', icon: '🚐' },
-    { value: 'LIVIANO', label: 'Camión Liviano', icon: '🚚' },
-    { value: 'MEDIANO', label: 'Camión Mediano', icon: '🚛' },
-    { value: 'PESADO', label: 'Camión Pesado', icon: '🚜' },
+    { value: 'FURGON', label: 'Furgón', icon: '🚐' },
+    { value: 'CAMION_LIVIANO', label: 'Camión Liviano', icon: '🚚' },
+    { value: 'CAMION_MEDIANO', label: 'Camión Mediano', icon: '🚛' },
+    { value: 'CAMION_PESADO', label: 'Camión Pesado', icon: '🚜' },
     { value: 'BUS', label: 'Bus', icon: '🚌' },
     { value: 'MAQUINARIA', label: 'Maquinaria', icon: '🏗️' },
   ];
@@ -819,7 +819,7 @@ export default function PerfilGruero() {
                     />
                   </div>
 
-                  {/* Selector de Tipos de Vehículos - ACTUALIZADO */}
+                  {/* Selector de Tipos de Vehículos - ACTUALIZADO CON NOMBRES REALES DE BD */}
                   <div className="md:col-span-2">
                     <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-3">
                       Tipos de Vehículos que Atiende <span className="text-red-500">*</span>
