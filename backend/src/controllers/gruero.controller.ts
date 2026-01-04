@@ -622,43 +622,49 @@ export class GrueroController {
    * Subir documentos del gruero (método antiguo - mantener por compatibilidad)
    */
   static async uploadDocumentos(req: Request, res: Response) {
-    try {
-      const userId = req.user?.userId;
-      const { licenciaConducir, seguroVigente, revisionTecnica } = req.body;
-      
-      const gruero = await prisma.gruero.findUnique({
-        where: { userId },
-      });
-      
-      if (!gruero) {
-        return res.status(404).json({
-          success: false,
-          message: 'Perfil de gruero no encontrado',
-        });
-      }
-      
-      const grueroActualizado = await prisma.gruero.update({
-        where: { id: gruero.id },
-        data: {
-          ...(licenciaConducir && { licenciaConducir }),
-          ...(seguroVigente && { seguroVigente }),
-          ...(revisionTecnica && { revisionTecnica }),
-        },
-      });
-      
-      return res.status(200).json({
-        success: true,
-        message: 'Documentos actualizados',
-        data: grueroActualizado,
-      });
-    } catch (error: any) {
-      return res.status(500).json({
+  try {
+    const userId = req.user?.userId;
+    const { licenciaConducir, seguroVigente, revisionTecnica } = req.body;
+
+    const gruero = await prisma.gruero.findUnique({
+      where: { userId },
+    });
+
+    if (!gruero) {
+      return res.status(404).json({
         success: false,
-        message: 'Error al subir documentos',
-        error: error.message,
+        message: 'Perfil de gruero no encontrado',
       });
     }
+
+    const grueroActualizado = await prisma.gruero.update({
+      where: { id: gruero.id },
+      data: {
+        ...(licenciaConducir && { licenciaConducir }),
+        ...(seguroVigente && { seguroVigente }),
+        ...(revisionTecnica && { revisionTecnica }),
+
+        // 🔥 RESET DE VERIFICACIÓN
+        estadoVerificacion: 'PENDIENTE',
+        motivoRechazo: null,
+        verificado: false,
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Documentos actualizados y enviados a revisión',
+      data: grueroActualizado,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: 'Error al subir documentos',
+      error: error.message,
+    });
   }
+}
+
 
   /**
    * Subir foto del gruero
@@ -819,8 +825,16 @@ export class GrueroController {
       // Actualizar documento
       const grueroActualizado = await prisma.gruero.update({
         where: { id: gruero.id },
-        data: updateData,
+        data: {
+          ...updateData,
+
+          // 🔥 RESET DE VERIFICACIÓN AL SUBIR DOCUMENTO
+          estadoVerificacion: 'PENDIENTE',
+          motivoRechazo: null,
+          verificado: false,
+        },
       });
+
 
       // Verificar vencimientos
       const hoy = new Date();
