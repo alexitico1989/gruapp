@@ -150,7 +150,8 @@ export class GrueroController {
           });
         }
 
-        const tiposValidos = ['AUTOMOVIL', 'CAMIONETA', 'MEDIANO', 'PESADO', 'MOTO', 'BUS', 'MAQUINARIA'];
+        // Tipos válidos - EXACTAMENTE IGUALES al ClienteDashboard y PerfilGruero
+        const tiposValidos = ['AUTOMOVIL', 'CAMIONETA', 'MOTO', 'FURGONETA', 'LIVIANO', 'MEDIANO', 'PESADO', 'BUS', 'MAQUINARIA'];
         const tiposInvalidos = tiposVehiculosAtiende.filter(tipo => !tiposValidos.includes(tipo));
         
         if (tiposInvalidos.length > 0) {

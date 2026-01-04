@@ -95,15 +95,17 @@ export default function PerfilGruero() {
   const [showEliminarCuenta, setShowEliminarCuenta] = useState(false);
   const [passwordEliminar, setPasswordEliminar] = useState('');
 
-  // Tipos de vehículos disponibles
+  // Tipos de vehículos - EXACTAMENTE IGUALES al ClienteDashboard
   const TIPOS_VEHICULOS = [
     { value: 'AUTOMOVIL', label: 'Automóvil', icon: '🚗' },
-    { value: 'CAMIONETA', label: 'Camioneta', icon: '🚙' },
-    { value: 'MEDIANO', label: 'Vehículo Mediano', icon: '🚚' },
-    { value: 'PESADO', label: 'Vehículo Pesado', icon: '🚛' },
-    { value: 'MOTO', label: 'Motocicleta', icon: '🏍️' },
+    { value: 'CAMIONETA', label: 'SUV/Camioneta', icon: '🚙' },
+    { value: 'MOTO', label: 'Moto', icon: '🏍️' },
+    { value: 'FURGONETA', label: 'Furgón', icon: '🚐' },
+    { value: 'LIVIANO', label: 'Camión Liviano', icon: '🚚' },
+    { value: 'MEDIANO', label: 'Camión Mediano', icon: '🚛' },
+    { value: 'PESADO', label: 'Camión Pesado', icon: '🚜' },
     { value: 'BUS', label: 'Bus', icon: '🚌' },
-    { value: 'MAQUINARIA', label: 'Maquinaria', icon: '🚜' },
+    { value: 'MAQUINARIA', label: 'Maquinaria', icon: '🏗️' },
   ];
 
   const toggleTipoVehiculo = (tipo: string) => {
@@ -201,33 +203,44 @@ export default function PerfilGruero() {
   };
 
   const handleUpdateVehiculo = async () => {
-  // Validar que haya al menos un tipo seleccionado
-  if (formVehiculo.tiposVehiculosAtiende.length === 0) {
-    toast.error('Debes seleccionar al menos un tipo de vehículo');
-    return;
-  }
-
-  try {
-    const response = await api.patch('/gruero/vehiculo', {
-      patente: formVehiculo.patente,
-      marca: formVehiculo.marca,
-      modelo: formVehiculo.modelo,
-      anio: parseInt(formVehiculo.anio),
-      capacidadToneladas: parseFloat(formVehiculo.capacidadToneladas),
-      tipoGrua: formVehiculo.tipoGrua,
-      tiposVehiculosAtiende: formVehiculo.tiposVehiculosAtiende, // Ya es un array
-    });
-    
-    if (response.data.success) {
-      toast.success('Información del vehículo actualizada');
-      setEditandoVehiculo(false);
-      cargarDatos();
+    // Validar que haya al menos un tipo seleccionado
+    if (!formVehiculo.tiposVehiculosAtiende || formVehiculo.tiposVehiculosAtiende.length === 0) {
+      toast.error('Debes seleccionar al menos un tipo de vehículo');
+      return;
     }
-  } catch (error: any) {
-    console.error('Error actualizando vehículo:', error);
-    toast.error(error.response?.data?.message || 'Error al actualizar vehículo');
-  }
-};
+
+    try {
+      const payload = {
+        patente: formVehiculo.patente,
+        marca: formVehiculo.marca,
+        modelo: formVehiculo.modelo,
+        anio: parseInt(formVehiculo.anio),
+        capacidadToneladas: parseFloat(formVehiculo.capacidadToneladas),
+        tipoGrua: formVehiculo.tipoGrua || '',
+        tiposVehiculosAtiende: formVehiculo.tiposVehiculosAtiende,
+      };
+
+      console.log('📤 PAYLOAD ENVIADO:', payload);
+      console.log('📤 tiposVehiculosAtiende:', {
+        value: payload.tiposVehiculosAtiende,
+        type: typeof payload.tiposVehiculosAtiende,
+        isArray: Array.isArray(payload.tiposVehiculosAtiende)
+      });
+
+      const response = await api.patch('/gruero/vehiculo', payload);
+      
+      if (response.data.success) {
+        toast.success('Información del vehículo actualizada');
+        setEditandoVehiculo(false);
+        cargarDatos();
+      }
+    } catch (error: any) {
+      console.error('❌ Error actualizando vehículo:', error);
+      console.error('❌ Response completo:', error.response);
+      console.error('❌ Response data:', error.response?.data);
+      toast.error(error.response?.data?.message || 'Error al actualizar vehículo');
+    }
+  };
 
   const handleUploadFotoGruero = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -806,7 +819,7 @@ export default function PerfilGruero() {
                     />
                   </div>
 
-                  {/* Selector de Tipos de Vehículos */}
+                  {/* Selector de Tipos de Vehículos - ACTUALIZADO */}
                   <div className="md:col-span-2">
                     <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-3">
                       Tipos de Vehículos que Atiende <span className="text-red-500">*</span>
@@ -856,7 +869,7 @@ export default function PerfilGruero() {
                     <p className="font-semibold text-sm md:text-base">{grueroData.capacidadToneladas} toneladas</p>
                   </div>
 
-                  {/* Mostrar Tipos de Vehículos que Atiende */}
+                  {/* Mostrar Tipos de Vehículos que Atiende - ACTUALIZADO */}
                   <div className="col-span-2 md:col-span-3">
                     <p className="text-xs text-gray-500 mb-2">Tipos de Vehículos que Atiende</p>
                     <div className="flex flex-wrap gap-2">
