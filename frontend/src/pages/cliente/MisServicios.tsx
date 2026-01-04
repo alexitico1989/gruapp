@@ -112,10 +112,10 @@ export default function MisServicios() {
       });
       
       if (response.data.success) {
-        const { sandboxInitPoint } = response.data.data;
+        const { initPoint } = response.data.data;
         
         // Redirigir a Mercado Pago
-        window.location.href = sandboxInitPoint;
+        window.location.href = initPoint;
       }
     } catch (error: any) {
       console.error('Error al crear preferencia:', error);

@@ -88,8 +88,8 @@ export default function RatingModal({
       });
       
       if (response.data.success) {
-        const { sandboxInitPoint } = response.data.data;
-        window.location.href = sandboxInitPoint;
+        const { initPoint } = response.data.data;
+        window.location.href = initPoint;
       }
     } catch (error: any) {
       console.error('Error al crear preferencia:', error);
