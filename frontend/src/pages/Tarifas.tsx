@@ -5,8 +5,18 @@ import Footer from '../components/Footer';
 
 export default function Tarifas() {
   const [kilometros, setKilometros] = useState(10);
-  const tarifaBase = 25000;
-  const precioPorKm = 1350;
+  const [tipoVehiculo, setTipoVehiculo] = useState<'liviano' | 'pesado'>('liviano');
+  
+  // Tarifas según tipo de vehículo
+  const tarifaBaseLiviano = 25000;
+  const precioPorKmLiviano = 1350;
+  
+  const tarifaBasePesado = 60000;
+  const precioPorKmPesado = 1850;
+  
+  // Calcular según tipo seleccionado
+  const tarifaBase = tipoVehiculo === 'liviano' ? tarifaBaseLiviano : tarifaBasePesado;
+  const precioPorKm = tipoVehiculo === 'liviano' ? precioPorKmLiviano : precioPorKmPesado;
   const total = tarifaBase + (kilometros * precioPorKm);
 
   return (
@@ -35,12 +45,50 @@ export default function Tarifas() {
               <h3 className="text-2xl md:text-3xl font-bold text-[#1e3a5f] mb-6 md:mb-8">Calculadora de Tarifa</h3>
               
               <div className="space-y-6">
+                {/* Selector de Tipo de Vehículo */}
+                <div>
+                  <label className="block text-base md:text-lg font-semibold text-[#1e3a5f] mb-4">
+                    Tipo de Vehículo
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => setTipoVehiculo('liviano')}
+                      className={`p-4 rounded-xl border-2 transition-all ${
+                        tipoVehiculo === 'liviano'
+                          ? 'border-[#ff7a3d] bg-orange-50 text-[#ff7a3d]'
+                          : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
+                      }`}
+                    >
+                      <div className="text-2xl mb-2"></div>
+                      <div className="font-bold text-sm">Livianos</div>
+                      <div className="text-xs mt-1 opacity-75">Autos, SUV, Motos</div>
+                    </button>
+                    
+                    <button
+                      onClick={() => setTipoVehiculo('pesado')}
+                      className={`p-4 rounded-xl border-2 transition-all ${
+                        tipoVehiculo === 'pesado'
+                          ? 'border-[#ff7a3d] bg-orange-50 text-[#ff7a3d]'
+                          : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
+                      }`}
+                    >
+                      <div className="text-2xl mb-2"></div>
+                      <div className="font-bold text-sm">Pesados</div>
+                      <div className="text-xs mt-1 opacity-75">Camiones, Buses</div>
+                    </button>
+                  </div>
+                </div>
+
                 <div>
                   <div className="flex justify-between items-center mb-4">
                     <span className="text-base md:text-lg font-semibold text-[#1e3a5f]">Tarifa Base</span>
                     <span className="text-xl md:text-2xl font-bold text-[#ff7a3d]">${tarifaBase.toLocaleString('es-CL')}</span>
                   </div>
-                  <p className="text-gray-600 text-sm">Tarifa base a pagar por solicitar servicio</p>
+                  <p className="text-gray-600 text-sm">
+                    {tipoVehiculo === 'liviano' 
+                      ? 'Tarifa base para vehículos livianos' 
+                      : 'Tarifa base para vehículos pesados'}
+                  </p>
                 </div>
 
                 <div className="border-t border-gray-200 pt-6">
@@ -74,7 +122,7 @@ export default function Tarifas() {
                   <h4 className="font-bold text-[#1e3a5f] mb-4">Cálculo de tu Servicio:</h4>
                   <div className="space-y-2 text-sm md:text-base text-gray-700">
                     <div className="flex justify-between">
-                      <span>Tarifa base:</span>
+                      <span>Tarifa base ({tipoVehiculo === 'liviano' ? 'Liviano' : 'Pesado'}):</span>
                       <span>${tarifaBase.toLocaleString('es-CL')}</span>
                     </div>
                     <div className="flex justify-between">
@@ -152,7 +200,37 @@ export default function Tarifas() {
                 </div>
               </div>
 
-              <div className="mt-6 md:mt-8 bg-[#ff7a3d] bg-opacity-10 border-2 border-[#ff7a3d] rounded-xl p-4 md:p-6">
+              {/* Tabla de Tarifas */}
+              <div className="mt-6 md:mt-8 bg-white border-2 border-gray-200 rounded-xl overflow-hidden">
+                <div className="bg-[#1e3a5f] text-white p-4">
+                  <h4 className="font-bold text-center">Tabla de Tarifas</h4>
+                </div>
+                <div className="divide-y divide-gray-200">
+                  <div className="grid grid-cols-3 gap-2 p-3 bg-gray-50 font-semibold text-xs md:text-sm">
+                    <div>Tipo</div>
+                    <div className="text-center">Base</div>
+                    <div className="text-center">Por km</div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 p-3 text-xs md:text-sm">
+                    <div className="flex items-center gap-2">
+
+                      <span className="font-medium">Livianos</span>
+                    </div>
+                    <div className="text-center font-bold text-[#ff7a3d]">${tarifaBaseLiviano.toLocaleString('es-CL')}</div>
+                    <div className="text-center font-bold text-[#ff7a3d]">${precioPorKmLiviano.toLocaleString('es-CL')}</div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 p-3 text-xs md:text-sm bg-orange-50">
+                    <div className="flex items-center gap-2">
+        
+                      <span className="font-medium">Pesados</span>
+                    </div>
+                    <div className="text-center font-bold text-[#ff7a3d]">${tarifaBasePesado.toLocaleString('es-CL')}</div>
+                    <div className="text-center font-bold text-[#ff7a3d]">${precioPorKmPesado.toLocaleString('es-CL')}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 bg-[#ff7a3d] bg-opacity-10 border-2 border-[#ff7a3d] rounded-xl p-4 md:p-6">
                 <p className="text-[#1e3a5f] font-semibold text-center text-sm md:text-base">
                   💡 Los precios se calculan automáticamente según la distancia real del servicio
                 </p>
@@ -171,7 +249,14 @@ export default function Tarifas() {
             <div className="bg-white rounded-xl p-5 md:p-6 shadow-sm">
               <h3 className="text-lg md:text-xl font-bold text-[#1e3a5f] mb-3">¿Cómo se calcula la tarifa final?</h3>
               <p className="text-sm md:text-base text-gray-600">
-                La tarifa se calcula sumando la tarifa base de $25.000 más $1.350 por cada kilómetro recorrido, medido por GPS.
+                La tarifa depende del tipo de vehículo. Para livianos: $25.000 base + $1.350/km. Para pesados: $60.000 base + $1.850/km, medido por GPS.
+              </p>
+            </div>
+
+            <div className="bg-white rounded-xl p-5 md:p-6 shadow-sm">
+              <h3 className="text-lg md:text-xl font-bold text-[#1e3a5f] mb-3">¿Qué vehículos son considerados pesados?</h3>
+              <p className="text-sm md:text-base text-gray-600">
+                Camiones medianos y pesados, buses y maquinaria. Los autos, SUV, motos y furgones son considerados livianos.
               </p>
             </div>
 
@@ -193,6 +278,13 @@ export default function Tarifas() {
               <h3 className="text-lg md:text-xl font-bold text-[#1e3a5f] mb-3">¿Puedo cancelar mi solicitud?</h3>
               <p className="text-sm md:text-base text-gray-600">
                 Sí, puedes cancelar antes de que el gruero acepte el servicio sin ningún cargo.
+              </p>
+            </div>
+
+            <div className="bg-white rounded-xl p-5 md:p-6 shadow-sm">
+              <h3 className="text-lg md:text-xl font-bold text-[#1e3a5f] mb-3">¿El tipo de vehículo afecta el precio?</h3>
+              <p className="text-sm md:text-base text-gray-600">
+                Sí, los vehículos pesados tienen una tarifa mayor debido al mayor esfuerzo y equipamiento especializado requerido.
               </p>
             </div>
           </div>
