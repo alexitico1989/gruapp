@@ -410,31 +410,20 @@ export const setupSocketHandlers = (io: Server) => {
     /**
      * Desconexión
      */
-    socket.on('disconnect', async () => {  // ← AGREGAR async aquí
+    socket.on('disconnect', () => {
       const grueroId = socket.data.grueroId;
 
       if (grueroId) {
         gruerosSockets.delete(grueroId);
         console.log(`🔴 Gruero desconectado: ${grueroId}`);
 
-        try {
-          await prisma.gruero.update({
-            where: { id: grueroId },
-            data: { status: 'OFFLINE' },
-          });
-          console.log(`✅ Estado actualizado a OFFLINE: ${grueroId}`);  // ← Comillas corregidas
-        } catch (error) {
-          console.error('❌ Error actualizando estado a OFFLINE:', error);
-        }
-
         // Notificar desconexión
         io.emit('gruero:desconectado', { grueroId });
-        io.emit('gruero:statusUpdated', { grueroId, status: 'OFFLINE' });
       } else {
         console.log('🔴 Cliente desconectado:', socket.id);
       }
     });
-  });  // ← ESTE cierre estaba faltando (cierra el io.on('connection'))
+  });
 
   console.log('✅ Socket.IO handlers configurados');
 };
