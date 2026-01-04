@@ -6,10 +6,22 @@ import PDFGenerator from '../utils/pdf-generator';
 
 const prisma = new PrismaClient();
 
-// Configurar Mercado Pago
+// Configurar Mercado Pago con credenciales de PRODUCCIÓN
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN || '',
+  options: {
+    timeout: 5000,
+  }
 });
+
+// Verificar que las credenciales estén configuradas
+if (!process.env.MP_ACCESS_TOKEN) {
+  console.error('⚠️ WARNING: MP_ACCESS_TOKEN no está configurado');
+}
+
+console.log('✅ Mercado Pago configurado en modo:', 
+  process.env.MP_ACCESS_TOKEN?.includes('TEST') ? 'SANDBOX' : 'PRODUCCIÓN'
+);
 
 export class PagoController {
   /**
@@ -96,27 +108,40 @@ export class PagoController {
         items: [
           {
             id: servicio.id,
-            title: 'Servicio de Grua',
-            description: 'Servicio de grua',
+            title: `Servicio de Grúa - GruApp`,
+            description: `Servicio de grúa desde ${servicio.origenDireccion} hasta ${servicio.destinoDireccion}`,
             quantity: 1,
             unit_price: Number(servicio.totalCliente),
             currency_id: 'CLP',
           },
         ],
+        payer: {
+          name: servicio.cliente.user.nombre,
+          surname: servicio.cliente.user.apellido,
+          email: servicio.cliente.user.email,
+        },
         back_urls: {
           success: `${process.env.FRONTEND_URL}/cliente/servicios?payment=success&servicioId=${servicioId}`,
           failure: `${process.env.FRONTEND_URL}/cliente/servicios?payment=failure&servicioId=${servicioId}`,
           pending: `${process.env.FRONTEND_URL}/cliente/servicios?payment=pending&servicioId=${servicioId}`,
         },
+        auto_return: 'approved' as any,
         notification_url: `${process.env.BACKEND_URL}/api/pagos/webhook`,
         external_reference: servicioId,
+        statement_descriptor: 'GRUAPP',
+        expires: true,
+        expiration_date_from: new Date().toISOString(),
+        expiration_date_to: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 horas
       };
 
-      console.log('📝 Creando preferencia MP:', JSON.stringify(body, null, 2));
+      console.log('📝 Creando preferencia MP para servicio:', servicioId);
+      console.log('💰 Monto:', servicio.totalCliente.toLocaleString('es-CL'));
+      console.log('🔗 Webhook URL:', body.notification_url);
 
       const result = await preference.create({ body });
 
       console.log('✅ Preferencia creada:', result.id);
+      console.log('🔗 Init Point:', result.init_point);
 
       // Guardar el ID de preferencia en el servicio
       await prisma.servicio.update({
@@ -130,12 +155,12 @@ export class PagoController {
         success: true,
         data: {
           preferenceId: result.id,
-          initPoint: result.init_point,
-          sandboxInitPoint: result.sandbox_init_point,
+          initPoint: result.init_point, // URL de PRODUCCIÓN
         },
       });
     } catch (error: any) {
       console.error('❌ Error al crear preferencia:', error);
+      console.error('❌ Detalles:', error.message);
       return res.status(500).json({
         success: false,
         message: 'Error al crear preferencia de pago',
@@ -153,8 +178,10 @@ export class PagoController {
       const { type, data } = req.body;
 
       console.log('📨 Webhook recibido:', { type, data });
+      console.log('📨 Headers:', req.headers);
+      console.log('📨 Body completo:', JSON.stringify(req.body, null, 2));
 
-      // Responder inmediatamente a MP (importante)
+      // Responder inmediatamente a MP (importante para evitar reintentos)
       res.sendStatus(200);
 
       // Solo procesamos notificaciones de pago
@@ -163,14 +190,28 @@ export class PagoController {
         return;
       }
 
+      // Validación adicional: verificar que tenemos el ID del pago
+      if (!data || !data.id) {
+        console.error('❌ Webhook sin ID de pago');
+        return;
+      }
+
       // Crear instancia de Payment
       const paymentClient = new Payment(client);
 
       // Obtener información del pago
       const paymentId = data.id;
+      console.log('🔍 Consultando pago:', paymentId);
+
       const paymentInfo = await paymentClient.get({ id: paymentId });
 
-      console.log('💳 Información del pago:', paymentInfo);
+      console.log('💳 Información del pago:', {
+        id: paymentInfo.id,
+        status: paymentInfo.status,
+        status_detail: paymentInfo.status_detail,
+        amount: paymentInfo.transaction_amount,
+        external_reference: paymentInfo.external_reference,
+      });
 
       // Extraer servicioId del external_reference
       const servicioId = paymentInfo.external_reference;
@@ -182,6 +223,8 @@ export class PagoController {
 
       // Actualizar servicio según el estado del pago
       if (paymentInfo.status === 'approved') {
+        console.log('✅ Pago APROBADO para servicio:', servicioId);
+
         await prisma.servicio.update({
           where: { id: servicioId },
           data: {
@@ -215,11 +258,13 @@ export class PagoController {
             data: {
               userId: servicio.cliente.userId,
               tipo: 'PAGO_CONFIRMADO',
-              titulo: 'Pago confirmado',
+              titulo: '✅ Pago confirmado',
               mensaje: `Tu pago de $${servicio.totalCliente.toLocaleString('es-CL')} ha sido confirmado exitosamente.`,
               referencia: servicioId,
             },
           });
+
+          console.log('✅ Notificación de pago enviada al cliente');
 
           // Notificación para el GRUERO
           if (servicio.gruero) {
@@ -227,7 +272,7 @@ export class PagoController {
               data: {
                 userId: servicio.gruero.userId,
                 tipo: 'PAGO_RECIBIDO',
-                titulo: 'Pago recibido',
+                titulo: '💰 Pago recibido',
                 mensaje: `Has recibido $${servicio.totalGruero.toLocaleString('es-CL')} por el servicio completado.`,
                 referencia: servicioId,
               },
@@ -237,6 +282,8 @@ export class PagoController {
 
           // 📧 GENERAR PDF Y ENVIAR EMAILS
           try {
+            console.log('📄 Generando comprobante PDF...');
+
             // Generar comprobante PDF
             const pdfBuffer = await PDFGenerator.generarComprobantePago({
               servicioId: servicio.id,
@@ -308,9 +355,11 @@ export class PagoController {
             // No fallar el webhook si los emails fallan
           }
 
-          console.log('✅ Pago confirmado para servicio:', servicioId);
+          console.log('✅ Pago procesado completamente para servicio:', servicioId);
         }
       } else if (paymentInfo.status === 'rejected') {
+        console.log('❌ Pago RECHAZADO para servicio:', servicioId);
+
         // Crear notificación de pago rechazado
         const servicio = await prisma.servicio.findUnique({
           where: { id: servicioId },
@@ -328,17 +377,43 @@ export class PagoController {
             data: {
               userId: servicio.cliente.userId,
               tipo: 'PAGO_RECHAZADO',
-              titulo: 'Pago rechazado',
-              mensaje: 'Tu pago fue rechazado. Por favor, intenta con otro método de pago.',
+              titulo: '❌ Pago rechazado',
+              mensaje: `Tu pago fue rechazado. Razón: ${paymentInfo.status_detail}. Por favor, intenta con otro método de pago.`,
               referencia: servicioId,
             },
           });
 
           console.log('❌ Pago rechazado para servicio:', servicioId);
         }
+      } else if (paymentInfo.status === 'pending') {
+        console.log('⏳ Pago PENDIENTE para servicio:', servicioId);
+
+        const servicio = await prisma.servicio.findUnique({
+          where: { id: servicioId },
+          include: { 
+            cliente: {
+              include: {
+                user: true,
+              }
+            }
+          },
+        });
+
+        if (servicio) {
+          await prisma.notificacion.create({
+            data: {
+              userId: servicio.cliente.userId,
+              tipo: 'PAGO_PENDIENTE',
+              titulo: '⏳ Pago pendiente',
+              mensaje: 'Tu pago está siendo procesado. Te notificaremos cuando se confirme.',
+              referencia: servicioId,
+            },
+          });
+        }
       }
     } catch (error: any) {
       console.error('❌ Error en webhook:', error);
+      console.error('❌ Stack:', error.stack);
       // NO retornar error a MP, ya respondimos con 200
     }
   }
