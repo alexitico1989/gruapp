@@ -11,7 +11,7 @@ export default function Tarifas() {
   const tarifaBaseLiviano = 25000;
   const precioPorKmLiviano = 1350;
   
-  const tarifaBasePesado = 60000;
+  const tarifaBasePesado = 80000;
   const precioPorKmPesado = 1850;
   
   // Calcular según tipo seleccionado
@@ -249,7 +249,7 @@ export default function Tarifas() {
             <div className="bg-white rounded-xl p-5 md:p-6 shadow-sm">
               <h3 className="text-lg md:text-xl font-bold text-[#1e3a5f] mb-3">¿Cómo se calcula la tarifa final?</h3>
               <p className="text-sm md:text-base text-gray-600">
-                La tarifa depende del tipo de vehículo. Para livianos: $25.000 base + $1.350/km. Para pesados: $60.000 base + $1.850/km, medido por GPS.
+                La tarifa depende del tipo de vehículo. Para livianos: $25.000 base + $1.350/km. Para pesados: $80.000 base + $1.850/km, medido por GPS.
               </p>
             </div>
 
