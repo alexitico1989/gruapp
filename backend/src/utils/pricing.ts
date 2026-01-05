@@ -3,7 +3,7 @@ import { PricingCalculation } from '../types';
 
 export class PricingService {
   // Tarifas para vehículos PESADOS (sobrescriben las del config)
-  private static readonly TARIFA_BASE_PESADO = 60000;
+  private static readonly TARIFA_BASE_PESADO = 80000;
   private static readonly TARIFA_POR_KM_PESADO = 1850;
 
   /**
