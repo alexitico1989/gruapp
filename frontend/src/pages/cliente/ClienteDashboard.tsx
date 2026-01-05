@@ -384,7 +384,7 @@ export default function ClienteDashboard() {
     const vehiculoSeleccionado = tiposVehiculos.find(v => v.id === tipoGrua);
     const esPesado = vehiculoSeleccionado?.pesado || false;
     
-    const tarifaBase = esPesado ? 60000 : 25000;
+    const tarifaBase = esPesado ? 80000 : 25000;
     const tarifaPorKm = esPesado ? 1850 : 1350;
     
     const total = tarifaBase + (distancia * tarifaPorKm);

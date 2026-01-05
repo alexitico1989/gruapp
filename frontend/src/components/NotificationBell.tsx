@@ -82,7 +82,7 @@ export default function NotificationBell() {
       const date = new Date(fecha);
       const ahora = new Date();
       const diferencia = ahora.getTime() - date.getTime();
-      const minutos = Math.floor(diferencia / 60000);
+      const minutos = Math.floor(diferencia / 80000);
       const horas = Math.floor(diferencia / 3600000);
       const dias = Math.floor(diferencia / 86400000);
 
