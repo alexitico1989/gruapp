@@ -131,19 +131,18 @@ interface RutaInfo {
   coordenadas: [number, number][];
 }
 
-// Tipos de vehículos - NOMBRES REALES DE LA BASE DE DATOS
 const tiposVehiculos = [
   // Vehículos Livianos
-  { id: 'AUTOMOVIL', label: 'Automóvil', pesado: false },
-  { id: 'SUV', label: 'SUV/Camioneta', pesado: false },
-  { id: 'MOTO', label: 'Moto', pesado: false },
-  { id: 'FURGON', label: 'Furgón', pesado: false },
-  { id: 'CAMION_LIVIANO', label: 'Camión Liviano', pesado: false },
+  { id: 'AUTOMOVIL', label: 'Automóvil', icon: Car, pesado: false },
+  { id: 'CAMIONETA', label: 'SUV/Camioneta', icon: Truck, pesado: false },
+  { id: 'MOTO', label: 'Moto', icon: Bike, pesado: false },
+  { id: 'FURGONETA', label: 'Furgón', icon: BusFront, pesado: false },
+  { id: 'LIVIANO', label: 'Camión Liviano', icon: Truck, pesado: false },
   // Vehículos Pesados
-  { id: 'CAMION_MEDIANO', label: 'Camión Mediano', pesado: true },
-  { id: 'CAMION_PESADO', label: 'Camión Pesado', pesado: true },
-  { id: 'BUS', label: 'Bus', pesado: true },
-  { id: 'MAQUINARIA', label: 'Maquinaria', pesado: true },
+  { id: 'MEDIANO', label: 'Camión Mediano', icon: Truck, pesado: true },
+  { id: 'PESADO', label: 'Camión Pesado', icon: Truck, pesado: true },
+  { id: 'BUS', label: 'Bus', icon: BusFront, pesado: true },
+  { id: 'MAQUINARIA', label: 'Maquinaria', icon: Truck, pesado: true },
 ];
 
 const obtenerDireccionDesdeCoordenadas = async (lat: number, lng: number): Promise<string> => {
@@ -299,7 +298,7 @@ export default function ClienteDashboard() {
   const [showNotification, setShowNotification] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [servicioParaCalificar, setServicioParaCalificar] = useState<Servicio | null>(null);
-  const [grueroPosition, setGrueroPosition] = useState<[number, number] | null>(null);
+  const [grueroPosition, setGrueroPosition] = useState<[number, number] | null>(null); // ← NUEVO: posición del gruero en tiempo real
 
   const debounceTimerOrigen = useRef<ReturnType<typeof setTimeout>>();
   const debounceTimerDestino = useRef<ReturnType<typeof setTimeout>>();
@@ -381,10 +380,12 @@ export default function ClienteDashboard() {
   };
 
   const calcularPrecio = (distancia: number) => {
+    // Verificar si el tipo de vehículo seleccionado es pesado
     const vehiculoSeleccionado = tiposVehiculos.find(v => v.id === tipoGrua);
     const esPesado = vehiculoSeleccionado?.pesado || false;
     
-    const tarifaBase = esPesado ? 80000 : 25000;
+    // Tarifas diferenciadas
+    const tarifaBase = esPesado ? 60000 : 25000;
     const tarifaPorKm = esPesado ? 1850 : 1350;
     
     const total = tarifaBase + (distancia * tarifaPorKm);
@@ -392,6 +393,7 @@ export default function ClienteDashboard() {
     return Math.round(total);
   };
 
+  // Obtener geolocalización del usuario al cargar
   useEffect(() => {
     if (!servicioActivo && !ubicacionObtenida) {
       console.log('📍 Solicitando geolocalización del usuario...');
@@ -406,6 +408,7 @@ export default function ClienteDashboard() {
             setOrigenCoords(coords);
             setUbicacionObtenida(true);
             
+            // Obtener dirección de la ubicación actual
             toast.loading('Obteniendo tu ubicación...');
             const direccion = await obtenerDireccionDesdeCoordenadas(latitude, longitude);
             toast.dismiss();
@@ -417,6 +420,7 @@ export default function ClienteDashboard() {
             toast.error('No se pudo obtener tu ubicación. Usando Santiago por defecto.');
             setUbicacionObtenida(true);
             
+            // Obtener dirección de Santiago por defecto
             obtenerDireccionDesdeCoordenadas(-33.4489, -70.6693).then(direccion => {
               setOrigen(direccion);
             });
@@ -432,6 +436,7 @@ export default function ClienteDashboard() {
         toast.error('Tu navegador no soporta geolocalización');
         setUbicacionObtenida(true);
         
+        // Usar Santiago por defecto
         obtenerDireccionDesdeCoordenadas(-33.4489, -70.6693).then(direccion => {
           setOrigen(direccion);
         });
@@ -442,6 +447,7 @@ export default function ClienteDashboard() {
   useEffect(() => {
     console.log('🔌 [ClienteDashboard] Verificando socket global del Layout');
     
+    // Esperar a que el socket global esté disponible
     const checkSocket = setInterval(() => {
       if (globalSocket) {
         console.log('✅ [ClienteDashboard] Socket global encontrado, configurando listeners');
@@ -452,6 +458,7 @@ export default function ClienteDashboard() {
           console.log('📍 Grúas recibidas del servidor:', gruas);
           console.log('📊 Cantidad de grúas:', gruas.length);
           
+          // Mostrar las ubicaciones recibidas
           if (gruas.length > 0) {
             gruas.forEach(grua => {
               console.log(`🚛 ${grua.nombre}: [${grua.ubicacion.lat}, ${grua.ubicacion.lng}]`);
@@ -517,9 +524,11 @@ export default function ClienteDashboard() {
           });
         });
 
+        // NUEVO: Escuchar notificaciones genéricas y abrir modal según el tipo
         globalSocket.on('nueva-notificacion', (notificacion: any) => {
           console.log('🔔 Nueva notificación (para modal):', notificacion);
           
+          // Si es una notificación de servicio aceptado o cambio de estado, abrir modal
           if (notificacion.tipo === 'SERVICIO_ACEPTADO' || 
               notificacion.tipo === 'EN_CAMINO' || 
               notificacion.tipo === 'EN_SITIO') {
@@ -529,6 +538,7 @@ export default function ClienteDashboard() {
             });
           }
           
+          // Si es completado, abrir modal de calificación
           if (notificacion.tipo === 'COMPLETADO') {
             console.log('🎉 Servicio completado - Abriendo modal de calificación');
             cargarServicioActivo().then((servicio) => {
@@ -592,11 +602,12 @@ export default function ClienteDashboard() {
         });
 
         globalSocket.on('servicio:canceladoNotificacion', (data: { servicioId: string; canceladoPor: string; cliente: any; gruero: any }) => {
-          console.log('Servicio cancelado recibido:', data);
+          console.log('🚫 Servicio cancelado recibido:', data);
           
           if (data.canceladoPor === 'GRUERO') {
             toast.error(`${data.gruero.nombre} canceló el servicio`, {
               duration: 5000,
+              icon: '❌',
             });
           }
           
@@ -611,16 +622,19 @@ export default function ClienteDashboard() {
           setPrecioEstimado(0);
           setDistanciaKm(0);
           setDuracionEstimada(0);
-          setGrueroPosition(null);
+          setGrueroPosition(null); // ← Limpiar posición del gruero
           
+          // Obtener ubicación actual en lugar de resetear a Santiago
           obtenerUbicacionActual();
           
           cargarHistorial();
         });
 
+        // NUEVO: Listener para actualizaciones de ubicación del gruero en tiempo real
         globalSocket.on('gruero:locationUpdated', (data: { grueroId: string; latitud: number; longitud: number }) => {
           console.log('📍 Ubicación del gruero actualizada:', data);
           
+          // Solo actualizar si hay un servicio activo y el gruero es el asignado
           if (servicioActivo && servicioActivo.gruero && servicioActivo.gruero.id === data.grueroId) {
             console.log('🚗 Actualizando posición del gruero en el mapa');
             setGrueroPosition([data.latitud, data.longitud]);
@@ -630,15 +644,17 @@ export default function ClienteDashboard() {
         console.log('📤 Solicitando grúas disponibles al servidor...');
         globalSocket.emit('cliente:getGruasDisponibles');
 
+        // Solicitar grúas cada 10 segundos para mantener ubicaciones actualizadas
         const interval = setInterval(() => {
           if (globalSocket.connected) {
             console.log('🔄 Actualizando ubicaciones de grúas...');
             globalSocket.emit('cliente:getGruasDisponibles');
           }
-        }, 10000);
+        }, 10000); // 10 segundos
 
         return () => {
           clearInterval(interval);
+          // NO desconectar el socket global, solo limpiar listeners
           if (socketRef.current) {
             socketRef.current.off('cliente:gruasDisponibles');
             socketRef.current.off('gruero:disponible');
@@ -693,7 +709,7 @@ export default function ClienteDashboard() {
     };
 
     calcularRutaYPrecio();
-  }, [origenCoords, destinoCoords, tipoGrua]);
+  }, [origenCoords, destinoCoords, tipoGrua]); // ← Agregar tipoGrua para recalcular cuando cambia
 
   const cargarServicioActivo = async () => {
     try {
@@ -702,12 +718,13 @@ export default function ClienteDashboard() {
         const servicio = response.data.data;
         setServicioActivo(servicio);
         
+        // Si el servicio tiene gruero asignado, inicializar su posición
         if (servicio.gruero && servicio.gruero.latitud && servicio.gruero.longitud) {
           console.log('📍 Inicializando posición del gruero:', servicio.gruero.latitud, servicio.gruero.longitud);
           setGrueroPosition([servicio.gruero.latitud, servicio.gruero.longitud]);
         }
         
-        return servicio;
+        return servicio; // Retornar el servicio
       } else {
         setServicioActivo(null);
         setGrueroPosition(null);
@@ -757,7 +774,7 @@ export default function ClienteDashboard() {
         destinoLat: destinoCoords[0],
         destinoLng: destinoCoords[1],
         destinoDireccion: destino,
-        tipoVehiculo: tipoGrua,
+        tipoVehiculo: tipoGrua, // ← Enviar como campo separado para filtrado
         observaciones: `Tipo de vehículo: ${tipoGrua}`,
       });
 
@@ -784,11 +801,13 @@ export default function ClienteDashboard() {
           console.log('📍 Ubicación actual obtenida para reset:', coords);
           setOrigenCoords(coords);
           
+          // Obtener dirección de la ubicación actual
           const direccion = await obtenerDireccionDesdeCoordenadas(latitude, longitude);
           setOrigen(direccion);
         },
         (error) => {
           console.error('❌ Error obteniendo ubicación:', error);
+          // Si falla, usar Santiago por defecto
           setOrigenCoords([-33.4489, -70.6693]);
           obtenerDireccionDesdeCoordenadas(-33.4489, -70.6693).then(direccion => {
             setOrigen(direccion);
@@ -801,6 +820,7 @@ export default function ClienteDashboard() {
         }
       );
     } else {
+      // Si no hay geolocalización, usar Santiago
       setOrigenCoords([-33.4489, -70.6693]);
       obtenerDireccionDesdeCoordenadas(-33.4489, -70.6693).then(direccion => {
         setOrigen(direccion);
@@ -837,8 +857,9 @@ export default function ClienteDashboard() {
         setPrecioEstimado(0);
         setDistanciaKm(0);
         setDuracionEstimada(0);
-        setGrueroPosition(null);
+        setGrueroPosition(null); // ← Limpiar posición del gruero
         
+        // Obtener ubicación actual en lugar de resetear a Santiago
         obtenerUbicacionActual();
         
         cargarHistorial();
@@ -874,18 +895,20 @@ export default function ClienteDashboard() {
           });
         }
         
+        // Preparar servicio para calificación con todos los datos
         setServicioParaCalificar({
           id: servicioActivo.id,
           origenDireccion: servicioActivo.origenDireccion,
           destinoDireccion: servicioActivo.destinoDireccion,
           distanciaKm: servicioActivo.distanciaKm,
           totalCliente: servicioActivo.totalCliente,
-          pagado: false,
+          pagado: false, // Aún no está pagado
           status: 'COMPLETADO',
           createdAt: servicioActivo.createdAt,
           gruero: servicioActivo.gruero,
         } as any);
         
+        // Abrir modal de calificación automáticamente
         setShowNotification(false);
         setTimeout(() => {
           console.log('✨ Abriendo modal de calificación');
@@ -910,8 +933,9 @@ export default function ClienteDashboard() {
     setPrecioEstimado(0);
     setDistanciaKm(0);
     setDuracionEstimada(0);
-    setGrueroPosition(null);
+    setGrueroPosition(null); // ← Limpiar posición del gruero
     
+    // Obtener ubicación actual en lugar de resetear a Santiago
     obtenerUbicacionActual();
     
     cargarHistorial();
@@ -920,6 +944,7 @@ export default function ClienteDashboard() {
   return (
     <Layout>
       <div className="flex flex-col h-[calc(100vh-64px)]">
+        {/* Modales */}
         {servicioActivo && servicioActivo.gruero && (
           <ServiceNotification
             isOpen={showNotification}
@@ -965,9 +990,11 @@ export default function ClienteDashboard() {
           />
         )}
 
+        {/* Panel Superior - Compacto y con scroll horizontal */}
         <div className="bg-white border-b border-gray-200 overflow-x-auto overflow-y-hidden shrink-0">
           <div className="flex gap-3 p-3 md:p-3 min-w-max md:min-w-0 md:flex-wrap md:justify-center">
             
+            {/* Origen */}
             <div className="bg-white border-2 border-gray-200 rounded-lg p-2.5 min-w-[280px] md:min-w-[240px] md:w-auto relative">
               <label className="block text-xs font-semibold text-gray-700 mb-1.5">📍 Origen</label>
               <input
@@ -1000,6 +1027,7 @@ export default function ClienteDashboard() {
               )}
             </div>
 
+            {/* Destino */}
             <div className="bg-white border-2 border-gray-200 rounded-lg p-2.5 min-w-[280px] md:min-w-[240px] md:w-auto relative">
               <label className="block text-xs font-semibold text-gray-700 mb-1.5">🎯 Destino</label>
               <input
@@ -1032,6 +1060,7 @@ export default function ClienteDashboard() {
               )}
             </div>
 
+            {/* Tipo de Vehículo - Selector Desplegable */}
             <div className="bg-white border-2 border-gray-200 rounded-lg p-2.5 min-w-[280px] md:min-w-[240px] md:w-auto">
               <label className="block text-xs font-semibold text-gray-700 mb-1.5">🚗 Tipo de Vehículo</label>
               
@@ -1060,6 +1089,7 @@ export default function ClienteDashboard() {
                 </optgroup>
               </select>
               
+              {/* Mostrar vehículo seleccionado con icono */}
               {tipoGrua && (
                 <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded-lg flex items-center gap-2">
                   {(() => {
@@ -1082,10 +1112,12 @@ export default function ClienteDashboard() {
               )}
             </div>
 
+            {/* Resumen / Estado */}
             {servicioActivo ? (
               <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-2.5 min-w-[280px] md:min-w-[240px] md:w-auto">
                 <p className="text-xs font-semibold text-blue-900 mb-2">📦 Servicio: {servicioActivo.status}</p>
                 
+                {/* Si tiene gruero asignado */}
                 {servicioActivo.gruero ? (
                   <>
                     <p className="text-sm font-semibold text-gray-900">
@@ -1115,6 +1147,7 @@ export default function ClienteDashboard() {
                     </button>
                   </>
                 ) : (
+                  /* Si no tiene gruero (SOLICITADO) */
                   <>
                     <div className="flex items-center justify-center py-2">
                       <Loader2 className="animate-spin h-6 w-6 text-blue-600 mr-2" />
@@ -1160,6 +1193,7 @@ export default function ClienteDashboard() {
               </div>
             )}
 
+            {/* Botón Solicitar / Grúas disponibles */}
             <div className="bg-white border-2 border-gray-200 rounded-lg p-2.5 min-w-[200px] md:min-w-[180px] md:w-auto flex flex-col justify-between">
               {!servicioActivo && (
                 <>
@@ -1182,6 +1216,7 @@ export default function ClienteDashboard() {
           </div>
         </div>
 
+        {/* Mapa - Ocupa el resto de la pantalla */}
         <div className="flex-1 relative">
           <MapContainer 
             center={origenCoords} 
@@ -1327,6 +1362,7 @@ export default function ClienteDashboard() {
               </Marker>
             ))}
 
+            {/* Marcador del Gruero Asignado - Posición en Tiempo Real */}
             {servicioActivo && servicioActivo.gruero && grueroPosition && (
               <Marker 
                 position={grueroPosition} 

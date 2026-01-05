@@ -782,7 +782,7 @@ export class AdminController {
         data: {
           userId: gruero.userId,
           tipo: 'DOCUMENTO_RECHAZADO',
-          titulo: 'Documento Rechazado',
+          titulo: '❌ Documento Rechazado',
           mensaje: `Tu documento ${documento} ha sido rechazado. Motivo: ${motivo}. Por favor, vuelve a subirlo.`,
         },
       });
@@ -793,7 +793,7 @@ export class AdminController {
         data: gruero,
       });
     } catch (error) {
-      console.error('Error al rechazar documento:', error);
+      console.error('❌ Error al rechazar documento:', error);
       res.status(500).json({
         success: false,
         message: 'Error al rechazar documento',
@@ -1989,174 +1989,4 @@ static async marcarServiciosPagados(req: Request, res: Response): Promise<void> 
     });
   }
 }
-
-  /**
-   * DELETE /api/admin/grueros/:id
-   * Eliminar cuenta de un gruero permanentemente
-   */
-  static async eliminarGruero(req: Request, res: Response): Promise<void> {
-    try {
-      const { id } = req.params;
-
-      // Verificar que el gruero existe
-      const gruero = await prisma.gruero.findUnique({
-        where: { id },
-        include: {
-          user: true,
-          servicios: {
-            where: {
-              status: {
-                in: ['ACEPTADO', 'EN_CAMINO', 'EN_SITIO'],
-              },
-            },
-          },
-        },
-      });
-
-      if (!gruero) {
-        res.status(404).json({
-          success: false,
-          message: 'Gruero no encontrado',
-        });
-        return;
-      }
-
-      // Verificar que no tenga servicios activos
-      if (gruero.servicios.length > 0) {
-        res.status(400).json({
-          success: false,
-          message: 'No se puede eliminar un gruero con servicios activos. Debe cancelarlos primero.',
-          serviciosActivos: gruero.servicios.length,
-        });
-        return;
-      }
-
-      // Eliminar en orden (respetando relaciones)
-      // 1. Calificaciones recibidas
-      await prisma.calificacion.deleteMany({
-        where: { grueroId: id },
-      });
-
-      // 2. Notificaciones
-      await prisma.notificacion.deleteMany({
-        where: { userId: gruero.userId },
-      });
-
-      // 3. Servicios (los completados/cancelados)
-      await prisma.servicio.deleteMany({
-        where: { grueroId: id },
-      });
-
-      // 4. Gruero
-      await prisma.gruero.delete({
-        where: { id },
-      });
-
-      // 5. Usuario
-      await prisma.user.delete({
-        where: { id: gruero.userId },
-      });
-
-      res.json({
-        success: true,
-        message: 'Cuenta de gruero eliminada permanentemente',
-        data: {
-          grueroId: id,
-          userId: gruero.userId,
-          nombre: `${gruero.user.nombre} ${gruero.user.apellido}`,
-        },
-      });
-    } catch (error) {
-      console.error('❌ Error al eliminar gruero:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Error al eliminar cuenta de gruero',
-      });
-    }
-  }
-
-  /**
-   * DELETE /api/admin/clientes/:id
-   * Eliminar cuenta de un cliente permanentemente
-   */
-  static async eliminarCliente(req: Request, res: Response): Promise<void> {
-    try {
-      const { id } = req.params;
-
-      // Verificar que el cliente existe
-      const cliente = await prisma.cliente.findUnique({
-        where: { id },
-        include: {
-          user: true,
-          servicios: {
-            where: {
-              status: {
-                in: ['SOLICITADO', 'ACEPTADO', 'EN_CAMINO', 'EN_SITIO'],
-              },
-            },
-          },
-        },
-      });
-
-      if (!cliente) {
-        res.status(404).json({
-          success: false,
-          message: 'Cliente no encontrado',
-        });
-        return;
-      }
-
-      // Verificar que no tenga servicios activos
-      if (cliente.servicios.length > 0) {
-        res.status(400).json({
-          success: false,
-          message: 'No se puede eliminar un cliente con servicios activos. Debe cancelarlos primero.',
-          serviciosActivos: cliente.servicios.length,
-        });
-        return;
-      }
-
-      // Eliminar en orden (respetando relaciones)
-      // 1. Calificaciones dadas
-      await prisma.calificacion.deleteMany({
-        where: { clienteId: id },
-      });
-
-      // 2. Notificaciones
-      await prisma.notificacion.deleteMany({
-        where: { userId: cliente.userId },
-      });
-
-      // 4. Servicios (los completados/cancelados)
-      await prisma.servicio.deleteMany({
-        where: { clienteId: id },
-      });
-
-      // 5. Cliente
-      await prisma.cliente.delete({
-        where: { id },
-      });
-
-      // 6. Usuario
-      await prisma.user.delete({
-        where: { id: cliente.userId },
-      });
-
-      res.json({
-        success: true,
-        message: 'Cuenta de cliente eliminada permanentemente',
-        data: {
-          clienteId: id,
-          userId: cliente.userId,
-          nombre: `${cliente.user.nombre} ${cliente.user.apellido}`,
-        },
-      });
-    } catch (error) {
-      console.error('❌ Error al eliminar cliente:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Error al eliminar cuenta de cliente',
-      });
-    }
-  }
 }

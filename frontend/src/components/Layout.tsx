@@ -68,29 +68,29 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
     // Listener para nuevas notificaciones (FUNCIONA EN TODAS LAS PÁGINAS)
     socket.on('nueva-notificacion', (notificacion) => {
-      console.log(' [Layout] Nueva notificación recibida:', notificacion);
+      console.log('🔔 [Layout] Nueva notificación recibida:', notificacion);
       agregarNotificacion(notificacion);
 
       // Mostrar toast según el tipo
       if (user.role === 'GRUERO') {
         if (notificacion.tipo === 'NUEVO_SERVICIO') {
-          toast('Nuevo servicio disponible cerca', { duration: 5000 });
+          toast('Nuevo servicio disponible cerca', { icon: '🚗', duration: 5000 });
         } else if (notificacion.tipo === 'CANCELADO') {
-          toast.error(notificacion.mensaje, { duration: 5000 });
+          toast.error(notificacion.mensaje, { icon: '❌', duration: 5000 });
         } else if (notificacion.tipo === 'CALIFICACION') {
-          toast(notificacion.mensaje, { duration: 5000 });
+          toast(notificacion.mensaje, { icon: '⭐', duration: 5000 });
         }
       } else if (user.role === 'CLIENTE') {
         if (notificacion.tipo === 'SERVICIO_ACEPTADO') {
           toast.success(notificacion.mensaje, { icon: '✅', duration: 5000 });
         } else if (notificacion.tipo === 'EN_CAMINO') {
-          toast(notificacion.mensaje, { duration: 5000 });
+          toast(notificacion.mensaje, { icon: '🚛', duration: 5000 });
         } else if (notificacion.tipo === 'EN_SITIO') {
-          toast(notificacion.mensaje, { duration: 5000 });
+          toast(notificacion.mensaje, { icon: '📍', duration: 5000 });
         } else if (notificacion.tipo === 'COMPLETADO') {
-          toast.success(notificacion.mensaje, { duration: 5000 });
+          toast.success(notificacion.mensaje, { icon: '🎉', duration: 5000 });
         } else if (notificacion.tipo === 'CANCELADO') {
-          toast.error(notificacion.mensaje, { duration: 5000 });
+          toast.error(notificacion.mensaje, { icon: '❌', duration: 5000 });
         }
       }
     });

@@ -11,9 +11,7 @@ interface GrueroData {
   marca: string;
   modelo: string;
   anio: number;
-  tipoGrua: string;
   capacidadToneladas: number;
-  tiposVehiculosAtiende: string;
   status: string;
   verificado: boolean;
   totalServicios: number;
@@ -80,8 +78,6 @@ export default function PerfilGruero() {
     modelo: '',
     anio: '',
     capacidadToneladas: '',
-    tipoGrua: '',
-    tiposVehiculosAtiende: [] as string[],
   });
 
   const [uploadingFotoGruero, setUploadingFotoGruero] = useState(false);
@@ -94,28 +90,6 @@ export default function PerfilGruero() {
 
   const [showEliminarCuenta, setShowEliminarCuenta] = useState(false);
   const [passwordEliminar, setPasswordEliminar] = useState('');
-
-  // Tipos de vehículos - NOMBRES REALES DE LA BASE DE DATOS
-  const TIPOS_VEHICULOS = [
-    { value: 'AUTOMOVIL', label: 'Automóvil' },
-    { value: 'SUV', label: 'SUV/Camioneta' },
-    { value: 'MOTO', label: 'Moto' },
-    { value: 'FURGON', label: 'Furgón' },
-    { value: 'CAMION_LIVIANO', label: 'Camión Liviano' },
-    { value: 'CAMION_MEDIANO', label: 'Camión Mediano' },
-    { value: 'CAMION_PESADO', label: 'Camión Pesado' },
-    { value: 'BUS', label: 'Bus' },
-    { value: 'MAQUINARIA', label: 'Maquinaria' },
-  ];
-
-  const toggleTipoVehiculo = (tipo: string) => {
-    setFormVehiculo(prev => ({
-      ...prev,
-      tiposVehiculosAtiende: prev.tiposVehiculosAtiende.includes(tipo)
-        ? prev.tiposVehiculosAtiende.filter(t => t !== tipo)
-        : [...prev.tiposVehiculosAtiende, tipo]
-    }));
-  };
 
   useEffect(() => {
     cargarDatos();
@@ -140,22 +114,12 @@ export default function PerfilGruero() {
           email: data.user.email,
         });
 
-        // Parsear tiposVehiculosAtiende si viene como JSON string
-        let tiposArray: string[] = [];
-        try {
-          tiposArray = JSON.parse(data.tiposVehiculosAtiende || '[]');
-        } catch (error) {
-          console.error('Error parseando tipos:', error);
-        }
-
         setFormVehiculo({
           patente: data.patente,
           marca: data.marca,
           modelo: data.modelo,
           anio: data.anio?.toString() || '',
           capacidadToneladas: data.capacidadToneladas?.toString() || '',
-          tipoGrua: data.tipoGrua || '',
-          tiposVehiculosAtiende: tiposArray,
         });
       }
 
@@ -203,31 +167,12 @@ export default function PerfilGruero() {
   };
 
   const handleUpdateVehiculo = async () => {
-    // Validar que haya al menos un tipo seleccionado
-    if (!formVehiculo.tiposVehiculosAtiende || formVehiculo.tiposVehiculosAtiende.length === 0) {
-      toast.error('Debes seleccionar al menos un tipo de vehículo');
-      return;
-    }
-
     try {
-      const payload = {
-        patente: formVehiculo.patente,
-        marca: formVehiculo.marca,
-        modelo: formVehiculo.modelo,
+      const response = await api.patch('/gruero/vehiculo', {
+        ...formVehiculo,
         anio: parseInt(formVehiculo.anio),
         capacidadToneladas: parseFloat(formVehiculo.capacidadToneladas),
-        tipoGrua: formVehiculo.tipoGrua || '',
-        tiposVehiculosAtiende: formVehiculo.tiposVehiculosAtiende,
-      };
-
-      console.log('📤 PAYLOAD ENVIADO:', payload);
-      console.log('📤 tiposVehiculosAtiende:', {
-        value: payload.tiposVehiculosAtiende,
-        type: typeof payload.tiposVehiculosAtiende,
-        isArray: Array.isArray(payload.tiposVehiculosAtiende)
       });
-
-      const response = await api.patch('/gruero/vehiculo', payload);
       
       if (response.data.success) {
         toast.success('Información del vehículo actualizada');
@@ -235,9 +180,7 @@ export default function PerfilGruero() {
         cargarDatos();
       }
     } catch (error: any) {
-      console.error('❌ Error actualizando vehículo:', error);
-      console.error('❌ Response completo:', error.response);
-      console.error('❌ Response data:', error.response?.data);
+      console.error('Error actualizando vehículo:', error);
       toast.error(error.response?.data?.message || 'Error al actualizar vehículo');
     }
   };
@@ -740,22 +683,12 @@ export default function PerfilGruero() {
                     <button
                       onClick={() => {
                         setEditandoVehiculo(false);
-                        // Parsear tipos al cancelar
-                        let tiposArray: string[] = [];
-                        try {
-                          tiposArray = JSON.parse(grueroData.tiposVehiculosAtiende || '[]');
-                        } catch (error) {
-                          console.error('Error:', error);
-                        }
-
                         setFormVehiculo({
                           patente: grueroData.patente,
                           marca: grueroData.marca,
                           modelo: grueroData.modelo,
                           anio: grueroData.anio?.toString() || '',
                           capacidadToneladas: grueroData.capacidadToneladas?.toString() || '',
-                          tipoGrua: grueroData.tipoGrua || '',
-                          tiposVehiculosAtiende: tiposArray,
                         });
                       }}
                       className="flex items-center bg-gray-500 text-white px-2 md:px-3 py-1 rounded-lg hover:bg-gray-600 text-sm"
@@ -818,33 +751,6 @@ export default function PerfilGruero() {
                       className="input w-full text-base"
                     />
                   </div>
-
-                  {/* Selector de Tipos de Vehículos - ACTUALIZADO CON NOMBRES REALES DE BD */}
-                  <div className="md:col-span-2">
-                    <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-3">
-                      Tipos de Vehículos que Atiende <span className="text-red-500">*</span>
-                    </label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                      {TIPOS_VEHICULOS.map((tipo) => (
-                        <button
-                          key={tipo.value}
-                          type="button"
-                          onClick={() => toggleTipoVehiculo(tipo.value)}
-                          className={`p-3 rounded-lg border-2 transition-all text-left ${
-                            formVehiculo.tiposVehiculosAtiende.includes(tipo.value)
-                              ? 'border-[#ff7a3d] bg-orange-50'
-                              : 'border-gray-300 hover:border-gray-400'
-                          }`}
-                        >
-                          <div className="text-2xl mb-1">{tipo.icon}</div>
-                          <div className="text-xs font-semibold">{tipo.label}</div>
-                        </button>
-                      ))}
-                    </div>
-                    {formVehiculo.tiposVehiculosAtiende.length === 0 && (
-                      <p className="text-red-500 text-xs mt-2">⚠️ Debes seleccionar al menos un tipo</p>
-                    )}
-                  </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
@@ -864,35 +770,9 @@ export default function PerfilGruero() {
                     <p className="text-xs text-gray-500">Año</p>
                     <p className="font-semibold text-sm md:text-base">{grueroData.anio}</p>
                   </div>
-                  <div>
+                  <div className="col-span-2 md:col-span-1">
                     <p className="text-xs text-gray-500">Capacidad</p>
                     <p className="font-semibold text-sm md:text-base">{grueroData.capacidadToneladas} toneladas</p>
-                  </div>
-
-                  {/* Mostrar Tipos de Vehículos que Atiende - ACTUALIZADO */}
-                  <div className="col-span-2 md:col-span-3">
-                    <p className="text-xs text-gray-500 mb-2">Tipos de Vehículos que Atiende</p>
-                    <div className="flex flex-wrap gap-2">
-                      {(() => {
-                        try {
-                          const tipos = JSON.parse(grueroData.tiposVehiculosAtiende || '[]');
-                          if (tipos.length === 0) {
-                            return <span className="text-gray-500 text-sm">No configurado</span>;
-                          }
-                          return tipos.map((tipo: string) => {
-                            const tipoInfo = TIPOS_VEHICULOS.find(t => t.value === tipo);
-                            return tipoInfo ? (
-                              <span key={tipo} className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
-                                <span>{tipoInfo.icon}</span>
-                                <span>{tipoInfo.label}</span>
-                              </span>
-                            ) : null;
-                          });
-                        } catch (error) {
-                          return <span className="text-gray-500 text-sm">No configurado</span>;
-                        }
-                      })()}
-                    </div>
                   </div>
                 </div>
               )}
