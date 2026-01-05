@@ -97,15 +97,15 @@ export default function PerfilGruero() {
 
   // Tipos de vehículos - NOMBRES REALES DE LA BASE DE DATOS
   const TIPOS_VEHICULOS = [
-    { value: 'AUTOMOVIL', label: 'Automóvil', icon: '🚗' },
-    { value: 'SUV', label: 'SUV/Camioneta', icon: '🚙' },
-    { value: 'MOTO', label: 'Moto', icon: '🏍️' },
-    { value: 'FURGON', label: 'Furgón', icon: '🚐' },
-    { value: 'CAMION_LIVIANO', label: 'Camión Liviano', icon: '🚚' },
-    { value: 'CAMION_MEDIANO', label: 'Camión Mediano', icon: '🚛' },
-    { value: 'CAMION_PESADO', label: 'Camión Pesado', icon: '🚜' },
-    { value: 'BUS', label: 'Bus', icon: '🚌' },
-    { value: 'MAQUINARIA', label: 'Maquinaria', icon: '🏗️' },
+    { value: 'AUTOMOVIL', label: 'Automóvil' },
+    { value: 'SUV', label: 'SUV/Camioneta' },
+    { value: 'MOTO', label: 'Moto' },
+    { value: 'FURGON', label: 'Furgón' },
+    { value: 'CAMION_LIVIANO', label: 'Camión Liviano' },
+    { value: 'CAMION_MEDIANO', label: 'Camión Mediano' },
+    { value: 'CAMION_PESADO', label: 'Camión Pesado' },
+    { value: 'BUS', label: 'Bus' },
+    { value: 'MAQUINARIA', label: 'Maquinaria' },
   ];
 
   const toggleTipoVehiculo = (tipo: string) => {

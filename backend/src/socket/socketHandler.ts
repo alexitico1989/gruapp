@@ -369,7 +369,7 @@ export const setupSocketHandlers = (io: Server) => {
       try {
         const { servicioId, canceladoPor } = data;
 
-        console.log(`🚫 Servicio cancelado - ID: ${servicioId}, Cancelado por: ${canceladoPor}`);
+        console.log(`Servicio cancelado - ID: ${servicioId}, Cancelado por: ${canceladoPor}`);
 
         const servicio = await prisma.servicio.findUnique({
           where: { id: servicioId },

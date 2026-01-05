@@ -134,16 +134,16 @@ interface RutaInfo {
 // Tipos de vehículos - NOMBRES REALES DE LA BASE DE DATOS
 const tiposVehiculos = [
   // Vehículos Livianos
-  { id: 'AUTOMOVIL', label: 'Automóvil', icon: Car, pesado: false },
-  { id: 'SUV', label: 'SUV/Camioneta', icon: Truck, pesado: false },
-  { id: 'MOTO', label: 'Moto', icon: Bike, pesado: false },
-  { id: 'FURGON', label: 'Furgón', icon: BusFront, pesado: false },
-  { id: 'CAMION_LIVIANO', label: 'Camión Liviano', icon: Truck, pesado: false },
+  { id: 'AUTOMOVIL', label: 'Automóvil', pesado: false },
+  { id: 'SUV', label: 'SUV/Camioneta', pesado: false },
+  { id: 'MOTO', label: 'Moto', pesado: false },
+  { id: 'FURGON', label: 'Furgón', pesado: false },
+  { id: 'CAMION_LIVIANO', label: 'Camión Liviano', pesado: false },
   // Vehículos Pesados
-  { id: 'CAMION_MEDIANO', label: 'Camión Mediano', icon: Truck, pesado: true },
-  { id: 'CAMION_PESADO', label: 'Camión Pesado', icon: Truck, pesado: true },
-  { id: 'BUS', label: 'Bus', icon: BusFront, pesado: true },
-  { id: 'MAQUINARIA', label: 'Maquinaria', icon: Truck, pesado: true },
+  { id: 'CAMION_MEDIANO', label: 'Camión Mediano', pesado: true },
+  { id: 'CAMION_PESADO', label: 'Camión Pesado', pesado: true },
+  { id: 'BUS', label: 'Bus', pesado: true },
+  { id: 'MAQUINARIA', label: 'Maquinaria', pesado: true },
 ];
 
 const obtenerDireccionDesdeCoordenadas = async (lat: number, lng: number): Promise<string> => {
@@ -592,12 +592,11 @@ export default function ClienteDashboard() {
         });
 
         globalSocket.on('servicio:canceladoNotificacion', (data: { servicioId: string; canceladoPor: string; cliente: any; gruero: any }) => {
-          console.log('🚫 Servicio cancelado recibido:', data);
+          console.log('Servicio cancelado recibido:', data);
           
           if (data.canceladoPor === 'GRUERO') {
             toast.error(`${data.gruero.nombre} canceló el servicio`, {
               duration: 5000,
-              icon: '❌',
             });
           }
           

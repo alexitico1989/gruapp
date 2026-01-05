@@ -782,7 +782,7 @@ export class AdminController {
         data: {
           userId: gruero.userId,
           tipo: 'DOCUMENTO_RECHAZADO',
-          titulo: '❌ Documento Rechazado',
+          titulo: 'Documento Rechazado',
           mensaje: `Tu documento ${documento} ha sido rechazado. Motivo: ${motivo}. Por favor, vuelve a subirlo.`,
         },
       });
@@ -793,7 +793,7 @@ export class AdminController {
         data: gruero,
       });
     } catch (error) {
-      console.error('❌ Error al rechazar documento:', error);
+      console.error('Error al rechazar documento:', error);
       res.status(500).json({
         success: false,
         message: 'Error al rechazar documento',
