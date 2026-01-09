@@ -1133,6 +1133,7 @@ export default function ClienteDashboard() {
                   })()}
                 </div>
               )}
+            </div>
 
             {/* Resumen / Estado */}
             {servicioActivo ? (
