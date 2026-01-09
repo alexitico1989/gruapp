@@ -69,7 +69,7 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
   // Marcar como leída
   marcarLeida: async (id: string) => {
     try {
-      const response = await api.put(`/notificaciones/${id}/leida`);
+      const response = await api.patch(`/notificaciones/${id}/leida`); // ← CAMBIADO: PUT → PATCH
       
       if (response.data.success) {
         const nuevoNoLeidas = Math.max(0, get().noLeidas - 1);
@@ -89,7 +89,7 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
   // Marcar todas como leídas
   marcarTodasLeidas: async () => {
     try {
-      const response = await api.put('/notificaciones/marcar-todas-leidas');
+      const response = await api.patch('/notificaciones/marcar-todas-leidas'); // ← CAMBIADO: PUT → PATCH
       
       if (response.data.success) {
         console.log('✅ Todas las notificaciones marcadas como leídas');
