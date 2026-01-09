@@ -1,6 +1,13 @@
 import { Router } from 'express';
 import { GrueroController } from '../controllers/gruero.controller';
 import { AuthMiddleware } from '../middlewares/auth.middleware';
+import { handleValidationErrors } from '../middlewares/validation.middleware';
+import {
+  updateGrueroPerfilValidation,
+  updateVehiculoValidation,
+  updateDisponibilidadValidation,
+  updateLocationValidation,
+} from '../validators/perfil.validator';
 import { uploadGrueroPhoto, uploadGruaPhoto, uploadDocument } from '../config/multer';
 
 const router = Router();
@@ -25,6 +32,8 @@ router.get(
 router.patch(
   '/perfil',
   AuthMiddleware.authorize('GRUERO'),
+  updateGrueroPerfilValidation,
+  handleValidationErrors,
   GrueroController.updatePerfil
 );
 
@@ -35,6 +44,8 @@ router.patch(
 router.patch(
   '/vehiculo',
   AuthMiddleware.authorize('GRUERO'),
+  updateVehiculoValidation,
+  handleValidationErrors,
   GrueroController.updateVehiculo
 );
 
@@ -45,6 +56,8 @@ router.patch(
 router.patch(
   '/disponibilidad',
   AuthMiddleware.authorize('GRUERO'),
+  updateDisponibilidadValidation,
+  handleValidationErrors,
   GrueroController.updateDisponibilidad
 );
 
@@ -55,6 +68,8 @@ router.patch(
 router.put(
   '/location',
   AuthMiddleware.authorize('GRUERO'),
+  updateLocationValidation,
+  handleValidationErrors,
   GrueroController.updateLocation
 );
 

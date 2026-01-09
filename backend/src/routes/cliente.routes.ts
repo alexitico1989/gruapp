@@ -1,6 +1,9 @@
 import express from 'express';
 import { ClienteController } from '../controllers/cliente.controller';
 import { AuthMiddleware } from '../middlewares/auth.middleware';
+import { handleValidationErrors } from '../middlewares/validation.middleware';
+import { updateClientePerfilValidation } from '../validators/perfil.validator';
+import { changePasswordValidation } from '../validators/auth.validator';
 
 const router = express.Router();
 
@@ -9,8 +12,20 @@ router.use(AuthMiddleware.authenticate);
 
 // Perfil
 router.get('/perfil', ClienteController.getPerfil);
-router.patch('/perfil', ClienteController.updatePerfil);
-router.patch('/password', ClienteController.cambiarPassword);
+
+router.patch(
+  '/perfil',
+  updateClientePerfilValidation,
+  handleValidationErrors,
+  ClienteController.updatePerfil
+);
+
+router.patch(
+  '/password',
+  changePasswordValidation,
+  handleValidationErrors,
+  ClienteController.cambiarPassword
+);
 
 // Pagos
 router.get('/pagos', ClienteController.getPagos);
