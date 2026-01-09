@@ -131,16 +131,17 @@ interface RutaInfo {
   coordenadas: [number, number][];
 }
 
+// Tipos de vehículos - NOMBRES REALES DE LA BASE DE DATOS
 const tiposVehiculos = [
   // Vehículos Livianos
   { id: 'AUTOMOVIL', label: 'Automóvil', icon: Car, pesado: false },
-  { id: 'CAMIONETA', label: 'SUV/Camioneta', icon: Truck, pesado: false },
+  { id: 'SUV', label: 'SUV/Camioneta', icon: Truck, pesado: false },
   { id: 'MOTO', label: 'Moto', icon: Bike, pesado: false },
-  { id: 'FURGONETA', label: 'Furgón', icon: BusFront, pesado: false },
-  { id: 'LIVIANO', label: 'Camión Liviano', icon: Truck, pesado: false },
+  { id: 'FURGON', label: 'Furgón', icon: BusFront, pesado: false },
+  { id: 'CAMION_LIVIANO', label: 'Camión Liviano', icon: Truck, pesado: false },
   // Vehículos Pesados
-  { id: 'MEDIANO', label: 'Camión Mediano', icon: Truck, pesado: true },
-  { id: 'PESADO', label: 'Camión Pesado', icon: Truck, pesado: true },
+  { id: 'CAMION_MEDIANO', label: 'Camión Mediano', icon: Truck, pesado: true },
+  { id: 'CAMION_PESADO', label: 'Camión Pesado', icon: Truck, pesado: true },
   { id: 'BUS', label: 'Bus', icon: BusFront, pesado: true },
   { id: 'MAQUINARIA', label: 'Maquinaria', icon: Truck, pesado: true },
 ];
