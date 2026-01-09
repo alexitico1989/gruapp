@@ -461,7 +461,7 @@ export class AdminController {
   static async eliminarGruero(req: Request, res: Response) {
     const { id } = req.params;
     try {
-      await prisma.gruero.delete({ where: { id: Number(id) } });
+      await prisma.gruero.delete({ where: { id } });
       res.status(200).json({ message: "Gruero eliminado correctamente" });
     } catch (error) {
       res.status(500).json({ error: "Error eliminando gruero", details: error });

@@ -105,6 +105,7 @@ interface Servicio {
   totalCliente: number;
   distanciaKm: number;
   gruero?: {
+    id: string;
     patente: string;
     marca: string;
     modelo: string;
