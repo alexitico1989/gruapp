@@ -14,10 +14,10 @@ router.get('/', NotificacionController.getNotificaciones);
 router.get('/contador', NotificacionController.getContadorNoLeidas);
 
 // Marcar notificación como leída
-router.put('/:id/leida', NotificacionController.marcarLeida);
+router.patch('/:id/leida', NotificacionController.marcarLeida);
 
 // Marcar todas como leídas
-router.put('/marcar-todas-leidas', NotificacionController.marcarTodasLeidas);
+router.patch('/marcar-todas-leidas', NotificacionController.marcarTodasLeidas);
 
 // Eliminar notificación
 router.delete('/:id', NotificacionController.deleteNotificacion);

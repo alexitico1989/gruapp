@@ -31,11 +31,22 @@ export default function NotificationBell() {
     console.log('🔢 Badge actualizado - No leídas:', noLeidas);
   }, [noLeidas]);
 
-  // Cargar notificaciones al abrir
-  const handleOpen = () => {
-    setIsOpen(!isOpen);
-    if (!isOpen) {
-      fetchNotificaciones();
+  // ✅ MODIFICADO: Marcar como leídas automáticamente al abrir
+  const handleOpen = async () => {
+    const nuevoEstado = !isOpen;
+    setIsOpen(nuevoEstado);
+    
+    if (nuevoEstado) {
+      // Cargar notificaciones
+      await fetchNotificaciones();
+      
+      // Si hay notificaciones no leídas, marcarlas automáticamente
+      if (noLeidas > 0) {
+        console.log('🔔 Dropdown abierto con', noLeidas, 'notificaciones no leídas - marcando como leídas');
+        setTimeout(() => {
+          marcarTodasLeidas();
+        }, 500); // Pequeño delay para que el usuario vea que tenía notificaciones
+      }
     }
   };
 
@@ -72,6 +83,12 @@ export default function NotificationBell() {
         return '⭐';
       case 'DOCUMENTO_VENCE':
         return '⚠️';
+      case 'PAGO_CONFIRMADO':
+        return '💰';
+      case 'PAGO_RECIBIDO':
+        return '💳';
+      case 'PAGO_RECHAZADO':
+        return '❌';
       default:
         return '🔔';
     }
@@ -82,7 +99,7 @@ export default function NotificationBell() {
       const date = new Date(fecha);
       const ahora = new Date();
       const diferencia = ahora.getTime() - date.getTime();
-      const minutos = Math.floor(diferencia / 80000);
+      const minutos = Math.floor(diferencia / 60000);
       const horas = Math.floor(diferencia / 3600000);
       const dias = Math.floor(diferencia / 86400000);
 
