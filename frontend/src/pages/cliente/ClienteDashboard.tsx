@@ -387,7 +387,7 @@ export default function ClienteDashboard() {
     const esPesado = vehiculoSeleccionado?.pesado || false;
     
     // Tarifas diferenciadas
-    const tarifaBase = esPesado ? 60000 : 25000;
+    const tarifaBase = esPesado ? 80000 : 25000;
     const tarifaPorKm = esPesado ? 1850 : 1350;
     
     const total = tarifaBase + (distancia * tarifaPorKm);
