@@ -14,6 +14,25 @@ import { ErrorHandlerMiddleware } from './middlewares/errorHandler.middleware';
 import { setupSocketHandlers } from './socket/socketHandler';
 import { CronService } from './services/cron.service';
 
+// ============================================
+// IMPORTAR MIDDLEWARES DE SEGURIDAD
+// ============================================
+import {
+  helmetConfig,
+  mongoSanitizeMiddleware,
+  hppMiddleware,
+  xssProtection,
+  securityLogger,
+  additionalSecurityHeaders,
+} from './middlewares/security.middleware';
+
+import {
+  generalLimiter,
+  loginLimiter,
+  registerLimiter,
+  sensitiveLimiter,
+  webhookLimiter,
+} from './middlewares/rateLimiter.middleware';
 
 const app: Application = express();
 const httpServer = createServer(app);
@@ -21,7 +40,9 @@ const httpServer = createServer(app);
 // Configurar Socket.IO
 const io = new SocketIOServer(httpServer, {
   cors: {
-    origin: '*',
+    origin: config.nodeEnv === 'production' 
+      ? ['https://www.gruappchile.cl', 'https://gruappchile.cl']
+      : '*',
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -31,37 +52,105 @@ const io = new SocketIOServer(httpServer, {
 // Hacer io accesible desde req en todos los controladores
 app.set('io', io);
 
-// Middlewares
+// ============================================
+// MIDDLEWARES DE SEGURIDAD (ORDEN IMPORTANTE)
+// ============================================
+
+// 1. Helmet - Headers de seguridad HTTP
+app.use(helmetConfig);
+
+// 2. Headers adicionales de seguridad
+app.use(additionalSecurityHeaders);
+
+// 3. CORS configurado según entorno
 app.use(
   cors({
-    origin: '*',
+    origin: config.nodeEnv === 'production'
+      ? ['https://www.gruappchile.cl', 'https://gruappchile.cl']
+      : '*',
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// Servir archivos estáticos (uploads)
+// 4. Body parsers
+app.use(express.json({ limit: '10mb' })); // Límite de 10MB para JSON
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// 5. Sanitización contra NoSQL injection
+app.use(mongoSanitizeMiddleware);
+
+// 6. Protección contra HTTP Parameter Pollution
+app.use(hppMiddleware);
+
+// 7. Protección XSS en todos los inputs
+app.use(xssProtection);
+
+// 8. Logger de seguridad (detecta requests sospechosos)
+app.use(securityLogger);
+
+// 9. Rate limiting general (ANTES de las rutas)
+app.use('/api', generalLimiter);
+
+// ============================================
+// SERVIR ARCHIVOS ESTÁTICOS
+// ============================================
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Logger simple
+// ============================================
+// LOGGER SIMPLE
+// ============================================
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   next();
 });
 
-// Rutas API
+// ============================================
+// RUTAS API CON RATE LIMITING ESPECÍFICO
+// ============================================
+
+// Rutas de autenticación con rate limiting estricto
+app.use('/api/auth/login', loginLimiter);
+app.use('/api/gruero/login', loginLimiter);
+app.use('/api/cliente/login', loginLimiter);
+app.use('/api/admin/login', loginLimiter);
+
+// Rutas de registro con rate limiting
+app.use('/api/auth/register', registerLimiter);
+app.use('/api/gruero/register', registerLimiter);
+app.use('/api/cliente/register', registerLimiter);
+
+// Rutas de pagos con rate limiting sensible
+app.use('/api/pagos/crear-preferencia', sensitiveLimiter);
+
+// Webhooks con rate limiting especial
+app.use('/api/pagos/webhook', webhookLimiter);
+
+// Rutas generales
 app.use('/api', routes);
 app.use('/api/notificaciones', notificacionRoutes);
 app.use('/api/reclamos', reclamoRoutes);
 app.use('/api/cliente', clienteRoutes);
 app.use('/api/pagos', pagoRoutes);
 
-// Servir frontend estático (DESPUÉS de las rutas API)
+// ============================================
+// SERVIR FRONTEND ESTÁTICO
+// ============================================
 const publicPath = path.join(__dirname, '../public');
-app.use(serveStatic(publicPath));
+app.use(serveStatic(publicPath, {
+  maxAge: '1d', // Cache de 1 día para archivos estáticos
+  setHeaders: (res, path) => {
+    // No cachear index.html
+    if (path.endsWith('index.html')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    }
+  },
+}));
 
-// Ruta catch-all para SPA (debe ir al final)
+// ============================================
+// RUTA CATCH-ALL PARA SPA
+// ============================================
 app.get('*', (req, res) => {
   // Si la ruta empieza con /api, devolver 404
   if (req.path.startsWith('/api')) {
@@ -75,22 +164,34 @@ app.get('*', (req, res) => {
   return res.sendFile(path.join(publicPath, 'index.html'));
 });
 
-// Manejo de errores (debe ir al final)
+// ============================================
+// MANEJO DE ERRORES (DEBE IR AL FINAL)
+// ============================================
 app.use(ErrorHandlerMiddleware.handle);
 
-// Configurar Socket.IO handlers
+// ============================================
+// CONFIGURAR SOCKET.IO HANDLERS
+// ============================================
 setupSocketHandlers(io);
 
-// Iniciar Cron Jobs
+// ============================================
+// INICIAR CRON JOBS
+// ============================================
 CronService.init();
 
-// Iniciar servidor
+// ============================================
+// INICIAR SERVIDOR
+// ============================================
 const PORT = process.env.PORT || config.port;
 
 httpServer.listen(PORT, () => {
   console.log('===========================================');
   console.log(`🚛 Servidor Grúas Chile iniciado`);
   console.log(`🌍 Entorno: ${config.nodeEnv}`);
+  console.log(`🔐 Seguridad: ✅ HABILITADA`);
+  console.log(`🛡️  Rate Limiting: ✅ ACTIVO`);
+  console.log(`🔒 XSS Protection: ✅ ACTIVO`);
+  console.log(`🚫 NoSQL Injection: ✅ BLOQUEADO`);
   console.log(`🚀 API: http://localhost:${PORT}`);
   console.log(`📡 Socket.IO: http://localhost:${PORT}${config.socketPath}`);
   console.log(`📁 Uploads: http://localhost:${PORT}/uploads`);
