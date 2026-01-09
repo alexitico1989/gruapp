@@ -1094,9 +1094,31 @@ export default function ClienteDashboard() {
               {tipoGrua && (
                 <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded-lg flex items-center gap-2">
                   {(() => {
+                    console.log('🔍 tipoGrua seleccionado:', tipoGrua);
+                    console.log('🔍 tiposVehiculos disponibles:', tiposVehiculos.map(v => v.id));
+                    
                     const vehiculoSeleccionado = tiposVehiculos.find(v => v.id === tipoGrua);
-                    if (!vehiculoSeleccionado) return null;
+                    
+                    console.log('🔍 vehiculoSeleccionado:', vehiculoSeleccionado);
+                    
+                    if (!vehiculoSeleccionado) {
+                      console.error('❌ No se encontró vehículo con id:', tipoGrua);
+                      return (
+                        <div className="text-red-600 text-xs">
+                          Error: Tipo de vehículo no válido
+                        </div>
+                      );
+                    }
+                    
                     const IconComponent = vehiculoSeleccionado.icon;
+                    
+                    console.log('🔍 IconComponent:', IconComponent);
+                    
+                    if (!IconComponent) {
+                      console.error('❌ IconComponent es undefined para:', vehiculoSeleccionado);
+                      return null;
+                    }
+                    
                     return (
                       <>
                         <IconComponent className="h-5 w-5 text-[#ff7a3d]" />
@@ -1111,7 +1133,6 @@ export default function ClienteDashboard() {
                   })()}
                 </div>
               )}
-            </div>
 
             {/* Resumen / Estado */}
             {servicioActivo ? (
