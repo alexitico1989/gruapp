@@ -1082,7 +1082,7 @@ export default function ClienteDashboard() {
                   ))}
                 </optgroup>
                 
-                <optgroup label="🚚 PESADOS ($60.000 + $1.850/km)">
+                <optgroup label="🚚 PESADOS ($80.000 + $1.850/km)">
                   {tiposVehiculos.filter(v => v.pesado).map((tipo) => (
                     <option key={tipo.id} value={tipo.id}>
                       {tipo.label}
