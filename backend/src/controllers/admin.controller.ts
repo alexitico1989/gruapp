@@ -469,6 +469,31 @@ export class AdminController {
   }
 
   /**
+ * Eliminar cliente permanentemente
+ */
+static async eliminarCliente(req: Request, res: Response) {
+  const { id } = req.params;
+  try {
+    // Primero eliminar el usuario asociado (esto eliminará en cascada el cliente)
+    await prisma.user.delete({ 
+      where: { id } 
+    });
+    
+    res.status(200).json({ 
+      success: true,
+      message: "Cliente eliminado correctamente" 
+    });
+  } catch (error) {
+    console.error('Error eliminando cliente:', error);
+    res.status(500).json({ 
+      success: false,
+      error: "Error eliminando cliente", 
+      details: error 
+    });
+  }
+}
+
+  /**
    * GET /api/admin/servicios
    * Obtener todos los servicios con filtros
    */
