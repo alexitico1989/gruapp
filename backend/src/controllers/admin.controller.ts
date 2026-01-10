@@ -461,10 +461,36 @@ export class AdminController {
   static async eliminarGruero(req: Request, res: Response) {
     const { id } = req.params;
     try {
-      await prisma.gruero.delete({ where: { id } });
-      res.status(200).json({ message: "Gruero eliminado correctamente" });
+      // 1. Buscar gruero para obtener userId
+      const gruero = await prisma.gruero.findUnique({
+        where: { id },
+        select: { userId: true }
+      });
+
+      if (!gruero) {
+        res.status(404).json({
+          success: false,
+          message: 'Gruero no encontrado',
+        });
+        return;
+      }
+
+      // 2. ✅ Eliminar solo el User (esto elimina Gruero por cascada automática)
+      await prisma.user.delete({ 
+        where: { id: gruero.userId } 
+      });
+
+      res.status(200).json({ 
+        success: true,
+        message: "Gruero eliminado correctamente" 
+      });
     } catch (error) {
-      res.status(500).json({ error: "Error eliminando gruero", details: error });
+      console.error('Error eliminando gruero:', error);
+      res.status(500).json({ 
+        success: false,
+        error: "Error eliminando gruero", 
+        details: error 
+      });
     }
   }
 
@@ -472,26 +498,40 @@ export class AdminController {
  * Eliminar cliente permanentemente
  */
 static async eliminarCliente(req: Request, res: Response) {
-  const { id } = req.params;
-  try {
-    // Primero eliminar el usuario asociado (esto eliminará en cascada el cliente)
-    await prisma.user.delete({ 
-      where: { id } 
-    });
-    
-    res.status(200).json({ 
-      success: true,
-      message: "Cliente eliminado correctamente" 
-    });
-  } catch (error) {
-    console.error('Error eliminando cliente:', error);
-    res.status(500).json({ 
-      success: false,
-      error: "Error eliminando cliente", 
-      details: error 
-    });
+    const { id } = req.params;
+    try {
+      // 1. Buscar cliente para obtener userId
+      const cliente = await prisma.cliente.findUnique({
+        where: { id },
+        select: { userId: true }
+      });
+
+      if (!cliente) {
+        res.status(404).json({
+          success: false,
+          message: 'Cliente no encontrado',
+        });
+        return;
+      }
+
+      // 2. ✅ Eliminar solo el User (esto elimina Cliente por cascada automática)
+      await prisma.user.delete({ 
+        where: { id: cliente.userId } 
+      });
+      
+      res.status(200).json({ 
+        success: true,
+        message: "Cliente eliminado correctamente" 
+      });
+    } catch (error) {
+      console.error('Error eliminando cliente:', error);
+      res.status(500).json({ 
+        success: false,
+        error: "Error eliminando cliente", 
+        details: error 
+      });
+    }
   }
-}
 
   /**
    * GET /api/admin/servicios
