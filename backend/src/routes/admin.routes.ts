@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { AdminController } from '../controllers/admin.controller';
 import { ReclamoController } from '../controllers/reclamo.controller';
 import { AuthMiddleware } from '../middlewares/auth.middleware';
+import securityLogRoutes from './securityLog.routes';
 
 const router = Router();
 
@@ -352,6 +353,18 @@ router.patch(
   AuthMiddleware.authorize('ADMIN'),
   ReclamoController.agregarNotas
 );
+
+/**
+ * ====================================
+ * RUTAS DE LOGS DE SEGURIDAD
+ * ====================================
+ */
+
+/**
+ * /api/admin/security-logs/*
+ * Rutas de logs de seguridad (GET, stats, check-ip, clean)
+ */
+router.use('/security-logs', securityLogRoutes);
 
 /**
  * ====================================

@@ -22,6 +22,7 @@ model User {
   
   clienteProfile   Cliente?
   grueroProfile    Gruero?
+  securityLogs     SecurityLog[]
   
   @@map("users")
 }
@@ -232,4 +233,55 @@ model Notificacion {
   @@index([userId, leida])
   @@index([createdAt])
   @@map("notificaciones")
+}
+
+model SecurityLog {
+  id          String   @id @default(uuid())
+  tipo        SecurityEventType
+  nivel       SecurityLevel
+  ip          String
+  userAgent   String?
+  userId      String?
+  email       String?
+  endpoint    String
+  method      String
+  statusCode  Int?
+  mensaje     String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([tipo])
+  @@index([nivel])
+  @@index([ip])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("security_logs")
+}
+
+enum SecurityEventType {
+  LOGIN_FAILED
+  LOGIN_SUCCESS
+  REGISTER_FAILED
+  REGISTER_SUCCESS
+  PASSWORD_CHANGE_FAILED
+  PASSWORD_CHANGE_SUCCESS
+  VALIDATION_ERROR
+  RATE_LIMIT_EXCEEDED
+  SUSPICIOUS_REQUEST
+  XSS_ATTEMPT
+  SQL_INJECTION_ATTEMPT
+  UNAUTHORIZED_ACCESS
+  TOKEN_EXPIRED
+  TOKEN_INVALID
+  ACCOUNT_DELETED
+  ACCOUNT_SUSPENDED
+}
+
+enum SecurityLevel {
+  INFO
+  WARNING
+  DANGER
+  CRITICAL
 }

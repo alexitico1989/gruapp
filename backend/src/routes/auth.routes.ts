@@ -3,6 +3,10 @@ import { AuthController } from '../controllers/auth.controller';
 import { AuthMiddleware } from '../middlewares/auth.middleware';
 import { handleValidationErrors } from '../middlewares/validation.middleware';
 import {
+  logLoginAttempt,
+  logRegisterAttempt,
+} from '../middlewares/securityLog.middleware';
+import {
   registerClienteValidation,
   registerGrueroValidation,
   loginValidation,
@@ -18,6 +22,7 @@ router.post(
   '/register/cliente',
   registerClienteValidation,
   handleValidationErrors,
+  logRegisterAttempt,
   AuthController.registerCliente
 );
 
@@ -29,6 +34,7 @@ router.post(
   '/register/gruero',
   registerGrueroValidation,
   handleValidationErrors,
+  logRegisterAttempt,
   AuthController.registerGruero
 );
 
@@ -40,6 +46,7 @@ router.post(
   '/login',
   loginValidation,
   handleValidationErrors,
+  logLoginAttempt,
   AuthController.login
 );
 

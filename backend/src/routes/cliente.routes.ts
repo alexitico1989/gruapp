@@ -2,6 +2,7 @@ import express from 'express';
 import { ClienteController } from '../controllers/cliente.controller';
 import { AuthMiddleware } from '../middlewares/auth.middleware';
 import { handleValidationErrors } from '../middlewares/validation.middleware';
+import { logPasswordChange } from '../middlewares/securityLog.middleware';
 import { updateClientePerfilValidation } from '../validators/perfil.validator';
 import { changePasswordValidation } from '../validators/auth.validator';
 
@@ -24,6 +25,7 @@ router.patch(
   '/password',
   changePasswordValidation,
   handleValidationErrors,
+  logPasswordChange,
   ClienteController.cambiarPassword
 );
 
