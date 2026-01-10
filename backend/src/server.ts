@@ -13,6 +13,7 @@ import pagoRoutes from './routes/pago.routes';
 import { ErrorHandlerMiddleware } from './middlewares/errorHandler.middleware';
 import { setupSocketHandlers } from './socket/socketHandler';
 import { CronService } from './services/cron.service';
+import passwordResetRoutes from './routes/passwordReset.routes';
 
 // ============================================
 // IMPORTAR MIDDLEWARES DE SEGURIDAD
@@ -179,6 +180,8 @@ app.get('*', (req, res) => {
 // MANEJO DE ERRORES (DEBE IR AL FINAL)
 // ============================================
 app.use(ErrorHandlerMiddleware.handle);
+
+app.use('/api/auth', passwordResetRoutes);
 
 // ============================================
 // CONFIGURAR SOCKET.IO HANDLERS

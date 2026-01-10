@@ -217,6 +217,62 @@ class EmailService {
       },
     });
   }
+
+  /**
+   * Email con código de recuperación de contraseña
+   */
+  async enviarCodigoRecuperacion(usuario: {
+    email: string;
+    nombre: string;
+    apellido: string;
+    code: string;
+  }): Promise<boolean> {
+    return this.sendEmail({
+      to: usuario.email,
+      subject: '🔐 Código de Recuperación de Contraseña - GruApp Chile',
+      template: 'password-reset-code',
+      context: {
+        nombre: usuario.nombre,
+        apellido: usuario.apellido,
+        code: usuario.code,
+        year: new Date().getFullYear(),
+      },
+    });
+  }
+
+  /**
+   * Email de confirmación de cambio de contraseña
+   */
+  async enviarConfirmacionCambioPassword(usuario: {
+    email: string;
+    nombre: string;
+    apellido: string;
+  }): Promise<boolean> {
+    const ahora = new Date();
+    const fecha = ahora.toLocaleDateString('es-CL', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    });
+    const hora = ahora.toLocaleTimeString('es-CL', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+
+    return this.sendEmail({
+      to: usuario.email,
+      subject: '✅ Contraseña Actualizada - GruApp Chile',
+      template: 'password-reset-confirmed',
+      context: {
+        nombre: usuario.nombre,
+        apellido: usuario.apellido,
+        fecha: fecha,
+        hora: hora,
+        year: new Date().getFullYear(),
+      },
+    });
+  }
 }
 
 export default new EmailService();
