@@ -158,6 +158,39 @@ const obtenerDireccionDesdeCoordenadas = async (lat: number, lng: number): Promi
       }
     );
     const data = await response.json();
+    
+    // ✅ NUEVO: Formatear dirección de forma limpia
+    if (data.address) {
+      const address = data.address;
+      
+      // Construir dirección en formato: "Calle Número, Comuna"
+      const parts: string[] = [];
+      
+      // Calle y número
+      const road = address.road || address.street || address.pedestrian || address.path;
+      const houseNumber = address.house_number;
+      
+      if (road) {
+        if (houseNumber) {
+          parts.push(`${road} ${houseNumber}`);
+        } else {
+          parts.push(road);
+        }
+      }
+      
+      // Comuna/Ciudad
+      const city = address.city || address.town || address.village || address.municipality || address.suburb;
+      if (city) {
+        parts.push(city);
+      }
+      
+      // Si tenemos partes, devolverlas
+      if (parts.length > 0) {
+        return parts.join(', ');
+      }
+    }
+    
+    // Fallback: devolver display_name completo o coordenadas
     return data.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
   } catch (error) {
     console.error('Error en geocodificación inversa:', error);
@@ -179,9 +212,11 @@ const obtenerRutaPorCalles = async (
       const route = data.routes[0];
       const distanciaKm = route.distance / 1000;
       const duracionMin = route.duration / 60;
+      
+      // ✅ Convertir coordenadas de [lng, lat] a [lat, lng] para Leaflet
       const coordenadas = route.geometry.coordinates.map((coord: [number, number]) => [
-        coord[1],
-        coord[0],
+        coord[1], // lat
+        coord[0], // lng
       ] as [number, number]);
 
       return {
@@ -323,19 +358,58 @@ export default function ClienteDashboard() {
         const response = await fetch(
           `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
             texto + ', Santiago, Chile'
-          )}&limit=5`,
+          )}&limit=5&addressdetails=1`,
           {
             headers: {
               'User-Agent': 'GruApp/1.0'
             }
           }
         );
-        const data = await response.json();
+        const dataRaw = await response.json();
+        
+        // ✅ NUEVO: Formatear las sugerencias para mostrar formato corto
+        const dataFormateada = dataRaw.map((item: any) => {
+          let displayName = item.display_name;
+          
+          // Si tiene address details, construir formato corto
+          if (item.address) {
+            const address = item.address;
+            const parts: string[] = [];
+            
+            // Calle y número
+            const road = address.road || address.street || address.pedestrian;
+            const houseNumber = address.house_number;
+            
+            if (road) {
+              if (houseNumber) {
+                parts.push(`${road} ${houseNumber}`);
+              } else {
+                parts.push(road);
+              }
+            }
+            
+            // Comuna
+            const city = address.city || address.town || address.village || address.municipality || address.suburb;
+            if (city) {
+              parts.push(city);
+            }
+            
+            if (parts.length > 0) {
+              displayName = parts.join(', ');
+            }
+          }
+          
+          return {
+            ...item,
+            display_name: displayName,
+            display_name_full: item.display_name, // Guardar el completo por si acaso
+          };
+        });
         
         if (tipo === 'origen') {
-          setSugerenciasOrigen(data);
+          setSugerenciasOrigen(dataFormateada);
         } else {
-          setSugerenciasDestino(data);
+          setSugerenciasDestino(dataFormateada);
         }
       } catch (error) {
         console.error('Error buscando sugerencias:', error);
