@@ -416,7 +416,10 @@ export default function RegisterGruero() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
                   <div>
-                    <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">Contraseña</label>
+                    <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">
+                      Contraseña
+                    </label>
+
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                       <input
@@ -428,8 +431,20 @@ export default function RegisterGruero() {
                         placeholder="••••••••"
                       />
                     </div>
-                    {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
+
+                    {/* Texto informativo debajo del input */}
+                    <p className="text-gray-500 text-xs mt-1">
+                      Utiliza al menos un carácter especial como <strong>@ / ;</strong>
+                    </p>
+
+                    {errors.password && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.password}
+                      </p>
+                    )}
                   </div>
+
+
                   
                   <div>
                     <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">Confirmar Contraseña</label>
