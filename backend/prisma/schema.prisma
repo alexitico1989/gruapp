@@ -260,6 +260,33 @@ model SecurityLog {
   @@map("security_logs")
 }
 
+model IPBlacklist {
+  id             String    @id @default(uuid())
+  ip             String    @unique
+  razon          String    // "AUTO_BLOCKED", "MANUAL", "SUSPICIOUS_ACTIVITY"
+  intentos       Int       @default(0)
+  bloqueadoAt    DateTime  @default(now())
+  desbloqueadoAt DateTime?
+  permanente     Boolean   @default(false)
+  notas          String?
+  createdBy      String?   // Admin que bloqueó manualmente
+  
+  @@index([ip])
+  @@index([bloqueadoAt])
+  @@map("ip_blacklist")
+}
+
+model IPWhitelist {
+  id          String   @id @default(uuid())
+  ip          String   @unique
+  descripcion String   // "Oficina Santiago", "VPN Empresa", etc
+  createdBy   String
+  createdAt   DateTime @default(now())
+  
+  @@index([ip])
+  @@map("ip_whitelist")
+}
+
 enum SecurityEventType {
   LOGIN_FAILED
   LOGIN_SUCCESS

@@ -34,6 +34,8 @@ import {
   webhookLimiter,
 } from './middlewares/rateLimiter.middleware';
 
+import { checkIPBlacklist } from './middlewares/ipBlacklist.middleware';
+
 const app: Application = express();
 const httpServer = createServer(app);
 
@@ -61,6 +63,9 @@ app.set('io', io);
 // ============================================
 // MIDDLEWARES DE SEGURIDAD (ORDEN IMPORTANTE)
 // ============================================
+
+// 0. IP Blacklist - PRIMERA LÍNEA DE DEFENSA
+app.use(checkIPBlacklist);
 
 // 1. Helmet - Headers de seguridad HTTP
 app.use(helmetConfig);
@@ -198,6 +203,7 @@ httpServer.listen(PORT, () => {
   console.log(`🛡️  Rate Limiting: ✅ ACTIVO`);
   console.log(`🔒 XSS Protection: ✅ ACTIVO`);
   console.log(`🚫 NoSQL Injection: ✅ BLOQUEADO`);
+  console.log(`🚷 IP Blacklist: ✅ ACTIVO`);
   console.log(`🚀 API: http://localhost:${PORT}`);
   console.log(`📡 Socket.IO: http://localhost:${PORT}${config.socketPath}`);
   console.log(`📁 Uploads: http://localhost:${PORT}/uploads`);
