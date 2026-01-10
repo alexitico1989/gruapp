@@ -210,7 +210,7 @@ export default function RegisterCliente() {
               {/* Password */}
               <div>
                 <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">
-                  Contraseña (usa al menos un caracter especial @ / ;...)
+                  Contraseña
                 </label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -220,7 +220,7 @@ export default function RegisterCliente() {
                       required: 'La contraseña es requerida',
                       minLength: {
                         value: 6,
-                        message: 'Mínimo 6 caracteres',
+                        message: 'Mínimo 6 caracteres, utiliza al menos un caracter especial como @, /, ;, etc',
                       },
                     })}
                     className="w-full pl-11 pr-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
