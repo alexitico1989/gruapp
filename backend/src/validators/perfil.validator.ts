@@ -59,12 +59,16 @@ export const updateGrueroPerfilValidation: ValidationChain[] = [
     .matches(/^\+?[1-9]\d{1,14}$/)
     .withMessage('Teléfono inválido (formato E.164: +56912345678)'),
   
+  // ✅ CORREGIDO: RUT con limpieza de puntos
   body('rut')
     .optional()
     .isString()
     .trim()
+    .customSanitizer((value) => {
+      return value.replace(/\./g, '').replace(/\s/g, '');
+    })
     .matches(/^\d{7,8}-[\dkK]$/)
-    .withMessage('RUT inválido (formato: 12345678-9)')
+    .withMessage('RUT inválido (formato: 12345678-9 o 12.345.678-9)')
 ];
 
 /**
@@ -98,19 +102,34 @@ export const updateVehiculoValidation: ValidationChain[] = [
     .isFloat({ min: 0.5, max: 100 })
     .withMessage('La capacidad debe ser entre 0.5 y 100 toneladas'),
   
+  // ✅ CORREGIDO: Tipos de grúa según schema.prisma
   body('tipoGrua')
     .optional()
-    .isIn(['PLATAFORMA', 'GANCHO', 'LIVIANA', 'PESADA'])
-    .withMessage('Tipo de grúa inválido')
+    .isIn(['CAMA_BAJA', 'HORQUILLA', 'PLUMA'])
+    .withMessage('Tipo de grúa inválido (debe ser: CAMA_BAJA, HORQUILLA o PLUMA)')
 ];
 
 /**
  * Validaciones para actualizar disponibilidad del gruero
  */
 export const updateDisponibilidadValidation: ValidationChain[] = [
+  // ✅ CORREGIDO: Validación más flexible para disponible
   body('disponible')
-    .isBoolean()
-    .withMessage('El campo disponible debe ser true o false')
+    .exists()
+    .withMessage('El campo disponible es requerido')
+    .custom((value) => {
+      // Aceptar boolean o string 'true'/'false'
+      if (value === true || value === false || value === 'true' || value === 'false') {
+        return true;
+      }
+      throw new Error('El campo disponible debe ser true o false');
+    })
+    .customSanitizer((value) => {
+      // Convertir string a boolean si es necesario
+      if (value === 'true') return true;
+      if (value === 'false') return false;
+      return Boolean(value);
+    })
 ];
 
 /**
