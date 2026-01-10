@@ -1,8 +1,10 @@
 import helmet from 'helmet';
 import { Request, Response, NextFunction } from 'express';
-const mongoSanitize = require('express-mongo-sanitize');
-const hpp = require('hpp');
-import sanitizeHtml from 'sanitize-html';
+import * as mongoSanitize from 'express-mongo-sanitize';
+import hpp from 'hpp';
+import { JSDOM } from 'jsdom';
+const window = new JSDOM('').window;
+const DOMPurify = require('dompurify')(window);
 
 /**
  * Configuración de Helmet para headers de seguridad
@@ -11,10 +13,32 @@ export const helmetConfig = helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      styleSrc: [
+        "'self'", 
+        "'unsafe-inline'", 
+        "https://fonts.googleapis.com",
+        "https://unpkg.com", // ✅ Leaflet CSS
+        "https://cdnjs.cloudflare.com" // ✅ Leaflet markers
+      ],
       scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Necesario para React
-      imgSrc: ["'self'", "data:", "https:", "blob:"],
-      connectSrc: ["'self'", "https://gruapp-production.up.railway.app", "wss://gruapp-production.up.railway.app"],
+      imgSrc: [
+        "'self'", 
+        "data:", 
+        "https:", 
+        "blob:",
+        "https://*.tile.openstreetmap.org", // ✅ Tiles de OSM
+        "https://unpkg.com", // ✅ Leaflet images
+        "https://cdnjs.cloudflare.com", // ✅ Leaflet markers
+        "https://raw.githubusercontent.com" // ✅ Markers personalizados
+      ],
+      connectSrc: [
+        "'self'", 
+        "https://gruapp-production.up.railway.app", 
+        "wss://gruapp-production.up.railway.app",
+        "https://nominatim.openstreetmap.org", // ✅ Geocoding
+        "https://router.project-osrm.org", // ✅ Rutas
+        "https://*.tile.openstreetmap.org" // ✅ Tiles
+      ],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
@@ -31,7 +55,7 @@ export const helmetConfig = helmet({
  */
 export const mongoSanitizeMiddleware = mongoSanitize({
   replaceWith: '_',
-  onSanitize: ({ req, key }: any) => {
+  onSanitize: ({ req, key }) => {
     console.warn(`⚠️ Intento de NoSQL injection detectado en ${req.path} - key: ${key}`);
   },
 });
@@ -70,11 +94,10 @@ export const xssProtection = (req: Request, res: Response, next: NextFunction) =
  */
 function sanitizeObject(obj: any): any {
   if (typeof obj === 'string') {
-    // Sanitizar string con sanitize-html (sin permitir ningún tag HTML)
-    return sanitizeHtml(obj, {
-      allowedTags: [],
-      allowedAttributes: {},
-      disallowedTagsMode: 'recursiveEscape',
+    // Sanitizar string con DOMPurify
+    return DOMPurify.sanitize(obj, {
+      ALLOWED_TAGS: [], // No permitir ningún tag HTML
+      ALLOWED_ATTR: [], // No permitir ningún atributo
     });
   }
   
