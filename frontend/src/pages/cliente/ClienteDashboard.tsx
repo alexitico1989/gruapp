@@ -1088,7 +1088,7 @@ export default function ClienteDashboard() {
                 disabled={!!servicioActivo}
               />
               {mostrarSugerenciasOrigen && sugerenciasOrigen.length > 0 && (
-                <div className="absolute z-50 w-[calc(100%-24px)] mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                <div className="fixed z-[9999] w-[280px] mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                   {sugerenciasOrigen.map((sug, idx) => (
                     <button
                       key={idx}
@@ -1121,7 +1121,7 @@ export default function ClienteDashboard() {
                 disabled={!!servicioActivo}
               />
               {mostrarSugerenciasDestino && sugerenciasDestino.length > 0 && (
-                <div className="absolute z-50 w-[calc(100%-24px)] mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                <div className="fixed z-[9999] w-[280px] mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                   {sugerenciasDestino.map((sug, idx) => (
                     <button
                       key={idx}
