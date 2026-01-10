@@ -2,6 +2,11 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './store/authStore';
 
+// Pages - Recuperación de Contraseña (NUEVAS)
+import ForgotPassword from './pages/ForgotPassword';
+import VerifyCode from './pages/VerifyCode';
+import ResetPassword from './pages/ResetPassword';
+
 // Pages - Auth
 import Landing from './pages/Landing';
 import Login from './pages/Login';
@@ -97,6 +102,11 @@ function App() {
             ? <Navigate to="/gruero/dashboard" replace />
             : <RegisterGruero />
         } />
+
+        {/* ✅ NUEVAS RUTAS - Recuperación de Contraseña */}
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/verify-code" element={<VerifyCode />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* Páginas Públicas */}
         <Route path="/servicios" element={<Servicios />} />

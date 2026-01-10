@@ -117,6 +117,16 @@ export default function Login() {
                 {errors.password && (
                   <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
                 )}
+                
+                {/* ✅ NUEVO: Enlace Olvidé mi contraseña */}
+                <div className="text-right mt-2">
+                  <Link
+                    to="/forgot-password"
+                    className="text-sm text-[#ff7a3d] hover:text-[#ff8c52] font-semibold transition-colors"
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </Link>
+                </div>
               </div>
 
               {/* Submit Button */}
