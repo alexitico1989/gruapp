@@ -20,8 +20,8 @@ export const registerClienteValidation: ValidationChain[] = [
     .withMessage('La contraseña debe contener al menos una minúscula')
     .matches(/[0-9]/)
     .withMessage('La contraseña debe contener al menos un número')
-    .matches(/[!@#$%^&*(),.?":{}|<>]/)
-    .withMessage('La contraseña debe contener al menos un carácter especial'),
+    .matches(/[@$!%*?&]/)
+    .withMessage('La contraseña debe contener al menos un carácter especial (@$!%*?&)'),
   
   body('nombre')
     .isString()
@@ -66,8 +66,8 @@ export const registerGrueroValidation: ValidationChain[] = [
     .withMessage('La contraseña debe contener al menos una minúscula')
     .matches(/[0-9]/)
     .withMessage('La contraseña debe contener al menos un número')
-    .matches(/[!@#$%^&*(),.?":{}|<>]/)
-    .withMessage('La contraseña debe contener al menos un carácter especial'),
+    .matches(/[@$!%*?&]/)
+    .withMessage('La contraseña debe contener al menos un carácter especial (@$!%*?&)'),
   
   body('nombre')
     .isString()
@@ -91,11 +91,16 @@ export const registerGrueroValidation: ValidationChain[] = [
     .matches(/^\+?[1-9]\d{1,14}$/)
     .withMessage('Teléfono inválido (formato E.164: +56912345678)'),
   
+  // ✅ CORREGIDO: Acepta RUT con o sin puntos
   body('rut')
     .isString()
     .trim()
+    .customSanitizer((value) => {
+      // Remover puntos y espacios
+      return value.replace(/\./g, '').replace(/\s/g, '');
+    })
     .matches(/^\d{7,8}-[\dkK]$/)
-    .withMessage('RUT inválido (formato: 12345678-9)'),
+    .withMessage('RUT inválido (formato: 12345678-9 o 12.345.678-9)'),
   
   body('patente')
     .isString()
@@ -120,9 +125,10 @@ export const registerGrueroValidation: ValidationChain[] = [
     .isFloat({ min: 0.5, max: 100 })
     .withMessage('La capacidad debe ser entre 0.5 y 100 toneladas'),
   
+  // ✅ CORREGIDO: Agregados los tipos correctos según schema.prisma
   body('tipoGrua')
-    .isIn(['PLATAFORMA', 'GANCHO', 'LIVIANA', 'PESADA'])
-    .withMessage('Tipo de grúa inválido')
+    .isIn(['CAMA_BAJA', 'HORQUILLA', 'PLUMA'])
+    .withMessage('Tipo de grúa inválido (debe ser: CAMA_BAJA, HORQUILLA o PLUMA)')
 ];
 
 /**
@@ -162,8 +168,8 @@ export const changePasswordValidation: ValidationChain[] = [
     .withMessage('La nueva contraseña debe contener al menos una minúscula')
     .matches(/[0-9]/)
     .withMessage('La nueva contraseña debe contener al menos un número')
-    .matches(/[!@#$%^&*(),.?":{}|<>]/)
-    .withMessage('La nueva contraseña debe contener al menos un carácter especial')
+    .matches(/[@$!%*?&]/)
+    .withMessage('La nueva contraseña debe contener al menos un carácter especial (@$!%*?&)')
     .custom((value, { req }) => {
       if (value === req.body.passwordActual) {
         throw new Error('La nueva contraseña debe ser diferente a la actual');
