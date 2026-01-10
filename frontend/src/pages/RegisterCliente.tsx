@@ -212,7 +212,6 @@ export default function RegisterCliente() {
                 <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">
                   Contraseña
                 </label>
-
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                   <input
@@ -220,28 +219,26 @@ export default function RegisterCliente() {
                     {...register('password', {
                       required: 'La contraseña es requerida',
                       minLength: {
-                        value: 6,
-                        message: 'Mínimo 6 caracteres',
+                        value: 8,
+                        message: 'Mínimo 8 caracteres',
                       },
                       pattern: {
-                        value: /[@\/;!#$%^&*(),.?":{}|<>]/,
-                        message: 'Debe contener al menos un carácter especial',
+                        value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+                        message: 'Debe cumplir con todos los requisitos',
                       },
                     })}
                     className="w-full pl-11 pr-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
                     placeholder="••••••••"
                   />
                 </div>
-
-                {/* Texto informativo debajo del input */}
-                <p className="text-gray-500 text-xs mt-1">
-                  Utiliza al menos un carácter especial como <strong>@ / ;</strong>
+                
+                {/* ✅ NUEVO: Mensaje de ayuda */}
+                <p className="text-gray-500 text-xs mt-1.5">
+                  Mínimo 8 caracteres con al menos: 1 mayúscula, 1 minúscula, 1 número y 1 carácter especial (@$!%*?&)
                 </p>
-
+                
                 {errors.password && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.password.message}
-                  </p>
+                  <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
                 )}
               </div>
 

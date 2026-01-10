@@ -136,9 +136,25 @@ export default function RegisterGruero() {
     else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formData.email)) newErrors.email = 'Email inválido';
     if (!formData.telefono.trim()) newErrors.telefono = 'El teléfono es requerido';
     else if (!/^[0-9]{8,15}$/.test(formData.telefono)) newErrors.telefono = 'Teléfono inválido (8-15 dígitos)';
-    if (!formData.password) newErrors.password = 'La contraseña es requerida';
-    else if (formData.password.length < 6) newErrors.password = 'Mínimo 6 caracteres';
-    if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Las contraseñas no coinciden';
+    
+    // ✅ NUEVA VALIDACIÓN DE PASSWORD
+    if (!formData.password) {
+      newErrors.password = 'La contraseña es requerida';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Mínimo 8 caracteres';
+    } else if (!/(?=.*[a-z])/.test(formData.password)) {
+      newErrors.password = 'Debe contener al menos una minúscula';
+    } else if (!/(?=.*[A-Z])/.test(formData.password)) {
+      newErrors.password = 'Debe contener al menos una mayúscula';
+    } else if (!/(?=.*\d)/.test(formData.password)) {
+      newErrors.password = 'Debe contener al menos un número';
+    } else if (!/(?=.*[@$!%*?&])/.test(formData.password)) {
+      newErrors.password = 'Debe contener al menos un carácter especial (@$!%*?&)';
+    }
+    
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Las contraseñas no coinciden';
+    }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -416,10 +432,7 @@ export default function RegisterGruero() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
                   <div>
-                    <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">
-                      Contraseña
-                    </label>
-
+                    <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">Contraseña</label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                       <input
@@ -431,20 +444,14 @@ export default function RegisterGruero() {
                         placeholder="••••••••"
                       />
                     </div>
-
-                    {/* Texto informativo debajo del input */}
-                    <p className="text-gray-500 text-xs mt-1">
-                      Utiliza al menos un carácter especial como <strong>@ / ;</strong>
+                    
+                    {/* ✅ NUEVO: Mensaje de ayuda */}
+                    <p className="text-gray-500 text-xs mt-1.5">
+                      Mínimo 8 caracteres con al menos: 1 mayúscula, 1 minúscula, 1 número y 1 carácter especial (@$!%*?&)
                     </p>
-
-                    {errors.password && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.password}
-                      </p>
-                    )}
+                    
+                    {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
                   </div>
-
-
                   
                   <div>
                     <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">Confirmar Contraseña</label>
