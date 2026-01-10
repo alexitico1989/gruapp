@@ -1,10 +1,9 @@
 import helmet from 'helmet';
 import { Request, Response, NextFunction } from 'express';
-import * as mongoSanitize from 'express-mongo-sanitize';
-import hpp from 'hpp';
-import { JSDOM } from 'jsdom';
-const window = new JSDOM('').window;
-const DOMPurify = require('dompurify')(window);
+import sanitizeHtml from 'sanitize-html';
+
+const mongoSanitize = require('express-mongo-sanitize');
+const hpp = require('hpp');
 
 /**
  * Configuración de Helmet para headers de seguridad
@@ -55,7 +54,7 @@ export const helmetConfig = helmet({
  */
 export const mongoSanitizeMiddleware = mongoSanitize({
   replaceWith: '_',
-  onSanitize: ({ req, key }) => {
+  onSanitize: ({ req, key }: { req: any; key: string }) => {
     console.warn(`⚠️ Intento de NoSQL injection detectado en ${req.path} - key: ${key}`);
   },
 });
@@ -94,10 +93,10 @@ export const xssProtection = (req: Request, res: Response, next: NextFunction) =
  */
 function sanitizeObject(obj: any): any {
   if (typeof obj === 'string') {
-    // Sanitizar string con DOMPurify
-    return DOMPurify.sanitize(obj, {
-      ALLOWED_TAGS: [], // No permitir ningún tag HTML
-      ALLOWED_ATTR: [], // No permitir ningún atributo
+    // Sanitizar string con sanitize-html
+    return sanitizeHtml(obj, {
+      allowedTags: [], // No permitir ningún tag HTML
+      allowedAttributes: {}, // No permitir ningún atributo
     });
   }
   
