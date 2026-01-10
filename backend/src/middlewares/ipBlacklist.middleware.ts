@@ -10,7 +10,7 @@ export const checkIPBlacklist = async (
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> => {
   try {
     const ip = req.ip || req.socket.remoteAddress || 'unknown';
 
@@ -29,11 +29,12 @@ export const checkIPBlacklist = async (
         statusCode: 403,
       });
 
-      return res.status(403).json({
+      res.status(403).json({
         success: false,
         message: 'Acceso denegado. Tu IP ha sido bloqueada por actividad sospechosa.',
         error: 'IP_BLOCKED',
       });
+      return;
     }
 
     next();
@@ -127,7 +128,7 @@ export const checkSuspiciousActivity = async (
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> => {
   try {
     const ip = req.ip || req.socket.remoteAddress || 'unknown';
 
