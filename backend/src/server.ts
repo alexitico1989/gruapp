@@ -37,6 +37,12 @@ import {
 const app: Application = express();
 const httpServer = createServer(app);
 
+// ============================================
+// TRUST PROXY (IMPORTANTE PARA RAILWAY/HEROKU)
+// ============================================
+// Confiar en el primer proxy (Railway, Heroku, etc)
+app.set('trust proxy', 1);
+
 // Configurar Socket.IO
 const io = new SocketIOServer(httpServer, {
   cors: {
