@@ -3,6 +3,8 @@ import { PrismaClient } from '@prisma/client';
 import { UpdateGrueroLocationDTO } from '../types';
 import { config } from '../config';
 import bcrypt from 'bcrypt';
+import imageOptimizer from '../services/imageOptimizer.service';
+import path from 'path';
 
 const prisma = new PrismaClient();
 
@@ -675,235 +677,215 @@ export class GrueroController {
 
 
   /**
-   * Subir foto del gruero
-   */
-  static async uploadFotoGruero(req: Request, res: Response) {
-    try {
-      const userId = req.user?.userId;
-      const file = req.file;
+ * Subir foto de la grúa (CON OPTIMIZACIÓN)
+ */
+static async uploadFotoGrua(req: Request, res: Response) {
+  try {
+    const userId = req.user?.userId;
+    const file = req.file;
 
-      if (!file) {
-        return res.status(400).json({
-          success: false,
-          message: 'No se recibió ningún archivo',
-        });
-      }
-
-      const gruero = await prisma.gruero.findUnique({
-        where: { userId },
-      });
-
-      if (!gruero) {
-        return res.status(404).json({
-          success: false,
-          message: 'Gruero no encontrado',
-        });
-      }
-
-      // Actualizar con la URL relativa del archivo
-      const fotoUrl = `/uploads/gruero-photos/${file.filename}`;
-
-      await prisma.gruero.update({
-        where: { id: gruero.id },
-        data: { fotoGruero: fotoUrl },
-      });
-
-      return res.status(200).json({
-        success: true,
-        message: 'Foto de perfil actualizada',
-        data: {
-          fotoGruero: fotoUrl,
-        },
-      });
-    } catch (error: any) {
-      console.error('Error subiendo foto de gruero:', error);
-      return res.status(500).json({
+    if (!file) {
+      return res.status(400).json({
         success: false,
-        message: 'Error al subir foto',
-        error: error.message,
+        message: 'No se recibió ningún archivo',
       });
     }
-  }
 
-  /**
-   * Subir foto de la grúa
-   */
-  static async uploadFotoGrua(req: Request, res: Response) {
-    try {
-      const userId = req.user?.userId;
-      const file = req.file;
+    const gruero = await prisma.gruero.findUnique({
+      where: { userId },
+    });
 
-      if (!file) {
-        return res.status(400).json({
-          success: false,
-          message: 'No se recibió ningún archivo',
-        });
-      }
-
-      const gruero = await prisma.gruero.findUnique({
-        where: { userId },
-      });
-
-      if (!gruero) {
-        return res.status(404).json({
-          success: false,
-          message: 'Gruero no encontrado',
-        });
-      }
-
-      // Actualizar con la URL relativa del archivo
-      const fotoUrl = `/uploads/grua-photos/${file.filename}`;
-
-      await prisma.gruero.update({
-        where: { id: gruero.id },
-        data: { fotoGrua: fotoUrl },
-      });
-
-      return res.status(200).json({
-        success: true,
-        message: 'Foto de la grúa actualizada',
-        data: {
-          fotoGrua: fotoUrl,
-        },
-      });
-    } catch (error: any) {
-      console.error('Error subiendo foto de grúa:', error);
-      return res.status(500).json({
+    if (!gruero) {
+      return res.status(404).json({
         success: false,
-        message: 'Error al subir foto',
-        error: error.message,
+        message: 'Gruero no encontrado',
       });
     }
+
+    // ✅ OPTIMIZAR IMAGEN
+    const inputPath = file.path;
+    const outputFilename = `optimized-${file.filename}`;
+    const outputPath = path.join(path.dirname(inputPath), outputFilename);
+
+    const optimization = await imageOptimizer.optimizarFotoGrua(
+      inputPath,
+      outputPath
+    );
+
+    console.log(`🚗 Foto grúa optimizada: ${optimization.savings} ahorro`);
+
+    const fotoUrl = `/uploads/grua-photos/${outputFilename}`;
+
+    await prisma.gruero.update({
+      where: { id: gruero.id },
+      data: { fotoGrua: fotoUrl },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Foto de la grúa actualizada',
+      data: {
+        fotoGrua: fotoUrl,
+        optimization: {
+          originalSize: `${(optimization.originalSize / 1024).toFixed(1)} KB`,
+          optimizedSize: `${(optimization.optimizedSize / 1024).toFixed(1)} KB`,
+          savings: optimization.savings,
+        },
+      },
+    });
+  } catch (error: any) {
+    console.error('Error subiendo foto de grúa:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error al subir foto',
+      error: error.message,
+    });
   }
+}
 
   /**
-   * Subir documento con fecha de vencimiento
-   */
-  static async uploadDocumento(req: Request, res: Response) {
-    try {
-      const userId = req.user?.userId;
-      const file = req.file;
-      const { tipoDocumento, fechaVencimiento } = req.body;
+ * Subir documento con fecha de vencimiento (CON OPTIMIZACIÓN)
+ */
+static async uploadDocumento(req: Request, res: Response) {
+  try {
+    const userId = req.user?.userId;
+    const file = req.file;
+    const { tipoDocumento, fechaVencimiento } = req.body;
 
-      if (!file) {
-        return res.status(400).json({
-          success: false,
-          message: 'No se recibió ningún archivo',
-        });
-      }
-
-      if (!tipoDocumento) {
-        return res.status(400).json({
-          success: false,
-          message: 'Debe especificar el tipo de documento',
-        });
-      }
-
-      const tiposValidos = ['licenciaConducir', 'seguroVigente', 'revisionTecnica', 'permisoCirculacion'];
-      if (!tiposValidos.includes(tipoDocumento)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Tipo de documento inválido',
-        });
-      }
-
-      const gruero = await prisma.gruero.findUnique({
-        where: { userId },
+    if (!file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No se recibió ningún archivo',
       });
+    }
 
-      if (!gruero) {
-        return res.status(404).json({
-          success: false,
-          message: 'Gruero no encontrado',
-        });
-      }
+    if (!tipoDocumento) {
+      return res.status(400).json({
+        success: false,
+        message: 'Debe especificar el tipo de documento',
+      });
+    }
 
-      // Construir objeto de actualización dinámicamente
-      const documentoUrl = `/uploads/documentos/${file.filename}`;
-      const updateData: any = {
-        [tipoDocumento]: documentoUrl,
-      };
+    const tiposValidos = ['licenciaConducir', 'seguroVigente', 'revisionTecnica', 'permisoCirculacion'];
+    if (!tiposValidos.includes(tipoDocumento)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tipo de documento inválido',
+      });
+    }
 
-      // Agregar fecha de vencimiento si se proporciona
-      if (fechaVencimiento) {
-        const campoVencimiento = tipoDocumento.replace('Conducir', '').replace('Vigente', '').replace('Tecnica', '').replace('Circulacion', '') + 'Vencimiento';
-        updateData[campoVencimiento] = new Date(fechaVencimiento);
-      }
+    const gruero = await prisma.gruero.findUnique({
+      where: { userId },
+    });
 
-      // Actualizar documento
-      const grueroActualizado = await prisma.gruero.update({
+    if (!gruero) {
+      return res.status(404).json({
+        success: false,
+        message: 'Gruero no encontrado',
+      });
+    }
+
+    // ✅ OPTIMIZAR DOCUMENTO
+    const inputPath = file.path;
+    const outputFilename = `optimized-${file.filename}`;
+    const outputPath = path.join(path.dirname(inputPath), outputFilename);
+
+    const optimization = await imageOptimizer.optimizarDocumento(
+      inputPath,
+      outputPath
+    );
+
+    console.log(`📄 Documento optimizado: ${optimization.savings} ahorro`);
+
+    // Construir objeto de actualización dinámicamente
+    const documentoUrl = `/uploads/documentos/${outputFilename}`;
+    const updateData: any = {
+      [tipoDocumento]: documentoUrl,
+    };
+
+    // Agregar fecha de vencimiento si se proporciona
+    if (fechaVencimiento) {
+      const campoVencimiento = tipoDocumento.replace('Conducir', '').replace('Vigente', '').replace('Tecnica', '').replace('Circulacion', '') + 'Vencimiento';
+      updateData[campoVencimiento] = new Date(fechaVencimiento);
+    }
+
+    // Actualizar documento
+    const grueroActualizado = await prisma.gruero.update({
+      where: { id: gruero.id },
+      data: {
+        ...updateData,
+        // Reset de verificación al subir documento
+        estadoVerificacion: 'PENDIENTE',
+        motivoRechazo: null,
+        verificado: false,
+      },
+    });
+
+    // Verificar vencimientos
+    const hoy = new Date();
+    const documentosVencidos = [];
+
+    if (grueroActualizado.licenciaVencimiento && grueroActualizado.licenciaVencimiento < hoy) {
+      documentosVencidos.push('Licencia de Conducir');
+    }
+    if (grueroActualizado.seguroVencimiento && grueroActualizado.seguroVencimiento < hoy) {
+      documentosVencidos.push('Seguro');
+    }
+    if (grueroActualizado.revisionVencimiento && grueroActualizado.revisionVencimiento < hoy) {
+      documentosVencidos.push('Revisión Técnica');
+    }
+    if (grueroActualizado.permisoVencimiento && grueroActualizado.permisoVencimiento < hoy) {
+      documentosVencidos.push('Permiso de Circulación');
+    }
+
+    // Si hay documentos vencidos, suspender cuenta
+    if (documentosVencidos.length > 0) {
+      await prisma.gruero.update({
         where: { id: gruero.id },
         data: {
-          ...updateData,
-
-          // 🔥 RESET DE VERIFICACIÓN AL SUBIR DOCUMENTO
-          estadoVerificacion: 'PENDIENTE',
-          motivoRechazo: null,
-          verificado: false,
+          cuentaSuspendida: true,
+          motivoSuspension: `DOCUMENTOS_VENCIDOS: ${documentosVencidos.join(', ')}`,
+          status: 'SUSPENDIDO',
         },
       });
-
-
-      // Verificar vencimientos
-      const hoy = new Date();
-      const documentosVencidos = [];
-
-      if (grueroActualizado.licenciaVencimiento && grueroActualizado.licenciaVencimiento < hoy) {
-        documentosVencidos.push('Licencia de Conducir');
-      }
-      if (grueroActualizado.seguroVencimiento && grueroActualizado.seguroVencimiento < hoy) {
-        documentosVencidos.push('Seguro');
-      }
-      if (grueroActualizado.revisionVencimiento && grueroActualizado.revisionVencimiento < hoy) {
-        documentosVencidos.push('Revisión Técnica');
-      }
-      if (grueroActualizado.permisoVencimiento && grueroActualizado.permisoVencimiento < hoy) {
-        documentosVencidos.push('Permiso de Circulación');
-      }
-
-      // Si hay documentos vencidos, suspender cuenta
-      if (documentosVencidos.length > 0) {
+    } else {
+      // Si todos los documentos están al día, reactivar cuenta si estaba suspendida
+      if (grueroActualizado.cuentaSuspendida && grueroActualizado.motivoSuspension?.includes('DOCUMENTOS_VENCIDOS')) {
         await prisma.gruero.update({
           where: { id: gruero.id },
           data: {
-            cuentaSuspendida: true,
-            motivoSuspension: `DOCUMENTOS_VENCIDOS: ${documentosVencidos.join(', ')}`,
-            status: 'SUSPENDIDO',
+            cuentaSuspendida: false,
+            motivoSuspension: null,
+            status: 'OFFLINE',
           },
         });
-      } else {
-        // Si todos los documentos están al día, reactivar cuenta si estaba suspendida
-        if (grueroActualizado.cuentaSuspendida && grueroActualizado.motivoSuspension?.includes('DOCUMENTOS_VENCIDOS')) {
-          await prisma.gruero.update({
-            where: { id: gruero.id },
-            data: {
-              cuentaSuspendida: false,
-              motivoSuspension: null,
-              status: 'OFFLINE',
-            },
-          });
-        }
       }
-
-      return res.status(200).json({
-        success: true,
-        message: 'Documento actualizado exitosamente',
-        data: {
-          tipoDocumento,
-          url: documentoUrl,
-          fechaVencimiento: fechaVencimiento || null,
-          documentosVencidos: documentosVencidos.length > 0 ? documentosVencidos : null,
-        },
-      });
-    } catch (error: any) {
-      console.error('Error subiendo documento:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Error al subir documento',
-        error: error.message,
-      });
     }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Documento actualizado exitosamente',
+      data: {
+        tipoDocumento,
+        url: documentoUrl,
+        fechaVencimiento: fechaVencimiento || null,
+        documentosVencidos: documentosVencidos.length > 0 ? documentosVencidos : null,
+        optimization: {
+          originalSize: `${(optimization.originalSize / 1024).toFixed(1)} KB`,
+          optimizedSize: `${(optimization.optimizedSize / 1024).toFixed(1)} KB`,
+          savings: optimization.savings,
+        },
+      },
+    });
+  } catch (error: any) {
+    console.error('Error subiendo documento:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error al subir documento',
+      error: error.message,
+    });
   }
+}
 
   /**
    * Verificar documentos próximos a vencer (alerta 10 días antes)
