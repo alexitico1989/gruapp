@@ -193,15 +193,19 @@ export class GrueroController {
   /**
    * Actualizar disponibilidad del gruero
    */
+  /**
+ * Actualizar disponibilidad del gruero
+ */
   static async updateDisponibilidad(req: Request, res: Response) {
     try {
       const userId = req.user?.userId;
-      const { status } = req.body;
+      const { disponible } = req.body;  // ✅ CORREGIDO: Leer "disponible"
 
-      if (!status || !['DISPONIBLE', 'OCUPADO', 'OFFLINE'].includes(status)) {
+      // ✅ Validar que sea boolean
+      if (typeof disponible !== 'boolean') {
         return res.status(400).json({
           success: false,
-          message: 'Estado inválido. Debe ser: DISPONIBLE, OCUPADO u OFFLINE',
+          message: 'El campo disponible debe ser true o false',
         });
       }
 
@@ -216,8 +220,11 @@ export class GrueroController {
         });
       }
 
+      // ✅ Convertir boolean a status
+      const status = disponible ? 'DISPONIBLE' : 'OFFLINE';
+
       // Verificar si la cuenta está suspendida
-      if (gruero.cuentaSuspendida && status === 'DISPONIBLE') {
+      if (gruero.cuentaSuspendida && disponible) {
         return res.status(403).json({
           success: false,
           message: 'No puedes ponerte disponible con la cuenta suspendida',
@@ -236,6 +243,7 @@ export class GrueroController {
         data: {
           id: grueroActualizado.id,
           status: grueroActualizado.status,
+          disponible: grueroActualizado.status === 'DISPONIBLE',
         },
       });
     } catch (error: any) {
