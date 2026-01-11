@@ -12,6 +12,8 @@ interface GrueroData {
   modelo: string;
   anio: number;
   capacidadToneladas: number;
+  tipoGrua: string;
+  tiposVehiculosAtiende: string; // ✅ AGREGADO
   status: string;
   verificado: boolean;
   totalServicios: number;
@@ -78,7 +80,11 @@ export default function PerfilGruero() {
     modelo: '',
     anio: '',
     capacidadToneladas: '',
+    tipoGrua: '',
   });
+
+  // ✅ NUEVO: Estado para tipos de vehículos
+  const [tiposVehiculosSeleccionados, setTiposVehiculosSeleccionados] = useState<string[]>([]);
 
   const [uploadingFotoGruero, setUploadingFotoGruero] = useState(false);
   const [uploadingFotoGrua, setUploadingFotoGrua] = useState(false);
@@ -90,6 +96,34 @@ export default function PerfilGruero() {
 
   const [showEliminarCuenta, setShowEliminarCuenta] = useState(false);
   const [passwordEliminar, setPasswordEliminar] = useState('');
+
+  // ✅ NUEVO: Tipos de vehículos disponibles
+  const tiposVehiculosDisponibles = [
+    { value: 'AUTO', label: 'Auto' },
+    { value: 'CAMIONETA', label: 'Camioneta' },
+    { value: 'SUV', label: 'SUV' },
+    { value: 'MOTO', label: 'Moto' },
+    { value: 'CAMION', label: 'Camión' },
+    { value: 'BUS', label: 'Bus' },
+  ];
+
+  const tiposGruaDisponibles = [
+    { value: 'CAMA_BAJA', label: 'Cama Baja' },
+    { value: 'HORQUILLA', label: 'Horquilla' },
+    { value: 'PLUMA', label: 'Pluma' },
+    { value: 'DESLIZABLE', label: 'Deslizable' },
+  ];
+
+  // ✅ NUEVO: Función para toggle de tipos de vehículos
+  const toggleTipoVehiculo = (tipo: string) => {
+    setTiposVehiculosSeleccionados(prev => {
+      if (prev.includes(tipo)) {
+        return prev.filter(t => t !== tipo);
+      } else {
+        return [...prev, tipo];
+      }
+    });
+  };
 
   useEffect(() => {
     cargarDatos();
@@ -120,7 +154,17 @@ export default function PerfilGruero() {
           modelo: data.modelo,
           anio: data.anio?.toString() || '',
           capacidadToneladas: data.capacidadToneladas?.toString() || '',
+          tipoGrua: data.tipoGrua || '',
         });
+
+        // ✅ NUEVO: Parsear tipos de vehículos
+        try {
+          const tipos = JSON.parse(data.tiposVehiculosAtiende || '[]');
+          setTiposVehiculosSeleccionados(Array.isArray(tipos) ? tipos : []);
+        } catch (error) {
+          console.error('Error parseando tipos de vehículos:', error);
+          setTiposVehiculosSeleccionados([]);
+        }
       }
 
       if (statsRes.data.success) {
@@ -167,11 +211,18 @@ export default function PerfilGruero() {
   };
 
   const handleUpdateVehiculo = async () => {
+    // ✅ VALIDACIÓN: Al menos un tipo de vehículo
+    if (tiposVehiculosSeleccionados.length === 0) {
+      toast.error('Debes seleccionar al menos un tipo de vehículo');
+      return;
+    }
+
     try {
       const response = await api.patch('/gruero/vehiculo', {
         ...formVehiculo,
         anio: parseInt(formVehiculo.anio),
         capacidadToneladas: parseFloat(formVehiculo.capacidadToneladas),
+        tiposVehiculosAtiende: JSON.stringify(tiposVehiculosSeleccionados), // ✅ ENVIAR TIPOS
       });
       
       if (response.data.success) {
@@ -323,14 +374,9 @@ export default function PerfilGruero() {
 
       if (response.data.success) {
         toast.success('Cuenta eliminada exitosamente');
-        
-        // Limpiar TODO el almacenamiento local y de sesión
         localStorage.clear();
         sessionStorage.clear();
-        
-        // Esperar un momento para que se vea el toast
         setTimeout(() => {
-          // Redirigir al login con hard redirect
           window.location.href = '/login';
         }, 1500);
       }
@@ -689,7 +735,15 @@ export default function PerfilGruero() {
                           modelo: grueroData.modelo,
                           anio: grueroData.anio?.toString() || '',
                           capacidadToneladas: grueroData.capacidadToneladas?.toString() || '',
+                          tipoGrua: grueroData.tipoGrua || '',
                         });
+                        // ✅ Resetear tipos de vehículos
+                        try {
+                          const tipos = JSON.parse(grueroData.tiposVehiculosAtiende || '[]');
+                          setTiposVehiculosSeleccionados(Array.isArray(tipos) ? tipos : []);
+                        } catch (error) {
+                          setTiposVehiculosSeleccionados([]);
+                        }
                       }}
                       className="flex items-center bg-gray-500 text-white px-2 md:px-3 py-1 rounded-lg hover:bg-gray-600 text-sm"
                     >
@@ -701,78 +755,148 @@ export default function PerfilGruero() {
               </div>
 
               {editandoVehiculo ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-                  <div>
-                    <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-2">Patente</label>
-                    <input
-                      type="text"
-                      value={formVehiculo.patente}
-                      onChange={(e) => setFormVehiculo({ ...formVehiculo, patente: e.target.value.toUpperCase() })}
-                      className="input w-full uppercase text-base"
-                      maxLength={6}
-                    />
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+                    <div>
+                      <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-2">Patente</label>
+                      <input
+                        type="text"
+                        value={formVehiculo.patente}
+                        onChange={(e) => setFormVehiculo({ ...formVehiculo, patente: e.target.value.toUpperCase() })}
+                        className="input w-full uppercase text-base"
+                        maxLength={6}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-2">Marca</label>
+                      <input
+                        type="text"
+                        value={formVehiculo.marca}
+                        onChange={(e) => setFormVehiculo({ ...formVehiculo, marca: e.target.value })}
+                        className="input w-full text-base"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-2">Modelo</label>
+                      <input
+                        type="text"
+                        value={formVehiculo.modelo}
+                        onChange={(e) => setFormVehiculo({ ...formVehiculo, modelo: e.target.value })}
+                        className="input w-full text-base"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-2">Año</label>
+                      <input
+                        type="number"
+                        value={formVehiculo.anio}
+                        onChange={(e) => setFormVehiculo({ ...formVehiculo, anio: e.target.value })}
+                        className="input w-full text-base"
+                        min="1900"
+                        max={new Date().getFullYear() + 1}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-2">Capacidad (toneladas)</label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        value={formVehiculo.capacidadToneladas}
+                        onChange={(e) => setFormVehiculo({ ...formVehiculo, capacidadToneladas: e.target.value })}
+                        className="input w-full text-base"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-2">Tipo de Grúa</label>
+                      <select
+                        value={formVehiculo.tipoGrua}
+                        onChange={(e) => setFormVehiculo({ ...formVehiculo, tipoGrua: e.target.value })}
+                        className="input w-full text-base"
+                      >
+                        <option value="">Seleccionar...</option>
+                        {tiposGruaDisponibles.map((tipo) => (
+                          <option key={tipo.value} value={tipo.value}>{tipo.label}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
+
+                  {/* ✅ NUEVO: Selector de Tipos de Vehículos */}
                   <div>
-                    <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-2">Marca</label>
-                    <input
-                      type="text"
-                      value={formVehiculo.marca}
-                      onChange={(e) => setFormVehiculo({ ...formVehiculo, marca: e.target.value })}
-                      className="input w-full text-base"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-2">Modelo</label>
-                    <input
-                      type="text"
-                      value={formVehiculo.modelo}
-                      onChange={(e) => setFormVehiculo({ ...formVehiculo, modelo: e.target.value })}
-                      className="input w-full text-base"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-2">Año</label>
-                    <input
-                      type="number"
-                      value={formVehiculo.anio}
-                      onChange={(e) => setFormVehiculo({ ...formVehiculo, anio: e.target.value })}
-                      className="input w-full text-base"
-                      min="1900"
-                      max={new Date().getFullYear() + 1}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-2">Capacidad (toneladas)</label>
-                    <input
-                      type="number"
-                      step="0.5"
-                      value={formVehiculo.capacidadToneladas}
-                      onChange={(e) => setFormVehiculo({ ...formVehiculo, capacidadToneladas: e.target.value })}
-                      className="input w-full text-base"
-                    />
+                    <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-2">
+                      Tipos de Vehículos que Atiendes *
+                    </label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {tiposVehiculosDisponibles.map((tipo) => (
+                        <button
+                          key={tipo.value}
+                          type="button"
+                          onClick={() => toggleTipoVehiculo(tipo.value)}
+                          className={`p-3 rounded-lg border-2 text-sm font-semibold transition-colors ${
+                            tiposVehiculosSeleccionados.includes(tipo.value)
+                              ? 'border-[#ff7a3d] bg-orange-50 text-[#ff7a3d]'
+                              : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                          }`}
+                        >
+                          {tipo.label}
+                        </button>
+                      ))}
+                    </div>
+                    {tiposVehiculosSeleccionados.length === 0 && (
+                      <p className="text-red-500 text-sm mt-2">
+                        Debes seleccionar al menos un tipo de vehículo
+                      </p>
+                    )}
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-                  <div>
-                    <p className="text-xs text-gray-500">Patente</p>
-                    <p className="font-semibold text-base md:text-lg">{grueroData.patente}</p>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+                    <div>
+                      <p className="text-xs text-gray-500">Patente</p>
+                      <p className="font-semibold text-base md:text-lg">{grueroData.patente}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Marca</p>
+                      <p className="font-semibold text-sm md:text-base">{grueroData.marca}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Modelo</p>
+                      <p className="font-semibold text-sm md:text-base">{grueroData.modelo}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Año</p>
+                      <p className="font-semibold text-sm md:text-base">{grueroData.anio}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Capacidad</p>
+                      <p className="font-semibold text-sm md:text-base">{grueroData.capacidadToneladas} ton</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Tipo de Grúa</p>
+                      <p className="font-semibold text-sm md:text-base">
+                        {tiposGruaDisponibles.find(t => t.value === grueroData.tipoGrua)?.label || grueroData.tipoGrua}
+                      </p>
+                    </div>
                   </div>
+
+                  {/* ✅ MOSTRAR TIPOS DE VEHÍCULOS */}
                   <div>
-                    <p className="text-xs text-gray-500">Marca</p>
-                    <p className="font-semibold text-sm md:text-base">{grueroData.marca}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Modelo</p>
-                    <p className="font-semibold text-sm md:text-base">{grueroData.modelo}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Año</p>
-                    <p className="font-semibold text-sm md:text-base">{grueroData.anio}</p>
-                  </div>
-                  <div className="col-span-2 md:col-span-1">
-                    <p className="text-xs text-gray-500">Capacidad</p>
-                    <p className="font-semibold text-sm md:text-base">{grueroData.capacidadToneladas} toneladas</p>
+                    <p className="text-xs text-gray-500 mb-2">Tipos de Vehículos que Atiendes</p>
+                    <div className="flex flex-wrap gap-2">
+                      {tiposVehiculosSeleccionados.length > 0 ? (
+                        tiposVehiculosSeleccionados.map((tipo) => (
+                          <span
+                            key={tipo}
+                            className="px-3 py-1 bg-orange-100 text-[#ff7a3d] rounded-full text-sm font-semibold"
+                          >
+                            {tiposVehiculosDisponibles.find(t => t.value === tipo)?.label || tipo}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-gray-500 text-sm">No especificado</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}

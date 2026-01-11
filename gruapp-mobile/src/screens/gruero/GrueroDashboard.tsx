@@ -7,18 +7,39 @@ import {
   Alert,
   ActivityIndicator,
   Switch,
+  Modal,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
+import { useSocket } from '../../contexts/SocketContext'; // ✅ IMPORTAR
 import api from '../../services/api';
 import { colors, spacing } from '../../theme/colors';
-import TruckIcon from '../../components/TruckIcon'; // ✅ IMPORTAR
+import TruckIcon from '../../components/TruckIcon';
+
+interface Servicio {
+  id: string;
+  origenDireccion: string;
+  destinoDireccion: string;
+  distanciaKm: number;
+  totalGruero: number;
+  totalCliente: number;
+  status: string;
+  cliente: {
+    user: {
+      nombre: string;
+      apellido: string;
+      telefono: string;
+    };
+  };
+}
 
 export default function GrueroDashboard() {
   const { user, logout } = useAuthStore();
+  const { socket, connected } = useSocket(); // ✅ USAR SOCKET
   const mapRef = useRef<MapView>(null);
 
   const [location, setLocation] = useState<{
@@ -28,11 +49,73 @@ export default function GrueroDashboard() {
   const [loading, setLoading] = useState(true);
   const [disponible, setDisponible] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  
+  // ✅ NUEVOS ESTADOS
+  const [nuevaSolicitud, setNuevaSolicitud] = useState<Servicio | null>(null);
+  const [showNuevaSolicitud, setShowNuevaSolicitud] = useState(false);
+  const [servicioActivo, setServicioActivo] = useState<Servicio | null>(null);
 
   useEffect(() => {
     getLocation();
     checkDisponibilidad();
+    cargarServicioActivo();
   }, []);
+
+  // ✅ SOCKET LISTENERS
+  useEffect(() => {
+    if (!socket || !disponible) return;
+
+    console.log('📡 Configurando listeners de gruero...');
+
+    // Nueva solicitud
+    socket.on('gruero:nuevaSolicitud', (data: Servicio) => {
+      console.log('🆕 Nueva solicitud recibida:', data);
+      setNuevaSolicitud(data);
+      setShowNuevaSolicitud(true);
+    });
+
+    // Servicio cancelado por cliente
+    socket.on('servicio:canceladoNotificacion', (data: any) => {
+      console.log('🚫 Servicio cancelado:', data);
+      
+      if (data.canceladoPor === 'CLIENTE') {
+        Alert.alert(
+          'Servicio Cancelado',
+          'El cliente canceló el servicio',
+          [{ text: 'OK' }]
+        );
+      }
+      
+      if (nuevaSolicitud && nuevaSolicitud.id === data.servicioId) {
+        setShowNuevaSolicitud(false);
+        setNuevaSolicitud(null);
+      }
+      
+      setServicioActivo(null);
+    });
+
+    // Estado actualizado por cliente
+    socket.on('cliente:estadoActualizado', (data: { servicioId: string; status: string }) => {
+      console.log('📢 Estado actualizado por cliente:', data);
+      
+      if (data.status === 'COMPLETADO') {
+        Alert.alert(
+          '✅ Servicio Completado',
+          'El cliente marcó el servicio como completado',
+          [{ text: 'OK' }]
+        );
+        setServicioActivo(null);
+      } else {
+        cargarServicioActivo();
+      }
+    });
+
+    return () => {
+      socket.off('gruero:nuevaSolicitud');
+      socket.off('servicio:canceladoNotificacion');
+      socket.off('cliente:estadoActualizado');
+    };
+  }, [socket, disponible, nuevaSolicitud]);
 
   const getLocation = async () => {
     try {
@@ -56,12 +139,10 @@ export default function GrueroDashboard() {
 
       setLocation(newLocation);
 
-      // Enviar ubicación al backend si está disponible
       if (disponible) {
         await updateLocationOnServer(newLocation);
       }
 
-      // Centrar mapa
       if (mapRef.current) {
         mapRef.current.animateToRegion({
           ...newLocation,
@@ -89,6 +170,22 @@ export default function GrueroDashboard() {
     }
   };
 
+  const cargarServicioActivo = async () => {
+    try {
+      const response = await api.get('/servicios/mis-servicios');
+      if (response.data.success) {
+        const activo = response.data.data.find(
+          (s: Servicio) => !['COMPLETADO', 'CANCELADO'].includes(s.status)
+        );
+        setServicioActivo(activo || null);
+      }
+    } catch (error: any) {
+      if (error.response?.status !== 404) {
+        console.error('Error cargando servicio activo:', error);
+      }
+    }
+  };
+
   const updateLocationOnServer = async (loc: { latitude: number; longitude: number }) => {
     try {
       await api.put('/gruero/location', {
@@ -113,7 +210,6 @@ export default function GrueroDashboard() {
       if (response.data.success) {
         setDisponible(nuevoEstado);
 
-        // Si se pone disponible, enviar ubicación
         if (nuevoEstado && location) {
           await updateLocationOnServer(location);
         }
@@ -133,6 +229,74 @@ export default function GrueroDashboard() {
       );
     } finally {
       setUpdatingStatus(false);
+    }
+  };
+
+  const aceptarServicio = async () => {
+    if (!nuevaSolicitud) return;
+
+    try {
+      setLoading(true);
+      const response = await api.post(`/servicios/${nuevaSolicitud.id}/aceptar`);
+
+      if (response.data.success) {
+        if (socket) {
+          socket.emit('servicio:aceptado', {
+            servicioId: nuevaSolicitud.id,
+          });
+        }
+
+        Alert.alert('¡Servicio Aceptado!', 'El cliente ha sido notificado');
+        setShowNuevaSolicitud(false);
+        setNuevaSolicitud(null);
+        cargarServicioActivo();
+      }
+    } catch (error: any) {
+      console.error('Error aceptando servicio:', error);
+      Alert.alert('Error', error.response?.data?.message || 'No se pudo aceptar el servicio');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const rechazarServicio = () => {
+    setShowNuevaSolicitud(false);
+    setNuevaSolicitud(null);
+  };
+
+  const actualizarEstadoServicio = async (nuevoEstado: string) => {
+    if (!servicioActivo) return;
+
+    try {
+      const response = await api.patch(`/servicios/${servicioActivo.id}/estado`, {
+        status: nuevoEstado,
+      });
+
+      if (response.data.success) {
+        if (socket) {
+          socket.emit('servicio:estadoActualizado', {
+            servicioId: servicioActivo.id,
+            status: nuevoEstado,
+          });
+        }
+
+        const mensajes: Record<string, string> = {
+          EN_CAMINO: '🚗 Estado actualizado: En Camino',
+          EN_SITIO: '📍 Estado actualizado: En el Sitio',
+          COMPLETADO: '✅ Servicio Completado',
+        };
+
+        Alert.alert('Estado Actualizado', mensajes[nuevoEstado] || 'Estado actualizado');
+        
+        if (nuevoEstado === 'COMPLETADO') {
+          setServicioActivo(null);
+        } else {
+          cargarServicioActivo();
+        }
+      }
+    } catch (error: any) {
+      console.error('Error actualizando estado:', error);
+      Alert.alert('Error', 'No se pudo actualizar el estado');
     }
   };
 
@@ -161,10 +325,16 @@ export default function GrueroDashboard() {
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>Hola, {user?.nombre}!</Text>
-          <Text style={styles.subtitle}>
-            {disponible ? 'Estás DISPONIBLE' : 'Estás OFFLINE'}
-          </Text>
+          <Text style={styles.greeting}>Hola, {user?.nombre}! 🚚</Text>
+          <View style={styles.connectionStatus}>
+            <View style={[
+              styles.connectionIndicator,
+              { backgroundColor: connected ? '#10b981' : '#ef4444' }
+            ]} />
+            <Text style={styles.connectionText}>
+              {disponible ? 'DISPONIBLE' : 'OFFLINE'} • {connected ? 'Conectado' : 'Desconectado'}
+            </Text>
+          </View>
         </View>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
           <Ionicons name="log-out-outline" size={24} color={colors.error} />
@@ -197,6 +367,57 @@ export default function GrueroDashboard() {
         </View>
       </View>
 
+      {/* Servicio Activo */}
+      {servicioActivo && (
+        <View style={styles.servicioActivoContainer}>
+          <Text style={styles.servicioActivoTitle}>
+            {servicioActivo.status === 'ACEPTADO' && '✅ Servicio Aceptado'}
+            {servicioActivo.status === 'EN_CAMINO' && '🚗 En Camino'}
+            {servicioActivo.status === 'EN_SITIO' && '📍 En el Sitio'}
+          </Text>
+          
+          <View style={styles.servicioInfo}>
+            <Text style={styles.clienteNombre}>
+              {servicioActivo.cliente.user.nombre} {servicioActivo.cliente.user.apellido}
+            </Text>
+            <Text style={styles.direccion}>📍 {servicioActivo.origenDireccion}</Text>
+            <Text style={styles.direccion}>🎯 {servicioActivo.destinoDireccion}</Text>
+            <Text style={styles.ganancia}>
+              ${servicioActivo.totalGruero.toLocaleString('es-CL')}
+            </Text>
+          </View>
+
+          <View style={styles.accionesContainer}>
+            {servicioActivo.status === 'ACEPTADO' && (
+              <TouchableOpacity
+                style={[styles.accionButton, { backgroundColor: '#3b82f6' }]}
+                onPress={() => actualizarEstadoServicio('EN_CAMINO')}
+              >
+                <Text style={styles.accionButtonText}>🚗 En Camino</Text>
+              </TouchableOpacity>
+            )}
+            
+            {servicioActivo.status === 'EN_CAMINO' && (
+              <TouchableOpacity
+                style={[styles.accionButton, { backgroundColor: '#8b5cf6' }]}
+                onPress={() => actualizarEstadoServicio('EN_SITIO')}
+              >
+                <Text style={styles.accionButtonText}>📍 En Sitio</Text>
+              </TouchableOpacity>
+            )}
+            
+            {servicioActivo.status === 'EN_SITIO' && (
+              <TouchableOpacity
+                style={[styles.accionButton, { backgroundColor: '#10b981' }]}
+                onPress={() => actualizarEstadoServicio('COMPLETADO')}
+              >
+                <Text style={styles.accionButtonText}>✅ Completar</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      )}
+
       {/* Mapa */}
       <View style={styles.mapContainer}>
         <MapView
@@ -219,13 +440,12 @@ export default function GrueroDashboard() {
               description="Visible para clientes"
             >
               <View style={styles.markerContainer}>
-                <TruckIcon size={32} color="#fff" />
+                <TruckIcon size={28} color="#fff" />
               </View>
             </Marker>
           )}
         </MapView>
 
-        {/* Botón centrar ubicación */}
         <TouchableOpacity
           style={styles.centerButton}
           onPress={getLocation}
@@ -243,7 +463,7 @@ export default function GrueroDashboard() {
               Activa tu disponibilidad para recibir solicitudes de clientes
             </Text>
           </View>
-        ) : (
+        ) : !servicioActivo ? (
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
               <Ionicons name="time-outline" size={20} color={colors.primary} />
@@ -254,13 +474,91 @@ export default function GrueroDashboard() {
               <Text style={styles.statLabel}>Ubicación visible</Text>
             </View>
           </View>
-        )}
+        ) : null}
       </View>
+
+      {/* Modal Nueva Solicitud */}
+      {showNuevaSolicitud && nuevaSolicitud && (
+        <Modal
+          visible={true}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={rechazarServicio}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>🆕 ¡Nueva Solicitud!</Text>
+              </View>
+
+              <ScrollView style={styles.modalContent}>
+                <View style={styles.clienteInfo}>
+                  <Text style={styles.clienteLabel}>Cliente</Text>
+                  <Text style={styles.clienteNombreModal}>
+                    {nuevaSolicitud.cliente.user.nombre} {nuevaSolicitud.cliente.user.apellido}
+                  </Text>
+                </View>
+
+                <View style={styles.direccionContainer}>
+                  <View style={styles.direccionItem}>
+                    <Ionicons name="location" size={20} color="#10b981" />
+                    <View style={styles.direccionTexto}>
+                      <Text style={styles.direccionLabel}>Origen</Text>
+                      <Text style={styles.direccionValor}>{nuevaSolicitud.origenDireccion}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.direccionItem}>
+                    <Ionicons name="navigate" size={20} color={colors.primary} />
+                    <View style={styles.direccionTexto}>
+                      <Text style={styles.direccionLabel}>Destino</Text>
+                      <Text style={styles.direccionValor}>{nuevaSolicitud.destinoDireccion}</Text>
+                    </View>
+                  </View>
+                </View>
+
+                <View style={styles.statsRow}>
+                  <View style={styles.statBox}>
+                    <Text style={styles.statBoxLabel}>Distancia</Text>
+                    <Text style={styles.statBoxValue}>{nuevaSolicitud.distanciaKm} km</Text>
+                  </View>
+                  <View style={[styles.statBox, { backgroundColor: '#dcfce7' }]}>
+                    <Text style={styles.statBoxLabel}>Tu Ganancia</Text>
+                    <Text style={[styles.statBoxValue, { color: '#16a34a' }]}>
+                      ${nuevaSolicitud.totalGruero.toLocaleString('es-CL')}
+                    </Text>
+                  </View>
+                </View>
+              </ScrollView>
+
+              <View style={styles.modalFooter}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.rechazarButton]}
+                  onPress={rechazarServicio}
+                >
+                  <Text style={styles.rechazarButtonText}>Rechazar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.aceptarButton]}
+                  onPress={aceptarServicio}
+                  disabled={loading}
+                >
+                  <Text style={styles.aceptarButtonText}>
+                    {loading ? 'Aceptando...' : '¡Aceptar!'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 }
 
+// ✅ AGREGAR ESTILOS ADICIONALES AL FINAL
 const styles = StyleSheet.create({
+  // ... (estilos existentes) ...
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -289,10 +587,20 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.secondary,
   },
-  subtitle: {
-    fontSize: 14,
-    color: colors.text.secondary,
+  connectionStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 4,
+    gap: 6,
+  },
+  connectionIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  connectionText: {
+    fontSize: 12,
+    color: colors.text.secondary,
   },
   logoutButton: {
     padding: spacing.xs,
@@ -330,6 +638,56 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.text.secondary,
   },
+  servicioActivoContainer: {
+    backgroundColor: '#fff',
+    padding: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  servicioActivoTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: colors.secondary,
+    marginBottom: spacing.sm,
+  },
+  servicioInfo: {
+    backgroundColor: '#f0f9ff',
+    padding: spacing.md,
+    borderRadius: 8,
+    marginBottom: spacing.sm,
+  },
+  clienteNombre: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.secondary,
+    marginBottom: 4,
+  },
+  direccion: {
+    fontSize: 13,
+    color: colors.text.secondary,
+    marginBottom: 2,
+  },
+  ganancia: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#16a34a',
+    marginTop: 8,
+  },
+  accionesContainer: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  accionButton: {
+    flex: 1,
+    padding: spacing.md,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  accionButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
   mapContainer: {
     flex: 1,
     position: 'relative',
@@ -338,11 +696,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   markerContainer: {
-    backgroundColor: colors.primary, // ✅ Fondo naranja
-    padding: -500,
-    borderRadius: 550,
-    borderWidth: -1,
-    borderColor: '#000',
+    backgroundColor: colors.primary,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#fff',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
@@ -396,5 +757,125 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 12,
     color: colors.text.secondary,
+  },
+  // ✅ ESTILOS DEL MODAL
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  modalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    width: '100%',
+    maxHeight: '80%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  modalHeader: {
+    backgroundColor: colors.primary,
+    padding: spacing.lg,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+    textAlign: 'center',
+  },
+  modalContent: {
+    padding: spacing.lg,
+  },
+  clienteInfo: {
+    backgroundColor: '#f0f9ff',
+    padding: spacing.md,
+    borderRadius: 8,
+    marginBottom: spacing.md,
+  },
+  clienteLabel: {
+    fontSize: 12,
+    color: colors.text.secondary,
+    marginBottom: 4,
+  },
+  clienteNombreModal: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.secondary,
+  },
+  direccionContainer: {
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  direccionItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+  },
+  direccionTexto: {
+    flex: 1,
+  },
+  direccionLabel: {
+    fontSize: 12,
+    color: colors.text.secondary,
+    marginBottom: 2,
+  },
+  direccionValor: {
+    fontSize: 14,
+    color: colors.secondary,
+    fontWeight: '500',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  statBox: {
+    flex: 1,
+    backgroundColor: '#f3f4f6',
+    padding: spacing.md,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  statBoxLabel: {
+    fontSize: 12,
+    color: colors.text.secondary,
+    marginBottom: 4,
+  },
+  statBoxValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.secondary,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    padding: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  modalButton: {
+    flex: 1,
+    padding: spacing.md,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  rechazarButton: {
+    backgroundColor: '#f3f4f6',
+  },
+  rechazarButtonText: {
+    color: colors.text.primary,
+    fontWeight: 'bold',
+  },
+  aceptarButton: {
+    backgroundColor: colors.primary,
+  },
+  aceptarButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
