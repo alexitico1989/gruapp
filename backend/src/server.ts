@@ -102,8 +102,44 @@ app.use(xssProtection);
 // 8. Logger de seguridad (detecta requests sospechosos)
 app.use(securityLogger);
 
-// 9. Rate limiting general (ANTES de las rutas)
-app.use('/api', generalLimiter);
+// ============================================
+// ✅ RUTAS EXCLUIDAS DE RATE LIMITING
+// ============================================
+// Estas rutas NO tienen límite (uso normal de la app)
+const excludedFromRateLimit = [
+  '/api/servicios/solicitar',
+  '/api/servicios/pendientes',
+  '/api/servicios/mis-servicios',
+  '/api/servicios/:id',
+  '/api/servicios/:id/estado',
+  '/api/servicios/:id/aceptar',
+  '/api/servicios/:id/cancelar',
+  '/api/gruero/disponibilidad',
+  '/api/gruero/location',
+  '/api/gruero/perfil',
+  '/api/gruero/estadisticas',
+  '/api/cliente/perfil',
+  '/api/cliente/dashboard',
+  '/api/notificaciones',
+];
+
+// 9. Rate limiting general CON EXCEPCIONES
+app.use('/api', (req, res, next) => {
+  // ✅ Excluir rutas específicas del rate limiting
+  const isExcluded = excludedFromRateLimit.some(route => {
+    const routePattern = route.replace(/:\w+/g, '[^/]+'); // Convertir :id a regex
+    const regex = new RegExp(`^${routePattern}$`);
+    return regex.test(req.path);
+  });
+
+  if (isExcluded) {
+    console.log(`⚡ Rate limiting DESHABILITADO para: ${req.path}`);
+    return next(); // Skip rate limiting
+  }
+
+  // Aplicar rate limiting general para las demás rutas
+  generalLimiter(req, res, next);
+});
 
 // ============================================
 // SERVIR ARCHIVOS ESTÁTICOS
@@ -203,7 +239,8 @@ httpServer.listen(PORT, () => {
   console.log(`🚛 Servidor Grúas Chile iniciado`);
   console.log(`🌍 Entorno: ${config.nodeEnv}`);
   console.log(`🔐 Seguridad: ✅ HABILITADA`);
-  console.log(`🛡️  Rate Limiting: ✅ ACTIVO`);
+  console.log(`🛡️  Rate Limiting: ✅ ACTIVO (con excepciones)`);
+  console.log(`⚡ Rutas sin límite: ${excludedFromRateLimit.length}`);
   console.log(`🔒 XSS Protection: ✅ ACTIVO`);
   console.log(`🚫 NoSQL Injection: ✅ BLOQUEADO`);
   console.log(`🚷 IP Blacklist: ✅ ACTIVO`);
