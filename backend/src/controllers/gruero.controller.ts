@@ -675,6 +675,67 @@ export class GrueroController {
   }
 }
 
+/**
+ * Subir foto del gruero (CON OPTIMIZACIÓN)
+ */
+static async uploadFotoGruero(req: Request, res: Response) {
+  try {
+    const userId = req.user?.userId;
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No se recibió ningún archivo',
+      });
+    }
+
+    const gruero = await prisma.gruero.findUnique({
+      where: { userId },
+    });
+
+    if (!gruero) {
+      return res.status(404).json({
+        success: false,
+        message: 'Gruero no encontrado',
+      });
+    }
+
+    // ✅ OPTIMIZAR IMAGEN
+    const inputPath = file.path;
+    const outputFilename = `optimized-${file.filename}`;
+    const outputPath = path.join(path.dirname(inputPath), outputFilename);
+
+    const optimization = await imageOptimizer.optimizarFotoGruero(
+      inputPath,
+      outputPath
+    );
+
+    console.log(`📸 Foto gruero optimizada: ${optimization.savings} ahorro`);
+
+    const fotoUrl = `/uploads/gruero-photos/${outputFilename}`;
+
+    await prisma.gruero.update({
+      where: { id: gruero.id },
+      data: { fotoGruero: fotoUrl },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Foto de perfil actualizada',
+      data: {
+        fotoGruero: fotoUrl,
+      },
+    });
+  } catch (error: any) {
+    console.error('Error subiendo foto de gruero:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error al subir foto',
+      error: error.message,
+    });
+  }
+}
 
   /**
  * Subir foto de la grúa (CON OPTIMIZACIÓN)
