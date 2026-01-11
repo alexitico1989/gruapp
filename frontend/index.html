@@ -18,5 +18,47 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- ✅ NUEVO: Mensaje de seguridad en consola (solo en producción) -->
+    <script>
+      // Solo mostrar en producción
+      if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+        // Limpiar consola primero
+        console.clear();
+        
+        // Mensaje de advertencia
+        console.log(
+          '%c¡Alto ahí! 🛑',
+          'color: #ff0000; font-size: 50px; font-weight: bold; text-shadow: 3px 3px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;'
+        );
+        
+        console.log(
+          '%c⚠️ ADVERTENCIA DE SEGURIDAD',
+          'color: #ff7a3d; font-size: 24px; font-weight: bold; background: #fff3e0; padding: 10px; border-radius: 5px;'
+        );
+        
+        console.log(
+          '%cEsta es una función del navegador destinada a desarrolladores.\n\n' +
+          'Si alguien te dijo que copiaras y pegaras algo aquí para:\n' +
+          '  • "Hackear" una cuenta\n' +
+          '  • Habilitar funciones de GruApp\n' +
+          '  • Ganar dinero fácil\n' +
+          '  • Obtener servicios gratis\n\n' +
+          '¡ES UNA ESTAFA! 🚨\n\n' +
+          'Hacerlo podría darle a atacantes acceso completo a tu cuenta de GruApp.',
+          'font-size: 16px; line-height: 1.8; color: #333;'
+        );
+        
+        console.log(
+          '%c🔒 Si no sabes lo que estás haciendo aquí, CIERRA esta ventana ahora.',
+          'color: #fff; font-size: 18px; font-weight: bold; background: #d32f2f; padding: 15px; border-radius: 5px;'
+        );
+        
+        console.log(
+          '%c¿Eres desarrollador? Únete a nuestro equipo: contacto@gruappchile.cl',
+          'color: #1e3a5f; font-size: 14px; font-style: italic; margin-top: 20px;'
+        );
+      }
+    </script>
   </body>
 </html>

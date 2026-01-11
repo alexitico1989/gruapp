@@ -24,4 +24,20 @@ export default defineConfig({
       },
     },
   },
+  // ✅ NUEVO: Configuración para producción
+  build: {
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,        // Elimina todos los console.log
+        drop_debugger: true,       // Elimina debugger statements
+        pure_funcs: [              // Elimina funciones específicas
+          'console.log',
+          'console.info',
+          'console.debug',
+          'console.warn',
+        ],
+      },
+    },
+  },
 });
