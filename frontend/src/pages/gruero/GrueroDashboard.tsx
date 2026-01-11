@@ -497,52 +497,55 @@ export default function GrueroDashboard() {
   };
 
   const toggleDisponibilidad = async () => {
-    if (!perfilCargado) {
-      toast.error('Esperando carga del perfil...');
-      return;
-    }
+  if (!perfilCargado) {
+    toast.error('Esperando carga del perfil...');
+    return;
+  }
 
-    if (!grueroId) {
-      toast.error('Error: ID de gruero no disponible');
-      return;
-    }
+  if (!grueroId) {
+    toast.error('Error: ID de gruero no disponible');
+    return;
+  }
 
-    const nuevoEstado = !disponible;
-    const nuevoStatus = nuevoEstado ? 'DISPONIBLE' : 'OFFLINE';
+  const nuevoEstado = !disponible;
 
-    try {
-      setLoading(true);
-      console.log('🔄 Actualizando disponibilidad:', nuevoStatus);
+  try {
+    setLoading(true);
+    console.log('🔄 Actualizando disponibilidad:', nuevoEstado);
+    
+    // ✅ CORREGIDO: Enviar "disponible" en lugar de "status"
+    const response = await api.patch('/gruero/disponibilidad', {
+      disponible: nuevoEstado  // ✅ Campo correcto
+    });
+
+    if (response.data.success) {
+      setDisponible(nuevoEstado);
+      sessionStorage.setItem('grueroDisponible', nuevoEstado.toString());
       
-      const response = await api.patch('/gruero/disponibilidad', {
-        status: nuevoStatus,
-      });
-
-      if (response.data.success) {
-        setDisponible(nuevoEstado);
-        sessionStorage.setItem('grueroDisponible', nuevoEstado.toString());
-        
-        if (socketRef.current) {
-          socketRef.current.emit('gruero:updateStatus', {
-            grueroId,
-            status: nuevoStatus,
-          });
-        }
-
-        if (nuevoEstado) {
-          toast.success('¡Ahora estás disponible!');
-        } else {
-          toast.success('Te has puesto fuera de línea');
-          detenerRastreo();
-        }
+      // Actualizar status en socket
+      const nuevoStatus = nuevoEstado ? 'DISPONIBLE' : 'OFFLINE';
+      
+      if (socketRef.current) {
+        socketRef.current.emit('gruero:updateStatus', {
+          grueroId,
+          status: nuevoStatus,
+        });
       }
-    } catch (error: any) {
-      console.error('❌ Error al cambiar disponibilidad:', error);
-      toast.error(error.response?.data?.message || 'Error al cambiar disponibilidad');
-    } finally {
-      setLoading(false);
+
+      if (nuevoEstado) {
+        toast.success('¡Ahora estás disponible!');
+      } else {
+        toast.success('Te has puesto fuera de línea');
+        detenerRastreo();
+      }
     }
-  };
+  } catch (error: any) {
+    console.error('❌ Error al cambiar disponibilidad:', error);
+    toast.error(error.response?.data?.message || 'Error al cambiar disponibilidad');
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     if (disponible && grueroId) {
