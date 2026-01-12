@@ -590,6 +590,18 @@ export default function ClienteDashboard() {
             
             return nuevasGruas;
           });
+
+          if (
+            servicioActivo &&
+            servicioActivo.gruero &&
+            servicioActivo.gruero.id === data.grueroId
+          ) {
+            console.log('🚗 Actualizando posición del gruero del servicio activo');
+            setGrueroPosition([
+              data.ubicacion.lat,
+              data.ubicacion.lng,
+            ]);
+          }
         });
 
         globalSocket.on('cliente:servicioAceptado', (data: { servicioId: string; gruero: any }) => {
@@ -704,17 +716,6 @@ export default function ClienteDashboard() {
           obtenerUbicacionActual();
           
           cargarHistorial();
-        });
-
-        // NUEVO: Listener para actualizaciones de ubicación del gruero en tiempo real
-        globalSocket.on('gruero:locationUpdated', (data: { grueroId: string; latitud: number; longitud: number }) => {
-          console.log('📍 Ubicación del gruero actualizada:', data);
-          
-          // Solo actualizar si hay un servicio activo y el gruero es el asignado
-          if (servicioActivo && servicioActivo.gruero && servicioActivo.gruero.id === data.grueroId) {
-            console.log('🚗 Actualizando posición del gruero en el mapa');
-            setGrueroPosition([data.latitud, data.longitud]);
-          }
         });
 
         console.log('📤 Solicitando grúas disponibles al servidor...');
