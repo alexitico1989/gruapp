@@ -4,7 +4,6 @@ import Layout from '../../components/Layout';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
-import { TIPOS_VEHICULO } from '../../utils/grueroConstants'; // ✅ IMPORTAR
 
 interface GrueroData {
   id: string;
@@ -14,7 +13,7 @@ interface GrueroData {
   anio: number;
   capacidadToneladas: number;
   tipoGrua: string;
-  tiposVehiculosAtiende: string;
+  tiposVehiculosAtiende: string; // ✅ AGREGADO
   status: string;
   verificado: boolean;
   totalServicios: number;
@@ -84,6 +83,7 @@ export default function PerfilGruero() {
     tipoGrua: '',
   });
 
+  // ✅ NUEVO: Estado para tipos de vehículos
   const [tiposVehiculosSeleccionados, setTiposVehiculosSeleccionados] = useState<string[]>([]);
 
   const [uploadingFotoGruero, setUploadingFotoGruero] = useState(false);
@@ -97,11 +97,18 @@ export default function PerfilGruero() {
   const [showEliminarCuenta, setShowEliminarCuenta] = useState(false);
   const [passwordEliminar, setPasswordEliminar] = useState('');
 
-  // ✅ USAR TIPOS DEL ARCHIVO DE CONSTANTES
-  const tiposVehiculosDisponibles = Object.entries(TIPOS_VEHICULO).map(([value, label]) => ({
-    value,
-    label,
-  }));
+  // ✅ NUEVO: Tipos de vehículos disponibles
+  const tiposVehiculosDisponibles = [
+    { value: 'AUTOMOVIL', label: 'Automóvil' },
+    { value: 'SUV', label: 'SUV/Camioneta' },
+    { value: 'MOTO', label: 'Moto' },
+    { value: 'FURGON', label: 'Furgón' },
+    { value: 'CAMION_LIVIANO', label: 'Camión Liviano' },
+    { value: 'CAMION_MEDIANO', label: 'Camión Mediano' },
+    { value: 'CAMION_PESADO', label: 'Camión Pesado' },
+    { value: 'BUS', label: 'Bus' },
+    { value: 'MAQUINARIA', label: 'Maquinaria' },
+  ];
 
   const tiposGruaDisponibles = [
     { value: 'CAMA_BAJA', label: 'Cama Baja' },
@@ -110,6 +117,7 @@ export default function PerfilGruero() {
     { value: 'DESLIZABLE', label: 'Deslizable' },
   ];
 
+  // ✅ NUEVO: Función para toggle de tipos de vehículos
   const toggleTipoVehiculo = (tipo: string) => {
     setTiposVehiculosSeleccionados(prev => {
       if (prev.includes(tipo)) {
@@ -152,6 +160,7 @@ export default function PerfilGruero() {
           tipoGrua: data.tipoGrua || '',
         });
 
+        // ✅ NUEVO: Parsear tipos de vehículos
         try {
           const tipos = JSON.parse(data.tiposVehiculosAtiende || '[]');
           setTiposVehiculosSeleccionados(Array.isArray(tipos) ? tipos : []);
@@ -205,6 +214,7 @@ export default function PerfilGruero() {
   };
 
   const handleUpdateVehiculo = async () => {
+    // ✅ VALIDACIÓN: Al menos un tipo de vehículo
     if (tiposVehiculosSeleccionados.length === 0) {
       toast.error('Debes seleccionar al menos un tipo de vehículo');
       return;
@@ -215,7 +225,7 @@ export default function PerfilGruero() {
         ...formVehiculo,
         anio: parseInt(formVehiculo.anio),
         capacidadToneladas: parseFloat(formVehiculo.capacidadToneladas),
-        tiposVehiculosAtiende: JSON.stringify(tiposVehiculosSeleccionados),
+        tiposVehiculosAtiende: JSON.stringify(tiposVehiculosSeleccionados), // ✅ ENVIAR TIPOS
       });
       
       if (response.data.success) {
@@ -730,6 +740,7 @@ export default function PerfilGruero() {
                           capacidadToneladas: grueroData.capacidadToneladas?.toString() || '',
                           tipoGrua: grueroData.tipoGrua || '',
                         });
+                        // ✅ Resetear tipos de vehículos
                         try {
                           const tipos = JSON.parse(grueroData.tiposVehiculosAtiende || '[]');
                           setTiposVehiculosSeleccionados(Array.isArray(tipos) ? tipos : []);
@@ -813,7 +824,7 @@ export default function PerfilGruero() {
                     </div>
                   </div>
 
-                  {/* Selector de Tipos de Vehículos */}
+                  {/* ✅ NUEVO: Selector de Tipos de Vehículos */}
                   <div>
                     <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-2">
                       Tipos de Vehículos que Atiendes *
@@ -872,7 +883,7 @@ export default function PerfilGruero() {
                     </div>
                   </div>
 
-                  {/* Mostrar Tipos de Vehículos */}
+                  {/* ✅ MOSTRAR TIPOS DE VEHÍCULOS */}
                   <div>
                     <p className="text-xs text-gray-500 mb-2">Tipos de Vehículos que Atiendes</p>
                     <div className="flex flex-wrap gap-2">
