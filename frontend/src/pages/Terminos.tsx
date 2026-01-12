@@ -62,12 +62,14 @@ export default function Terminos() {
               Las tarifas se calculan según:
             </p>
             <ul className="list-disc pl-6 mb-4 text-gray-700 space-y-2">
-              <li>Tarifa base: $25.000 CLP</li>
-              <li>Tarifa por kilómetro: $1.350 CLP</li>
+              <li>Tarifa base livianos: $25.000 CLP</li>
+              <li>Tarifa base pesados: $80.000 CLP</li>
+              <li>Tarifa por kilómetro livianos: $1.350 CLP</li>
+              <li>Tarifa por kilómetro pesados: $1.850 CLP</li>
               <li>Cálculo basado en distancia GPS real</li>
             </ul>
             <p className="text-gray-700 leading-relaxed mb-4">
-              Los pagos se procesan a través de Mercado Pago. GruApp cobra una comisión por el servicio de intermediación.
+              Los pagos se procesan a través de Mercado Pago. GruApp Chile cobra una comisión del 10% por el servicio de intermediación.
             </p>
 
             <h2 className="text-3xl font-bold text-[#1e3a5f] mt-12 mb-6">5. Responsabilidades del Usuario</h2>
@@ -80,7 +82,7 @@ export default function Terminos() {
 
             <h2 className="text-3xl font-bold text-[#1e3a5f] mt-12 mb-6">6. Responsabilidades del Gruero</h2>
             <ul className="list-disc pl-6 mb-4 text-gray-700 space-y-2">
-              <li>Contar con licencia de conducir clase A3 o superior vigente</li>
+              <li>Contar con licencia de conducir clase A4 o superior vigente</li>
               <li>Mantener la grúa con documentación al día</li>
               <li>Contar con seguro obligatorio (SOAP) vigente</li>
               <li>Prestar el servicio de forma profesional y segura</li>
