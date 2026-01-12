@@ -99,12 +99,15 @@ export default function PerfilGruero() {
 
   // ✅ NUEVO: Tipos de vehículos disponibles
   const tiposVehiculosDisponibles = [
-    { value: 'AUTO', label: 'Auto' },
-    { value: 'CAMIONETA', label: 'Camioneta' },
-    { value: 'SUV', label: 'SUV' },
+    { value: 'AUTOMOVIL', label: 'Automóvil' },
+    { value: 'SUV', label: 'SUV/Camioneta' },
     { value: 'MOTO', label: 'Moto' },
-    { value: 'CAMION', label: 'Camión' },
+    { value: 'FURGON', label: 'Furgón' },
+    { value: 'CAMION_LIVIANO', label: 'Camión Liviano' },
+    { value: 'CAMION_MEDIANO', label: 'Camión Mediano' },
+    { value: 'CAMION_PESADO', label: 'Camión Pesado' },
     { value: 'BUS', label: 'Bus' },
+    { value: 'MAQUINARIA', label: 'Maquinaria' },
   ];
 
   const tiposGruaDisponibles = [
