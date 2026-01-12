@@ -76,12 +76,16 @@ export const updateGrueroPerfilValidation: ValidationChain[] = [
  */
 export const updateVehiculoValidation: ValidationChain[] = [
   body('patente')
-    .optional()
-    .isString()
-    .trim()
-    .toUpperCase()
-    .matches(/^[A-Z]{4}\d{2}$/)
-    .withMessage('Patente inválida (formato: ABCD12)'),
+  .optional()
+  .isString()
+  .customSanitizer(value =>
+    value
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '') // elimina guiones y espacios
+  )
+  .matches(/^([A-Z]{2}\d{4}|[A-Z]{4}\d{2})$/)
+  .withMessage('Patente inválida (formatos válidos: AB1234 o ABCD12)'),
+
   
   body('marca')
     .optional()
