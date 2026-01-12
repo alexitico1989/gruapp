@@ -104,10 +104,9 @@ export class PagoController {
       const preference = new Preference(client);
 
       // Crear preferencia de pago
-      const body = {
+      const body: any = {
         items: [
           {
-            id: servicio.id,
             title: `Servicio de Grúa - GruApp`,
             description: `Servicio de grúa desde ${servicio.origenDireccion} hasta ${servicio.destinoDireccion}`,
             quantity: 1,
