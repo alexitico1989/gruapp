@@ -469,56 +469,67 @@ export default function ClienteDashboard() {
     return Math.round(total);
   };
 
-  // Obtener geolocalización del usuario al cargar
-  useEffect(() => {
-    if (!servicioActivo && !ubicacionObtenida) {
-      console.log('📍 Solicitando geolocalización del usuario...');
-      
-      if ('geolocation' in navigator) {
-        navigator.geolocation.getCurrentPosition(
-          async (position) => {
-            const { latitude, longitude } = position.coords;
-            const coords: [number, number] = [latitude, longitude];
-            
-            console.log('✅ Ubicación obtenida:', coords);
-            setOrigenCoords(coords);
-            setUbicacionObtenida(true);
-            
-            // Obtener dirección de la ubicación actual
-            toast.loading('Obteniendo tu ubicación...');
-            const direccion = await obtenerDireccionDesdeCoordenadas(latitude, longitude);
-            toast.dismiss();
-            toast.success('Ubicación obtenida');
-            setOrigen(direccion);
-          },
-          (error) => {
-            console.error('❌ Error obteniendo geolocalización:', error);
-            toast.error('No se pudo obtener tu ubicación. Usando Santiago por defecto.');
-            setUbicacionObtenida(true);
-            
-            // Obtener dirección de Santiago por defecto
-            obtenerDireccionDesdeCoordenadas(-33.4489, -70.6693).then(direccion => {
-              setOrigen(direccion);
-            });
-          },
-          {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0,
-          }
-        );
-      } else {
-        console.warn('⚠️ Geolocalización no disponible');
-        toast.error('Tu navegador no soporta geolocalización');
-        setUbicacionObtenida(true);
-        
-        // Usar Santiago por defecto
-        obtenerDireccionDesdeCoordenadas(-33.4489, -70.6693).then(direccion => {
-          setOrigen(direccion);
-        });
-      }
+  // Obtener geolocalización del usuario al cargar (ROBUSTO)
+useEffect(() => {
+  if (servicioActivo) return;
+
+  console.log('📍 Intentando obtener geolocalización del usuario...');
+
+  if (!('geolocation' in navigator)) {
+    console.warn('⚠️ Geolocalización no disponible');
+    toast.error('Tu navegador no soporta geolocalización');
+
+    setOrigenCoords([-33.4489, -70.6693]);
+    obtenerDireccionDesdeCoordenadas(-33.4489, -70.6693).then(setOrigen);
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      const { latitude, longitude } = position.coords;
+      const coords: [number, number] = [latitude, longitude];
+
+      console.log('✅ Ubicación real obtenida:', coords);
+
+      setOrigenCoords(coords);
+      setUbicacionObtenida(true);
+
+      toast.loading('Obteniendo tu ubicación...');
+      const direccion = await obtenerDireccionDesdeCoordenadas(latitude, longitude);
+      toast.dismiss();
+      toast.success('Ubicación detectada');
+
+      setOrigen(direccion);
+    },
+    async (error) => {
+      console.error('❌ Error obteniendo geolocalización:', error);
+
+      toast.error(
+        'No se pudo obtener tu ubicación. Usando ubicación manual.'
+      );
+
+      // NO bloquear futuros intentos
+      setUbicacionObtenida(false);
+
+      // Solo fallback visual
+      const fallback: [number, number] = [-33.4489, -70.6693];
+      setOrigenCoords(fallback);
+
+      const direccion = await obtenerDireccionDesdeCoordenadas(
+        fallback[0],
+        fallback[1]
+      );
+
+      setOrigen(direccion || 'Santiago de Chile');
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 0,
     }
-  }, [servicioActivo, ubicacionObtenida]);
+  );
+}, [servicioActivo]);
+
 
   useEffect(() => {
     console.log('🔌 [ClienteDashboard] Verificando socket global del Layout');
