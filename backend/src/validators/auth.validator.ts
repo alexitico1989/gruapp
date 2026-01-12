@@ -106,7 +106,7 @@ export const registerGrueroValidation: ValidationChain[] = [
     .isString()
     .trim()
     .toUpperCase()
-    .matches(/^[A-Z]{4}\d{2}$/)
+    .matches(/^([A-Z]{4}\d{2}|[A-Z]{2}\d{4})$/)
     .withMessage('Patente inválida (formato: ABCD12)'),
   
   body('marca')
