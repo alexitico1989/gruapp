@@ -78,13 +78,11 @@ export const updateVehiculoValidation: ValidationChain[] = [
   body('patente')
   .optional()
   .isString()
-  .customSanitizer(value =>
-    value
-      .toUpperCase()
-      .replace(/[^A-Z0-9]/g, '') // elimina guiones y espacios
-  )
-  .matches(/^([A-Z]{2}\d{4}|[A-Z]{4}\d{2})$/)
-  .withMessage('Patente inválida (formatos válidos: AB1234 o ABCD12)'),
+  .trim()
+  .toUpperCase()
+  .matches(/^([A-Z]{4}\d{2}|[A-Z]{2}\d{4})$/)
+  .withMessage('Patente inválida (formato: ABCD12 o AB1234)'),
+
 
   
   body('marca')
