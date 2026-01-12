@@ -1324,11 +1324,13 @@ export default function ClienteDashboard() {
             scrollWheelZoom={true}
           >
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-            
+
             <RecenterMap position={origenCoords} />
-            
-            {rutaCompleta.length > 0 && <FitBoundsToRoute rutaCompleta={rutaCompleta} />}
-            
+
+            {rutaCompleta.length > 0 && (
+              <FitBoundsToRoute rutaCompleta={rutaCompleta} />
+            )}
+
             <MapClickHandler
               onOrigenSet={(coords, direccion) => {
                 setOrigenCoords(coords);
@@ -1343,6 +1345,7 @@ export default function ClienteDashboard() {
               servicioActivo={servicioActivo}
             />
 
+            {/* ORIGEN */}
             <Marker 
               position={origenCoords} 
               icon={clientIcon}
@@ -1354,12 +1357,19 @@ export default function ClienteDashboard() {
               <Popup>
                 <div className="text-sm">
                   <p className="font-semibold">Origen</p>
-                  <p className="text-gray-600">{origen || 'Tu ubicación'}</p>
-                  {!servicioActivo && <p className="text-xs text-blue-600 mt-1">Arrastra para ajustar</p>}
+                  <p className="text-gray-600">
+                    {origen || 'Tu ubicación'}
+                  </p>
+                  {!servicioActivo && (
+                    <p className="text-xs text-blue-600 mt-1">
+                      Arrastra para ajustar
+                    </p>
+                  )}
                 </div>
               </Popup>
             </Marker>
 
+            {/* DESTINO */}
             {destinoCoords && (
               <>
                 <Marker 
@@ -1374,11 +1384,15 @@ export default function ClienteDashboard() {
                     <div className="text-sm">
                       <p className="font-semibold">Destino</p>
                       <p className="text-gray-600">{destino}</p>
-                      {!servicioActivo && <p className="text-xs text-blue-600 mt-1">Arrastra para ajustar</p>}
+                      {!servicioActivo && (
+                        <p className="text-xs text-blue-600 mt-1">
+                          Arrastra para ajustar
+                        </p>
+                      )}
                     </div>
                   </Popup>
                 </Marker>
-                
+
                 {rutaCompleta.length > 0 && (
                   <Polyline 
                     positions={rutaCompleta} 
@@ -1390,7 +1404,8 @@ export default function ClienteDashboard() {
               </>
             )}
 
-            {gruasDisponibles.map((grua) => (
+            {/* GRÚAS DISPONIBLES (solo si NO hay servicio activo) */}
+            {!servicioActivo && gruasDisponibles.map((grua) => (
               <Marker 
                 key={`${grua.id}-${grua.ubicacion.lat}-${grua.ubicacion.lng}`} 
                 position={[grua.ubicacion.lat, grua.ubicacion.lng]} 
@@ -1402,9 +1417,10 @@ export default function ClienteDashboard() {
                       <div className="flex-shrink-0">
                         {grua.fotoGruero ? (
                           <img
-                            src={grua.fotoGruero?.startsWith('http') 
-                              ? grua.fotoGruero 
-                              : `${API_URL.replace('/api', '')}${grua.fotoGruero}`
+                            src={
+                              grua.fotoGruero.startsWith('http')
+                                ? grua.fotoGruero
+                                : `${API_URL.replace('/api', '')}${grua.fotoGruero}`
                             }
                             alt="Foto Gruero"
                             className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
@@ -1419,9 +1435,10 @@ export default function ClienteDashboard() {
                       <div className="flex-shrink-0">
                         {grua.fotoGrua ? (
                           <img
-                            src={grua.fotoGrua?.startsWith('http') 
-                              ? grua.fotoGrua 
-                              : `${API_URL.replace('/api', '')}${grua.fotoGrua}`
+                            src={
+                              grua.fotoGrua.startsWith('http')
+                                ? grua.fotoGrua
+                                : `${API_URL.replace('/api', '')}${grua.fotoGrua}`
                             }
                             alt="Foto Grúa"
                             className="w-16 h-16 rounded-lg object-cover border-2 border-gray-200"
@@ -1436,22 +1453,26 @@ export default function ClienteDashboard() {
 
                     <div className="space-y-1">
                       <p className="font-bold text-[#1e3a5f]">{grua.nombre}</p>
-                      
+
                       <div className="flex items-center">
                         <Star className="h-4 w-4 text-yellow-500 fill-yellow-500 mr-1" />
-                        <span className="font-semibold">{grua.calificacion.toFixed(1)}</span>
-                        <span className="text-xs text-gray-500 ml-1">({grua.totalServicios} servicios)</span>
+                        <span className="font-semibold">
+                          {grua.calificacion.toFixed(1)}
+                        </span>
+                        <span className="text-xs text-gray-500 ml-1">
+                          ({grua.totalServicios} servicios)
+                        </span>
                       </div>
-                      
+
                       <p className="text-sm text-gray-600">
                         <Truck className="h-3 w-3 inline mr-1" />
                         {grua.marca} {grua.modelo}
                       </p>
-                      
+
                       <p className="text-sm text-gray-600">
                         Capacidad: {grua.capacidad} ton
                       </p>
-                      
+
                       <p className="text-sm text-gray-600">
                         Patente: <span className="font-semibold">{grua.patente}</span>
                       </p>
@@ -1461,27 +1482,41 @@ export default function ClienteDashboard() {
               </Marker>
             ))}
 
-            {/* Marcador del Gruero Asignado - Posición en Tiempo Real */}
-            {servicioActivo && servicioActivo.gruero && grueroPosition && (
-              <Marker 
-                position={grueroPosition} 
-                icon={gruaIcon}
-              >
+            {/* GRUERO ASIGNADO – TIEMPO REAL */}
+            {servicioActivo && grueroPosition && servicioActivo.gruero && (
+              <Marker position={grueroPosition} icon={gruaIcon}>
                 <Popup>
                   <div className="text-sm">
-                    <p className="font-semibold text-[#ff7a3d]">Tu Gruero</p>
-                    <p className="font-medium">{servicioActivo.gruero.user.nombre} {servicioActivo.gruero.user.apellido}</p>
-                    <p className="text-xs text-gray-600">{servicioActivo.gruero.patente}</p>
-                    <p className="text-xs text-gray-600">{servicioActivo.gruero.marca} {servicioActivo.gruero.modelo}</p>
+                    <p className="font-semibold text-[#ff7a3d]">
+                      Tu Gruero
+                    </p>
+                    <p className="font-medium">
+                      {servicioActivo.gruero.user.nombre}{' '}
+                      {servicioActivo.gruero.user.apellido}
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      {servicioActivo.gruero.patente}
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      {servicioActivo.gruero.marca}{' '}
+                      {servicioActivo.gruero.modelo}
+                    </p>
+
                     <div className="mt-2 text-xs">
-                      <span className={`px-2 py-1 rounded-full font-semibold ${
-                        servicioActivo.status === 'EN_CAMINO' ? 'bg-blue-100 text-blue-700' :
-                        servicioActivo.status === 'EN_SITIO' ? 'bg-green-100 text-green-700' :
-                        'bg-orange-100 text-orange-700'
-                      }`}>
-                        {servicioActivo.status === 'EN_CAMINO' ? '🚗 En camino' :
-                         servicioActivo.status === 'EN_SITIO' ? '📍 En el sitio' :
-                         '✓ Aceptado'}
+                      <span
+                        className={`px-2 py-1 rounded-full font-semibold ${
+                          servicioActivo.status === 'EN_CAMINO'
+                            ? 'bg-blue-100 text-blue-700'
+                            : servicioActivo.status === 'EN_SITIO'
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-orange-100 text-orange-700'
+                        }`}
+                      >
+                        {servicioActivo.status === 'EN_CAMINO'
+                          ? '🚗 En camino'
+                          : servicioActivo.status === 'EN_SITIO'
+                          ? '📍 En el sitio'
+                          : '✓ Aceptado'}
                       </span>
                     </div>
                   </div>

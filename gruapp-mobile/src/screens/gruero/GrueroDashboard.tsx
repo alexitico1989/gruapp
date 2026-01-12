@@ -193,6 +193,18 @@ export default function GrueroDashboard() {
         longitud: loc.longitude,
         status: 'DISPONIBLE',
       });
+
+      // 2️⃣ Emitir en tiempo real al cliente
+      if (socket && gruero?.id) {
+        socket.emit('gruero:locationUpdated', {
+          grueroId: gruero.id,
+          ubicacion: {
+            lat: loc.latitude,
+            lng: loc.longitude,
+          },
+        });
+      }
+
     } catch (error) {
       console.error('Error actualizando ubicación:', error);
     }
