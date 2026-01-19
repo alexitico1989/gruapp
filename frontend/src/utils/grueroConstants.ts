@@ -2,36 +2,30 @@
  * Constantes para el registro de grueros (Frontend)
  */
 
-export const TIPOS_GRUA = [
-  { value: 'CAMA_BAJA', label: 'Cama Baja' },
-  { value: 'HORQUILLA', label: 'Horquilla/Levante' },
-  { value: 'PLUMA', label: 'Pluma' },
-];
+// Tipos de grúa (Objeto plano para Object.entries)
+export const TIPOS_GRUA: Record<string, string> = {
+  CAMA_BAJA: 'Cama Baja',
+  HORQUILLA: 'Horquilla/Levante',
+  PLUMA: 'Pluma',
+};
 
-export const CAPACIDADES_TONELADAS = [
-  { value: 1.5, label: '1.5 toneladas' },
-  { value: 2, label: '2 toneladas' },
-  { value: 3, label: '3 toneladas' },
-  { value: 4, label: '4 toneladas' },
-  { value: 5, label: '5 toneladas' },
-  { value: 7, label: '7 toneladas' },
-  { value: 10, label: '10 toneladas' },
-  { value: 15, label: '15 toneladas' },
-  { value: 20, label: '20 toneladas' },
-];
+// Capacidades en toneladas (Array simple para .map())
+export const CAPACIDADES_TONELADAS = ['1.5', '2', '3', '4', '5', '7', '10', '15', '20'];
 
-export const TIPOS_VEHICULO = [
-  { value: 'AUTOMOVIL', label: 'Automóvil' },
-  { value: 'SUV', label: 'SUV/Camioneta' },
-  { value: 'MOTO', label: 'Moto' },
-  { value: 'FURGON', label: 'Furgón' },
-  { value: 'CAMION_LIVIANO', label: 'Camión Liviano' },
-  { value: 'CAMION_MEDIANO', label: 'Camión Mediano' },
-  { value: 'CAMION_PESADO', label: 'Camión Pesado' },
-  { value: 'BUS', label: 'Bus' },
-  { value: 'MAQUINARIA', label: 'Maquinaria' },
-];
+// Tipos de vehículos (Objeto plano para Object.entries)
+export const TIPOS_VEHICULO: Record<string, string> = {
+  AUTOMOVIL: 'Automóvil',
+  SUV: 'SUV/Camioneta',
+  MOTO: 'Moto',
+  FURGON: 'Furgón',
+  CAMION_LIVIANO: 'Camión Liviano',
+  CAMION_MEDIANO: 'Camión Mediano',
+  CAMION_PESADO: 'Camión Pesado',
+  BUS: 'Bus',
+  MAQUINARIA: 'Maquinaria',
+};
 
+// Marcas de grúa (Array simple)
 export const MARCAS_GRUA = [
   'Mercedes-Benz',
   'Volvo',
@@ -49,6 +43,7 @@ export const MARCAS_GRUA = [
   'Otro',
 ];
 
+// Tipos de documento (Array de objetos - mantener formato si se usa en otro lugar)
 export const TIPOS_DOCUMENTO = [
   { value: 'licenciaConducir', label: 'Licencia de Conducir' },
   { value: 'seguroVigente', label: 'Seguro Obligatorio (SOAP)' },
