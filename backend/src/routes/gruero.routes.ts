@@ -8,7 +8,6 @@ import {
   updateDisponibilidadValidation,
   updateLocationValidation,
 } from '../validators/perfil.validator';
-import { uploadGrueroPhoto, uploadGruaPhoto, uploadDocument } from '../config/multer';
 
 const router = Router();
 
@@ -97,59 +96,6 @@ router.get(
   '/historial',
   AuthMiddleware.authorize('GRUERO'),
   GrueroController.getHistorial
-);
-
-/**
- * POST /api/gruero/documentos
- * Subir documentos del gruero (método antiguo - mantener por compatibilidad)
- */
-router.post(
-  '/documentos',
-  AuthMiddleware.authorize('GRUERO'),
-  GrueroController.uploadDocumentos
-);
-
-/**
- * POST /api/gruero/foto-gruero
- * Subir foto del gruero
- */
-router.post(
-  '/foto-gruero',
-  AuthMiddleware.authorize('GRUERO'),
-  uploadGrueroPhoto.single('foto'),
-  GrueroController.uploadFotoGruero
-);
-
-/**
- * POST /api/gruero/foto-grua
- * Subir foto de la grúa
- */
-router.post(
-  '/foto-grua',
-  AuthMiddleware.authorize('GRUERO'),
-  uploadGruaPhoto.single('foto'),
-  GrueroController.uploadFotoGrua
-);
-
-/**
- * POST /api/gruero/documento
- * Subir documento con fecha de vencimiento
- */
-router.post(
-  '/documento',
-  AuthMiddleware.authorize('GRUERO'),
-  uploadDocument.single('documento'),
-  GrueroController.uploadDocumento
-);
-
-/**
- * GET /api/gruero/verificar-documentos
- * Verificar estado de documentos y alertas de vencimiento
- */
-router.get(
-  '/verificar-documentos',
-  AuthMiddleware.authorize('GRUERO'),
-  GrueroController.verificarDocumentos
 );
 
 /**

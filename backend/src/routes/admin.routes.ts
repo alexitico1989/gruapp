@@ -24,28 +24,6 @@ router.get(
 );
 
 /**
- * GET /api/admin/grueros/documentos-por-vencer
- * Obtener grueros con documentos próximos a vencer
- */
-router.get(
-  '/grueros/documentos-por-vencer',
-  AuthMiddleware.authenticate,
-  AuthMiddleware.authorize('ADMIN'),
-  AdminController.getDocumentosPorVencer
-);
-
-/**
- * POST /api/admin/grueros/verificar-vencimientos
- * Verificar y suspender grueros con documentos vencidos
- */
-router.post(
-  '/grueros/verificar-vencimientos',
-  AuthMiddleware.authenticate,
-  AuthMiddleware.authorize('ADMIN'),
-  AdminController.verificarVencimientos
-);
-
-/**
  * GET /api/admin/grueros/:id/servicios
  * Obtener historial de servicios de un gruero
  */
@@ -98,28 +76,6 @@ router.patch(
   AuthMiddleware.authenticate,
   AuthMiddleware.authorize('ADMIN'),
   AdminController.rechazarGruero
-);
-
-/**
- * PATCH /api/admin/grueros/:id/documentos/aprobar
- * Aprobar documentos de un gruero
- */
-router.patch(
-  '/grueros/:id/documentos/aprobar',
-  AuthMiddleware.authenticate,
-  AuthMiddleware.authorize('ADMIN'),
-  AdminController.aprobarDocumentos
-);
-
-/**
- * PATCH /api/admin/grueros/:id/documentos/rechazar
- * Rechazar documentos de un gruero
- */
-router.patch(
-  '/grueros/:id/documentos/rechazar',
-  AuthMiddleware.authenticate,
-  AuthMiddleware.authorize('ADMIN'),
-  AdminController.rechazarDocumentos
 );
 
 /**
