@@ -204,6 +204,12 @@ app.get('/OneSignalSDK.page.js', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/OneSignalSDK.page.js'));
 });
 
+app.get('/OneSignalSDK.page.es6.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.sendFile(path.join(__dirname, '../public/OneSignalSDK.page.es6.js'));
+});
+
 // ============================================
 // SERVIR FRONTEND ESTÁTICO
 // ============================================
