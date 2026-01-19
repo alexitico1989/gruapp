@@ -1,1 +1,1 @@
-﻿importScripts('/OneSignalSDK.page.js');
+﻿importScripts('/OneSignalSDK.page.es6.js');
