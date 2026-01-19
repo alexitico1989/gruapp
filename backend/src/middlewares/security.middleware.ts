@@ -23,7 +23,8 @@ export const helmetConfig = helmet({
         "'self'", 
         "'unsafe-inline'", 
         "'unsafe-eval'",
-        "https://cdn.onesignal.com" // ✅ OneSignal SDK
+        "https://cdn.onesignal.com", // ✅ OneSignal SDK
+        "https://api.onesignal.com" // ✅ OneSignal API scripts
       ],
       imgSrc: [
         "'self'", 
