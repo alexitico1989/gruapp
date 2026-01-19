@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Mail, Lock, Phone, FileText, Truck, Camera, Upload, ChevronRight, ChevronLeft, CheckCircle, Loader2 } from 'lucide-react';
+import { User, Mail, Lock, Phone, FileText, Truck, Upload, ChevronRight, ChevronLeft, CheckCircle, Loader2 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -24,8 +24,6 @@ interface FormData {
   tipoGrua: string;
   capacidadToneladas: string;
   tiposVehiculosAtiende: string[];
-  fotoGruero: File | null;
-  fotoGrua: File | null;
   licenciaConducir: File | null;
   licenciaVencimiento: string;
   seguroVigente: File | null;
@@ -58,8 +56,6 @@ export default function RegisterGruero() {
     tipoGrua: 'CAMA_BAJA',
     capacidadToneladas: '3',
     tiposVehiculosAtiende: [],
-    fotoGruero: null,
-    fotoGrua: null,
     licenciaConducir: null,
     licenciaVencimiento: '',
     seguroVigente: null,
@@ -69,9 +65,6 @@ export default function RegisterGruero() {
     permisoCirculacion: null,
     permisoVencimiento: '',
   });
-
-  const [fotoGrueroPreview, setFotoGrueroPreview] = useState<string>('');
-  const [fotoGruaPreview, setFotoGruaPreview] = useState<string>('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -110,18 +103,6 @@ export default function RegisterGruero() {
     const file = e.target.files?.[0];
     if (file) {
       setFormData(prev => ({ ...prev, [fieldName]: file }));
-      
-      if (fieldName === 'fotoGruero' || fieldName === 'fotoGrua') {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          if (fieldName === 'fotoGruero') {
-            setFotoGrueroPreview(reader.result as string);
-          } else {
-            setFotoGruaPreview(reader.result as string);
-          }
-        };
-        reader.readAsDataURL(file);
-      }
     }
   };
 
@@ -137,7 +118,6 @@ export default function RegisterGruero() {
     if (!formData.telefono.trim()) newErrors.telefono = 'El teléfono es requerido';
     else if (!/^[0-9]{8,15}$/.test(formData.telefono)) newErrors.telefono = 'Teléfono inválido (8-15 dígitos)';
     
-    // ✅ NUEVA VALIDACIÓN DE PASSWORD
     if (!formData.password) {
       newErrors.password = 'La contraseña es requerida';
     } else if (formData.password.length < 8) {
@@ -155,14 +135,7 @@ export default function RegisterGruero() {
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Las contraseñas no coinciden';
     }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
 
-  const validateStep2 = (): boolean => {
-    const newErrors: Record<string, string> = {};
-    
     if (!formData.patente.trim()) newErrors.patente = 'La patente es requerida';
     else if (!validarPatente(formData.patente)) newErrors.patente = 'Formato de patente inválido (ej: AA1234 o ABCD12)';
     if (!formData.marca.trim()) newErrors.marca = 'La marca es requerida';
@@ -179,11 +152,9 @@ export default function RegisterGruero() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const validateStep3 = (): boolean => {
+  const validateStep2 = (): boolean => {
     const newErrors: Record<string, string> = {};
     
-    if (!formData.fotoGruero) newErrors.fotoGruero = 'La foto del gruero es requerida';
-    if (!formData.fotoGrua) newErrors.fotoGrua = 'La foto de la grúa es requerida';
     if (!formData.licenciaConducir) newErrors.licenciaConducir = 'La licencia de conducir es requerida';
     if (!formData.licenciaVencimiento) newErrors.licenciaVencimiento = 'La fecha de vencimiento es requerida';
     if (!formData.seguroVigente) newErrors.seguroVigente = 'El seguro es requerido';
@@ -201,9 +172,8 @@ export default function RegisterGruero() {
     let isValid = false;
     
     if (currentStep === 1) isValid = validateStep1();
-    else if (currentStep === 2) isValid = validateStep2();
     
-    if (isValid && currentStep < 3) {
+    if (isValid && currentStep < 2) {
       setCurrentStep(currentStep + 1);
       window.scrollTo(0, 0);
     }
@@ -217,7 +187,7 @@ export default function RegisterGruero() {
   };
 
   const handleSubmit = async () => {
-    if (!validateStep3()) return;
+    if (!validateStep2()) return;
     
     try {
       setLoading(true);
@@ -246,30 +216,6 @@ export default function RegisterGruero() {
       
       const token = response.data.data.token;
       const user = response.data.data.user;
-      
-      if (formData.fotoGruero) {
-        const fotoGrueroFormData = new FormData();
-        fotoGrueroFormData.append('foto', formData.fotoGruero);
-        
-        await api.post('/gruero/foto-gruero', fotoGrueroFormData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            'Authorization': `Bearer ${token}`
-          }
-        });
-      }
-      
-      if (formData.fotoGrua) {
-        const fotoGruaFormData = new FormData();
-        fotoGruaFormData.append('foto', formData.fotoGrua);
-        
-        await api.post('/gruero/foto-grua', fotoGruaFormData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            'Authorization': `Bearer ${token}`
-          }
-        });
-      }
       
       const documentos = [
         { file: formData.licenciaConducir, tipo: 'licenciaConducir', vencimiento: formData.licenciaVencimiento },
@@ -310,11 +256,11 @@ export default function RegisterGruero() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header />
 
-      {/* Progress Bar - RESPONSIVE */}
+      {/* Progress Bar - 2 PASOS */}
       <div className="bg-white border-b border-gray-200 py-4 md:py-6">
         <div className="max-w-3xl mx-auto px-4 md:px-6">
           <div className="flex items-center justify-between">
-            {[1, 2, 3].map((step) => (
+            {[1, 2].map((step) => (
               <div key={step} className="flex items-center flex-1">
                 <div className={`flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full font-bold text-sm md:text-base ${
                   currentStep >= step ? 'bg-[#ff7a3d] text-white' : 'bg-gray-200 text-gray-500'
@@ -323,12 +269,11 @@ export default function RegisterGruero() {
                 </div>
                 <div className="ml-2 md:ml-3 flex-1 hidden sm:block">
                   <p className={`text-xs md:text-sm font-semibold ${currentStep >= step ? 'text-[#1e3a5f]' : 'text-gray-400'}`}>
-                    {step === 1 && 'Datos Personales'}
-                    {step === 2 && 'Datos del Vehículo'}
-                    {step === 3 && 'Fotos y Documentos'}
+                    {step === 1 && 'Datos Personales y Vehículo'}
+                    {step === 2 && 'Documentos Requeridos'}
                   </p>
                 </div>
-                {step < 3 && (
+                {step < 2 && (
                   <ChevronRight className={`h-4 w-4 md:h-5 md:w-5 mx-2 md:mx-4 ${currentStep > step ? 'text-[#ff7a3d]' : 'text-gray-300'}`} />
                 )}
               </div>
@@ -342,9 +287,9 @@ export default function RegisterGruero() {
         <div className="max-w-2xl mx-auto px-4 md:px-6">
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 md:p-8">
             
-            {/* STEP 1: Datos Personales */}
+            {/* STEP 1: Datos Personales + Vehículo */}
             {currentStep === 1 && (
-              <div className="space-y-4 md:space-y-5">
+              <div className="space-y-6">
                 <h2 className="text-xl md:text-2xl font-bold text-[#1e3a5f] mb-4 md:mb-6">Datos Personales</h2>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
@@ -444,12 +389,9 @@ export default function RegisterGruero() {
                         placeholder="••••••••"
                       />
                     </div>
-                    
-                    {/* ✅ NUEVO: Mensaje de ayuda */}
                     <p className="text-gray-500 text-xs mt-1.5">
                       Mínimo 8 caracteres con al menos: 1 mayúscula, 1 minúscula, 1 número y 1 carácter especial (@$!%*?&)
                     </p>
-                    
                     {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
                   </div>
                   
@@ -469,208 +411,132 @@ export default function RegisterGruero() {
                     {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>}
                   </div>
                 </div>
+
+                {/* Datos del Vehículo */}
+                <div className="border-t border-gray-200 pt-6 mt-6">
+                  <h2 className="text-xl md:text-2xl font-bold text-[#1e3a5f] mb-4 md:mb-6">Datos del Vehículo (Grúa)</h2>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+                    <div>
+                      <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">Patente</label>
+                      <input
+                        type="text"
+                        name="patente"
+                        value={formData.patente}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base uppercase"
+                        placeholder="AA1234 o ABCD12"
+                        maxLength={6}
+                      />
+                      {errors.patente && <p className="text-red-500 text-sm mt-1">{errors.patente}</p>}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">Marca</label>
+                      <select
+                        name="marca"
+                        value={formData.marca}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
+                      >
+                        <option value="">Seleccionar marca</option>
+                        {MARCAS_GRUA.map(marca => (
+                          <option key={marca} value={marca}>{marca}</option>
+                        ))}
+                      </select>
+                      {errors.marca && <p className="text-red-500 text-sm mt-1">{errors.marca}</p>}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 mt-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">Modelo</label>
+                      <input
+                        type="text"
+                        name="modelo"
+                        value={formData.modelo}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
+                        placeholder="Ej: Actros 2546"
+                      />
+                      {errors.modelo && <p className="text-red-500 text-sm mt-1">{errors.modelo}</p>}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">Año</label>
+                      <input
+                        type="number"
+                        name="anio"
+                        value={formData.anio}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
+                        placeholder="2020"
+                        min="1990"
+                        max={new Date().getFullYear() + 1}
+                      />
+                      {errors.anio && <p className="text-red-500 text-sm mt-1">{errors.anio}</p>}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 mt-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">Tipo de Grúa</label>
+                      <select
+                        name="tipoGrua"
+                        value={formData.tipoGrua}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
+                      >
+                        {Object.entries(TIPOS_GRUA).map(([value, label]) => (
+                          <option key={value} value={value}>{label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">Capacidad de Carga</label>
+                      <select
+                        name="capacidadToneladas"
+                        value={formData.capacidadToneladas}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
+                      >
+                        {CAPACIDADES_TONELADAS.map(cap => (
+                          <option key={cap} value={cap}>{cap} ton</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <label className="block text-sm font-semibold text-[#1e3a5f] mb-3">
+                      Tipos de Vehículos que Atiende <span className="text-red-500">*</span>
+                    </label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {Object.entries(TIPOS_VEHICULO).map(([value, label]) => (
+                        <label key={value} className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.tiposVehiculosAtiende.includes(value)}
+                            onChange={() => handleCheckboxChange(value)}
+                            className="w-4 h-4 text-[#ff7a3d] border-gray-300 rounded focus:ring-[#ff7a3d]"
+                          />
+                          <span className="text-sm text-gray-700">{label}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {errors.tiposVehiculosAtiende && <p className="text-red-500 text-sm mt-1">{errors.tiposVehiculosAtiende}</p>}
+                  </div>
+                </div>
               </div>
             )}
 
-            {/* STEP 2: Datos del Vehículo */}
+            {/* STEP 2: Documentos */}
             {currentStep === 2 && (
-              <div className="space-y-4 md:space-y-5">
-                <h2 className="text-xl md:text-2xl font-bold text-[#1e3a5f] mb-4 md:mb-6">Datos del Vehículo (Grúa)</h2>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
-                  <div>
-                    <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">Patente</label>
-                    <input
-                      type="text"
-                      name="patente"
-                      value={formData.patente}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base uppercase"
-                      placeholder="AA1234 o ABCD12"
-                      maxLength={6}
-                    />
-                    {errors.patente && <p className="text-red-500 text-sm mt-1">{errors.patente}</p>}
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">Marca</label>
-                    <select
-                      name="marca"
-                      value={formData.marca}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
-                    >
-                      <option value="">Seleccionar marca</option>
-                      {MARCAS_GRUA.map(marca => (
-                        <option key={marca} value={marca}>{marca}</option>
-                      ))}
-                    </select>
-                    {errors.marca && <p className="text-red-500 text-sm mt-1">{errors.marca}</p>}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
-                  <div>
-                    <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">Modelo</label>
-                    <input
-                      type="text"
-                      name="modelo"
-                      value={formData.modelo}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
-                      placeholder="Ej: Actros 2546"
-                    />
-                    {errors.modelo && <p className="text-red-500 text-sm mt-1">{errors.modelo}</p>}
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">Año</label>
-                    <input
-                      type="number"
-                      name="anio"
-                      value={formData.anio}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
-                      placeholder="2020"
-                      min="1990"
-                      max={new Date().getFullYear() + 1}
-                    />
-                    {errors.anio && <p className="text-red-500 text-sm mt-1">{errors.anio}</p>}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
-                  <div>
-                    <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">Tipo de Grúa</label>
-                    <select
-                      name="tipoGrua"
-                      value={formData.tipoGrua}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
-                    >
-                      {TIPOS_GRUA.map(tipo => (
-                        <option key={tipo.value} value={tipo.value}>{tipo.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">Capacidad de Carga</label>
-                    <select
-                      name="capacidadToneladas"
-                      value={formData.capacidadToneladas}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 md:py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff7a3d] focus:border-transparent transition-all text-base"
-                    >
-                      {CAPACIDADES_TONELADAS.map(cap => (
-                        <option key={cap.value} value={cap.value}>{cap.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-[#1e3a5f] mb-3">
-                    Tipos de Vehículos que Atiende <span className="text-red-500">*</span>
-                  </label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {TIPOS_VEHICULO.map(tipo => (
-                      <label key={tipo.value} className="flex items-center space-x-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={formData.tiposVehiculosAtiende.includes(tipo.value)}
-                          onChange={() => handleCheckboxChange(tipo.value)}
-                          className="w-4 h-4 text-[#ff7a3d] border-gray-300 rounded focus:ring-[#ff7a3d]"
-                        />
-                        <span className="text-sm text-gray-700">{tipo.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                  {errors.tiposVehiculosAtiende && <p className="text-red-500 text-sm mt-1">{errors.tiposVehiculosAtiende}</p>}
-                </div>
-              </div>
-            )}
-
-            {/* STEP 3: Fotos y Documentos */}
-            {currentStep === 3 && (
               <div className="space-y-5 md:space-y-6">
-                <h2 className="text-xl md:text-2xl font-bold text-[#1e3a5f] mb-4 md:mb-6">Fotos y Documentos</h2>
+                <h2 className="text-xl md:text-2xl font-bold text-[#1e3a5f] mb-4 md:mb-6">Documentos Requeridos</h2>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
-                  <div>
-                    <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">
-                      Foto del Gruero <span className="text-red-500">*</span>
-                    </label>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-[#ff7a3d] transition-colors">
-                      {fotoGrueroPreview ? (
-                        <div className="space-y-2">
-                          <img src={fotoGrueroPreview} alt="Preview" className="w-32 h-32 object-cover rounded-lg mx-auto" />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setFormData(prev => ({ ...prev, fotoGruero: null }));
-                              setFotoGrueroPreview('');
-                            }}
-                            className="text-sm text-red-500 hover:text-red-700"
-                          >
-                            Eliminar
-                          </button>
-                        </div>
-                      ) : (
-                        <label className="cursor-pointer">
-                          <Camera className="h-10 w-10 md:h-12 md:w-12 text-gray-400 mx-auto mb-2" />
-                          <p className="text-sm text-gray-600">Click para subir foto</p>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => handleFileChange(e, 'fotoGruero')}
-                            className="hidden"
-                          />
-                        </label>
-                      )}
-                    </div>
-                    {errors.fotoGruero && <p className="text-red-500 text-sm mt-1">{errors.fotoGruero}</p>}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">
-                      Foto de la Grúa <span className="text-red-500">*</span>
-                    </label>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-[#ff7a3d] transition-colors">
-                      {fotoGruaPreview ? (
-                        <div className="space-y-2">
-                          <img src={fotoGruaPreview} alt="Preview" className="w-32 h-32 object-cover rounded-lg mx-auto" />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setFormData(prev => ({ ...prev, fotoGrua: null }));
-                              setFotoGruaPreview('');
-                            }}
-                            className="text-sm text-red-500 hover:text-red-700"
-                          >
-                            Eliminar
-                          </button>
-                        </div>
-                      ) : (
-                        <label className="cursor-pointer">
-                          <Truck className="h-10 w-10 md:h-12 md:w-12 text-gray-400 mx-auto mb-2" />
-                          <p className="text-sm text-gray-600">Click para subir foto</p>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => handleFileChange(e, 'fotoGrua')}
-                            className="hidden"
-                          />
-                        </label>
-                      )}
-                    </div>
-                    {errors.fotoGrua && <p className="text-red-500 text-sm mt-1">{errors.fotoGrua}</p>}
-                  </div>
-                </div>
-
                 <div className="space-y-4">
-                  <h3 className="text-base md:text-lg font-semibold text-[#1e3a5f]">Documentos Requeridos</h3>
-                  
                   {/* Licencia de Conducir */}
                   <div className="border border-gray-200 rounded-lg p-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -835,7 +701,7 @@ export default function RegisterGruero() {
                 </button>
               )}
               
-              {currentStep < 3 ? (
+              {currentStep < 2 ? (
                 <button
                   type="button"
                   onClick={handleNext}
