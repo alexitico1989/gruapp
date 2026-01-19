@@ -19,7 +19,12 @@ export const helmetConfig = helmet({
         "https://unpkg.com", // ✅ Leaflet CSS
         "https://cdnjs.cloudflare.com" // ✅ Leaflet markers
       ],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Necesario para React
+      scriptSrc: [
+        "'self'", 
+        "'unsafe-inline'", 
+        "'unsafe-eval'",
+        "https://cdn.onesignal.com" // ✅ OneSignal SDK
+      ],
       imgSrc: [
         "'self'", 
         "data:", 
@@ -28,7 +33,8 @@ export const helmetConfig = helmet({
         "https://*.tile.openstreetmap.org", // ✅ Tiles de OSM
         "https://unpkg.com", // ✅ Leaflet images
         "https://cdnjs.cloudflare.com", // ✅ Leaflet markers
-        "https://raw.githubusercontent.com" // ✅ Markers personalizados
+        "https://raw.githubusercontent.com", // ✅ Markers personalizados
+        "https://img.onesignal.com" // ✅ OneSignal images
       ],
       connectSrc: [
         "'self'", 
@@ -36,12 +42,21 @@ export const helmetConfig = helmet({
         "wss://gruapp-production.up.railway.app",
         "https://nominatim.openstreetmap.org", // ✅ Geocoding
         "https://router.project-osrm.org", // ✅ Rutas
-        "https://*.tile.openstreetmap.org" // ✅ Tiles
+        "https://*.tile.openstreetmap.org", // ✅ Tiles
+        "https://onesignal.com", // ✅ OneSignal API
+        "https://*.onesignal.com" // ✅ OneSignal subdominios
       ],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
-      frameSrc: ["'none'"],
+      frameSrc: [
+        "'self'",
+        "https://onesignal.com" // ✅ OneSignal iframes
+      ],
+      workerSrc: [
+        "'self'",
+        "blob:" // ✅ Service Workers
+      ],
     },
   },
   crossOriginEmbedderPolicy: false, // Necesario para algunos recursos externos
