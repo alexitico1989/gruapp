@@ -610,27 +610,94 @@ export class AdminController {
    * GET /api/admin/estadisticas
    * Obtener estadísticas generales de la plataforma
    */
-  const fetchEstadisticas = async () => {
-  try {
-    setLoading(true);
-    const token = localStorage.getItem('adminToken');
+  static async getEstadisticas(req: Request, res: Response): Promise<void> {
+    try {
+      // Total de usuarios
+      const totalClientes = await prisma.cliente.count();
+      const totalGrueros = await prisma.gruero.count();
+      const gruerosPendientes = await prisma.gruero.count({
+        where: { estadoVerificacion: 'PENDIENTE' },
+      });
+      const gruerosActivos = await prisma.gruero.count({
+        where: { status: 'DISPONIBLE' },
+      });
 
-    // Solo obtenemos estadísticas (sin documentos)
-    const estadisticasRes = await axios.get(`${API_URL}/admin/estadisticas`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+      // Servicios
+      const totalServicios = await prisma.servicio.count();
+      const serviciosHoy = await prisma.servicio.count({
+        where: {
+          solicitadoAt: {
+            gte: new Date(new Date().setHours(0, 0, 0, 0)),
+          },
+        },
+      });
+      const serviciosCompletados = await prisma.servicio.count({
+        where: { status: 'COMPLETADO' },
+      });
+      const serviciosEnCurso = await prisma.servicio.count({
+        where: {
+          status: {
+            in: ['ACEPTADO', 'EN_CAMINO', 'EN_SITIO'],
+          },
+        },
+      });
 
-    if (estadisticasRes.data.success) {
-      setEstadisticas(estadisticasRes.data.data);
+      // Ingresos
+      const ingresos = await prisma.servicio.aggregate({
+        where: {
+          status: 'COMPLETADO',
+          pagado: true,
+        },
+        _sum: {
+          comisionPlataforma: true,
+          totalCliente: true,
+        },
+      });
+
+      // Servicios por día (últimos 7 días)
+      const hace7Dias = new Date();
+      hace7Dias.setDate(hace7Dias.getDate() - 7);
+
+      const serviciosPorDia = await prisma.servicio.groupBy({
+        by: ['solicitadoAt'],
+        where: {
+          solicitadoAt: {
+            gte: hace7Dias,
+          },
+        },
+        _count: true,
+      });
+
+      res.json({
+        success: true,
+        data: {
+          usuarios: {
+            totalClientes,
+            totalGrueros,
+            gruerosPendientes,
+            gruerosActivos,
+          },
+          servicios: {
+            total: totalServicios,
+            hoy: serviciosHoy,
+            completados: serviciosCompletados,
+            enCurso: serviciosEnCurso,
+          },
+          ingresos: {
+            comisionTotal: ingresos._sum.comisionPlataforma || 0,
+            facturacionTotal: ingresos._sum.totalCliente || 0,
+          },
+          serviciosPorDia,
+        },
+      });
+    } catch (error) {
+      console.error('❌ Error al obtener estadísticas:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error al obtener estadísticas',
+      });
     }
-
-  } catch (error: any) {
-    console.error('Error al cargar datos:', error);
-    toast.error('Error al cargar datos del dashboard');
-  } finally {
-    setLoading(false);
   }
-};
 
   /**
    * GET /api/admin/clientes
