@@ -12,7 +12,6 @@ import clienteRoutes from './routes/cliente.routes';
 import pagoRoutes from './routes/pago.routes';
 import { ErrorHandlerMiddleware } from './middlewares/errorHandler.middleware';
 import { setupSocketHandlers } from './socket/socketHandler';
-import { CronService } from './services/cron.service';
 import passwordResetRoutes from './routes/passwordReset.routes';
 
 // ============================================
@@ -224,10 +223,6 @@ app.use('/api/auth', passwordResetRoutes);
 // ============================================
 setupSocketHandlers(io);
 
-// ============================================
-// INICIAR CRON JOBS
-// ============================================
-CronService.init();
 
 // ============================================
 // INICIAR SERVIDOR

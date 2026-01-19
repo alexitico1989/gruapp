@@ -183,8 +183,6 @@ export const setupSocketHandlers = (io: Server) => {
             },
             calificacion: gruero.calificacionPromedio,
             totalServicios: gruero.totalServicios,
-            fotoGruero: gruero.fotoGruero,
-            fotoGrua: gruero.fotoGrua,
           };
 
           console.log('🚛 Notificando nueva grúa disponible a todos los clientes');
@@ -246,8 +244,6 @@ export const setupSocketHandlers = (io: Server) => {
           },
           calificacion: grua.calificacionPromedio,
           totalServicios: grua.totalServicios,
-          fotoGruero: grua.fotoGruero,
-          fotoGrua: grua.fotoGrua,
         }));
 
         console.log('✅ Enviando grúas al cliente:', gruasDisponibles.length);
