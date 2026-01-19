@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { User, Truck, Edit2, Save, X, Star, DollarSign, Package, Calendar, Phone, Mail, CreditCard, CheckCircle, Camera, Upload, AlertTriangle, FileText, Trash2 } from 'lucide-react';
+import { User, Truck, Edit2, Save, X, Star, DollarSign, Package, Calendar, Phone, Mail, CreditCard, CheckCircle, Upload, AlertTriangle, FileText, Trash2 } from 'lucide-react';
 import Layout from '../../components/Layout';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
+import { TIPOS_VEHICULO } from '../../utils/grueroConstants';
 
 interface GrueroData {
   id: string;
@@ -13,13 +14,11 @@ interface GrueroData {
   anio: number;
   capacidadToneladas: number;
   tipoGrua: string;
-  tiposVehiculosAtiende: string; // ✅ AGREGADO
+  tiposVehiculosAtiende: string;
   status: string;
   verificado: boolean;
   totalServicios: number;
   calificacionPromedio: number;
-  fotoGruero: string | null;
-  fotoGrua: string | null;
   licenciaConducir: string | null;
   licenciaVencimiento: string | null;
   seguroVigente: string | null;
@@ -83,11 +82,8 @@ export default function PerfilGruero() {
     tipoGrua: '',
   });
 
-  // ✅ NUEVO: Estado para tipos de vehículos
   const [tiposVehiculosSeleccionados, setTiposVehiculosSeleccionados] = useState<string[]>([]);
 
-  const [uploadingFotoGruero, setUploadingFotoGruero] = useState(false);
-  const [uploadingFotoGrua, setUploadingFotoGrua] = useState(false);
   const [uploadingDocumento, setUploadingDocumento] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [tipoDocumentoSeleccionado, setTipoDocumentoSeleccionado] = useState('');
@@ -97,18 +93,10 @@ export default function PerfilGruero() {
   const [showEliminarCuenta, setShowEliminarCuenta] = useState(false);
   const [passwordEliminar, setPasswordEliminar] = useState('');
 
-  // ✅ NUEVO: Tipos de vehículos disponibles
-  const tiposVehiculosDisponibles = [
-    { value: 'AUTOMOVIL', label: 'Automóvil' },
-    { value: 'SUV', label: 'SUV/Camioneta' },
-    { value: 'MOTO', label: 'Moto' },
-    { value: 'FURGON', label: 'Furgón' },
-    { value: 'CAMION_LIVIANO', label: 'Camión Liviano' },
-    { value: 'CAMION_MEDIANO', label: 'Camión Mediano' },
-    { value: 'CAMION_PESADO', label: 'Camión Pesado' },
-    { value: 'BUS', label: 'Bus' },
-    { value: 'MAQUINARIA', label: 'Maquinaria' },
-  ];
+  const tiposVehiculosDisponibles = Object.entries(TIPOS_VEHICULO).map(([value, label]) => ({
+    value,
+    label,
+  }));
 
   const tiposGruaDisponibles = [
     { value: 'CAMA_BAJA', label: 'Cama Baja' },
@@ -117,7 +105,6 @@ export default function PerfilGruero() {
     { value: 'DESLIZABLE', label: 'Deslizable' },
   ];
 
-  // ✅ NUEVO: Función para toggle de tipos de vehículos
   const toggleTipoVehiculo = (tipo: string) => {
     setTiposVehiculosSeleccionados(prev => {
       if (prev.includes(tipo)) {
@@ -160,7 +147,6 @@ export default function PerfilGruero() {
           tipoGrua: data.tipoGrua || '',
         });
 
-        // ✅ NUEVO: Parsear tipos de vehículos
         try {
           const tipos = JSON.parse(data.tiposVehiculosAtiende || '[]');
           setTiposVehiculosSeleccionados(Array.isArray(tipos) ? tipos : []);
@@ -214,7 +200,6 @@ export default function PerfilGruero() {
   };
 
   const handleUpdateVehiculo = async () => {
-    // ✅ VALIDACIÓN: Al menos un tipo de vehículo
     if (tiposVehiculosSeleccionados.length === 0) {
       toast.error('Debes seleccionar al menos un tipo de vehículo');
       return;
@@ -225,7 +210,7 @@ export default function PerfilGruero() {
         ...formVehiculo,
         anio: parseInt(formVehiculo.anio),
         capacidadToneladas: parseFloat(formVehiculo.capacidadToneladas),
-        tiposVehiculosAtiende: JSON.stringify(tiposVehiculosSeleccionados), // ✅ ENVIAR TIPOS
+        tiposVehiculosAtiende: JSON.stringify(tiposVehiculosSeleccionados),
       });
       
       if (response.data.success) {
@@ -236,76 +221,6 @@ export default function PerfilGruero() {
     } catch (error: any) {
       console.error('Error actualizando vehículo:', error);
       toast.error(error.response?.data?.message || 'Error al actualizar vehículo');
-    }
-  };
-
-  const handleUploadFotoGruero = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('La imagen no debe superar 5MB');
-      return;
-    }
-
-    if (!file.type.startsWith('image/')) {
-      toast.error('Solo se permiten imágenes');
-      return;
-    }
-
-    try {
-      setUploadingFotoGruero(true);
-      const formData = new FormData();
-      formData.append('foto', file);
-
-      const response = await api.post('/gruero/foto-gruero', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      if (response.data.success) {
-        toast.success('Foto de perfil actualizada');
-        cargarDatos();
-      }
-    } catch (error: any) {
-      console.error('Error subiendo foto:', error);
-      toast.error(error.response?.data?.message || 'Error al subir foto');
-    } finally {
-      setUploadingFotoGruero(false);
-    }
-  };
-
-  const handleUploadFotoGrua = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('La imagen no debe superar 5MB');
-      return;
-    }
-
-    if (!file.type.startsWith('image/')) {
-      toast.error('Solo se permiten imágenes');
-      return;
-    }
-
-    try {
-      setUploadingFotoGrua(true);
-      const formData = new FormData();
-      formData.append('foto', file);
-
-      const response = await api.post('/gruero/foto-grua', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      if (response.data.success) {
-        toast.success('Foto de la grúa actualizada');
-        cargarDatos();
-      }
-    } catch (error: any) {
-      console.error('Error subiendo foto:', error);
-      toast.error(error.response?.data?.message || 'Error al subir foto');
-    } finally {
-      setUploadingFotoGrua(false);
     }
   };
 
@@ -494,81 +409,7 @@ export default function PerfilGruero() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           {/* Columna Principal */}
           <div className="lg:col-span-2 space-y-4 md:space-y-6">
-            {/* Fotos de Perfil */}
-            <div className="bg-white rounded-lg shadow-md p-4 md:p-6">
-              <h2 className="text-lg md:text-xl font-bold text-[#1e3a5f] mb-4 md:mb-6 flex items-center">
-                <Camera className="h-5 w-5 md:h-6 md:w-6 mr-2" />
-                Fotos de Perfil
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                {/* Foto Gruero */}
-                <div className="text-center">
-                  <p className="font-semibold mb-3 text-sm md:text-base">Foto del Gruero</p>
-                  <div className="relative w-32 h-32 md:w-40 md:h-40 mx-auto mb-3">
-                    {grueroData.fotoGruero ? (
-                      <img
-                        src={grueroData.fotoGruero?.startsWith('http') 
-                          ? grueroData.fotoGruero 
-                          : `https://gruapp-production.up.railway.app${grueroData.fotoGruero}`
-                        }
-                        alt="Foto Gruero"
-                        className="w-full h-full object-cover rounded-full border-4 border-gray-200"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gray-200 rounded-full flex items-center justify-center">
-                        <User className="h-12 w-12 md:h-16 md:w-16 text-gray-400" />
-                      </div>
-                    )}
-                  </div>
-                  <label className="cursor-pointer">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleUploadFotoGruero}
-                      className="hidden"
-                      disabled={uploadingFotoGruero}
-                    />
-                    <span className="bg-[#ff7a3d] text-white px-3 md:px-4 py-2 rounded-lg hover:bg-orange-600 inline-block text-sm md:text-base">
-                      {uploadingFotoGruero ? 'Subiendo...' : 'Cambiar Foto'}
-                    </span>
-                  </label>
-                </div>
-
-                {/* Foto Grúa */}
-                <div className="text-center">
-                  <p className="font-semibold mb-3 text-sm md:text-base">Foto de la Grúa</p>
-                  <div className="relative w-32 h-32 md:w-40 md:h-40 mx-auto mb-3">
-                    {grueroData.fotoGrua ? (
-                      <img
-                        src={grueroData.fotoGrua?.startsWith('http') 
-                          ? grueroData.fotoGrua 
-                          : `https://gruapp-production.up.railway.app${grueroData.fotoGrua}`
-                        }
-                        alt="Foto Grúa"
-                        className="w-full h-full object-cover rounded-lg border-4 border-gray-200"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center">
-                        <Truck className="h-12 w-12 md:h-16 md:w-16 text-gray-400" />
-                      </div>
-                    )}
-                  </div>
-                  <label className="cursor-pointer">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleUploadFotoGrua}
-                      className="hidden"
-                      disabled={uploadingFotoGrua}
-                    />
-                    <span className="bg-[#ff7a3d] text-white px-3 md:px-4 py-2 rounded-lg hover:bg-orange-600 inline-block text-sm md:text-base">
-                      {uploadingFotoGrua ? 'Subiendo...' : 'Cambiar Foto'}
-                    </span>
-                  </label>
-                </div>
-              </div>
-            </div>
-
+            
             {/* Información Personal */}
             <div className="bg-white rounded-lg shadow-md p-4 md:p-6">
               <div className="flex items-center justify-between mb-4 md:mb-6">
@@ -740,7 +581,6 @@ export default function PerfilGruero() {
                           capacidadToneladas: grueroData.capacidadToneladas?.toString() || '',
                           tipoGrua: grueroData.tipoGrua || '',
                         });
-                        // ✅ Resetear tipos de vehículos
                         try {
                           const tipos = JSON.parse(grueroData.tiposVehiculosAtiende || '[]');
                           setTiposVehiculosSeleccionados(Array.isArray(tipos) ? tipos : []);
@@ -824,7 +664,7 @@ export default function PerfilGruero() {
                     </div>
                   </div>
 
-                  {/* ✅ NUEVO: Selector de Tipos de Vehículos */}
+                  {/* Selector de Tipos de Vehículos */}
                   <div>
                     <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-2">
                       Tipos de Vehículos que Atiendes *
@@ -883,7 +723,7 @@ export default function PerfilGruero() {
                     </div>
                   </div>
 
-                  {/* ✅ MOSTRAR TIPOS DE VEHÍCULOS */}
+                  {/* Mostrar Tipos de Vehículos */}
                   <div>
                     <p className="text-xs text-gray-500 mb-2">Tipos de Vehículos que Atiendes</p>
                     <div className="flex flex-wrap gap-2">

@@ -93,8 +93,6 @@ interface Grua {
   ubicacion: { lat: number; lng: number };
   calificacion: number;
   totalServicios: number;
-  fotoGruero?: string | null;
-  fotoGrua?: string | null;
 }
 
 interface Servicio {
@@ -1424,43 +1422,6 @@ useEffect(() => {
               >
                 <Popup maxWidth={300}>
                   <div className="p-2">
-                    <div className="flex gap-3 mb-3">
-                      <div className="flex-shrink-0">
-                        {grua.fotoGruero ? (
-                          <img
-                            src={
-                              grua.fotoGruero.startsWith('http')
-                                ? grua.fotoGruero
-                                : `${API_URL.replace('/api', '')}${grua.fotoGruero}`
-                            }
-                            alt="Foto Gruero"
-                            className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
-                          />
-                        ) : (
-                          <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center">
-                            <User className="h-8 w-8 text-gray-400" />
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex-shrink-0">
-                        {grua.fotoGrua ? (
-                          <img
-                            src={
-                              grua.fotoGrua.startsWith('http')
-                                ? grua.fotoGrua
-                                : `${API_URL.replace('/api', '')}${grua.fotoGrua}`
-                            }
-                            alt="Foto Grúa"
-                            className="w-16 h-16 rounded-lg object-cover border-2 border-gray-200"
-                          />
-                        ) : (
-                          <div className="w-16 h-16 rounded-lg bg-gray-200 flex items-center justify-center">
-                            <Truck className="h-8 w-8 text-gray-400" />
-                          </div>
-                        )}
-                      </div>
-                    </div>
 
                     <div className="space-y-1">
                       <p className="font-bold text-[#1e3a5f]">{grua.nombre}</p>
