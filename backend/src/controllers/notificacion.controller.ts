@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import oneSignalService from '../services/onesignal.service';
 
 const prisma = new PrismaClient();
 
@@ -184,6 +185,7 @@ export class NotificacionController {
   
   /**
    * Crear una notificación (uso interno)
+   * ✅ ACTUALIZADO: Ahora también envía notificación push con OneSignal
    */
   static async crearNotificacion(
     userId: string,
@@ -193,6 +195,7 @@ export class NotificacionController {
     data?: any
   ) {
     try {
+      // 1. Guardar en BD (para historial en la app)
       const notificacion = await prisma.notificacion.create({
         data: {
           userId,
@@ -201,6 +204,34 @@ export class NotificacionController {
           mensaje,
           data: data ? JSON.stringify(data) : null,
         },
+      });
+      
+      // 2. Determinar tipo de usuario (CLIENTE o GRUERO)
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true },
+      });
+      
+      if (!user) {
+        console.warn('⚠️ Usuario no encontrado para notificación push:', userId);
+        return notificacion;
+      }
+      
+      const userType = user.role === 'CLIENTE' ? 'CLIENTE' : 'GRUERO';
+      
+      // 3. Enviar notificación push con OneSignal (no bloqueante)
+      oneSignalService.sendNotification({
+        userId,
+        userType,
+        titulo,
+        mensaje,
+        data: {
+          tipo,
+          notificacionId: notificacion.id,
+          ...data,
+        },
+      }).catch((error) => {
+        console.error('⚠️ Error enviando push notification (no crítico):', error);
       });
       
       return notificacion;

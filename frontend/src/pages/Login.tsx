@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { Mail, Lock, Loader2 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
+import { subscribeUser } from '../lib/onesignal';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import api from '../lib/api';
@@ -30,13 +31,31 @@ export default function Login() {
       const response = await api.post('/auth/login', data);
 
       if (response.data.success) {
-        setAuth(response.data.data.user, response.data.data.token);
+        const { user, token } = response.data.data;
+        
+        // Guardar en el store
+        setAuth(user, token);
+
+        // 🔔 Suscribir a notificaciones push
+        try {
+          const userType = user.role === 'CLIENTE' ? 'CLIENTE' : 'GRUERO';
+          await subscribeUser(user.id, userType, {
+            nombre: user.nombre,
+            email: user.email,
+            telefono: user.telefono,
+          });
+          console.log('✅ Usuario suscrito a notificaciones push');
+        } catch (notifError) {
+          console.error('⚠️ Error suscribiendo a notificaciones (no crítico):', notifError);
+          // No bloquear el login si falla la suscripción
+        }
+
         toast.success('¡Bienvenido de vuelta!');
 
         // Redirigir según el rol
-        if (response.data.data.user.role === 'CLIENTE') {
+        if (user.role === 'CLIENTE') {
           navigate('/cliente/dashboard');
-        } else if (response.data.data.user.role === 'GRUERO') {
+        } else if (user.role === 'GRUERO') {
           navigate('/gruero/dashboard');
         }
       }

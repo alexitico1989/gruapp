@@ -1,6 +1,8 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './store/authStore';
+import { initOneSignal } from './lib/onesignal';
 
 // Pages - Recuperación de Contraseña (NUEVAS)
 import ForgotPassword from './pages/ForgotPassword';
@@ -72,6 +74,20 @@ function AdminProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   const { isAuthenticated, user } = useAuthStore();
+
+  // 🔔 Inicializar OneSignal cuando la app carga
+  useEffect(() => {
+    const setupOneSignal = async () => {
+      try {
+        await initOneSignal();
+        console.log('✅ OneSignal inicializado en App');
+      } catch (error) {
+        console.error('❌ Error inicializando OneSignal:', error);
+      }
+    };
+
+    setupOneSignal();
+  }, []);
 
   return (
     <BrowserRouter>

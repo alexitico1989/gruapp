@@ -41,6 +41,7 @@
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
     "nodemailer": "^7.0.12",
+    "onesignal-node": "^3.4.0",
     "pdfkit": "^0.17.2",
     "resend": "^6.6.0",
     "sanitize-html": "^2.17.0",
