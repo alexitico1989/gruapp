@@ -182,6 +182,23 @@ app.use('/api/cliente', clienteRoutes);
 app.use('/api/pagos', pagoRoutes);
 
 // ============================================
+// SERVIR SERVICE WORKERS (SIN CACHE)
+// ============================================
+app.get('/OneSignalSDKWorker.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.setHeader('Service-Worker-Allowed', '/');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.sendFile(path.join(__dirname, '../public/OneSignalSDKWorker.js'));
+});
+
+app.get('/OneSignalSDK.sw.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.setHeader('Service-Worker-Allowed', '/');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.sendFile(path.join(__dirname, '../public/OneSignalSDKWorker.js'));
+});
+
+// ============================================
 // SERVIR FRONTEND ESTÁTICO
 // ============================================
 const publicPath = path.join(__dirname, '../public');
