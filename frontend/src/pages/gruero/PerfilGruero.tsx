@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, Truck, Edit2, Save, X, Star, DollarSign, Package, Calendar, Phone, Mail, CreditCard, CheckCircle, Upload, AlertTriangle, FileText, Trash2 } from 'lucide-react';
+import { User, Truck, Edit2, Save, X, Star, DollarSign, Calendar, Phone, Mail, CreditCard, CheckCircle, Trash2 } from 'lucide-react';
 import Layout from '../../components/Layout';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../lib/api';
@@ -19,14 +19,6 @@ interface GrueroData {
   verificado: boolean;
   totalServicios: number;
   calificacionPromedio: number;
-  licenciaConducir: string | null;
-  licenciaVencimiento: string | null;
-  seguroVigente: string | null;
-  seguroVencimiento: string | null;
-  revisionTecnica: string | null;
-  revisionVencimiento: string | null;
-  permisoCirculacion: string | null;
-  permisoVencimiento: string | null;
   cuentaSuspendida: boolean;
   motivoSuspension: string | null;
   user: {
@@ -48,13 +40,6 @@ interface Estadisticas {
   gananciasMes: number;
   gananciasTotales: number;
   calificacionPromedio: number;
-}
-
-interface Alerta {
-  tipo: string;
-  mensaje: string;
-  fechaVencimiento: string;
-  estado: 'vencido' | 'proximo';
 }
 
 export default function PerfilGruero() {
@@ -84,12 +69,6 @@ export default function PerfilGruero() {
 
   const [tiposVehiculosSeleccionados, setTiposVehiculosSeleccionados] = useState<string[]>([]);
 
-  const [uploadingDocumento, setUploadingDocumento] = useState(false);
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [tipoDocumentoSeleccionado, setTipoDocumentoSeleccionado] = useState('');
-  const [fechaVencimiento, setFechaVencimiento] = useState('');
-  const [alertasDocumentos, setAlertasDocumentos] = useState<Alerta[]>([]);
-
   const [showEliminarCuenta, setShowEliminarCuenta] = useState(false);
   const [passwordEliminar, setPasswordEliminar] = useState('');
 
@@ -102,7 +81,6 @@ export default function PerfilGruero() {
     { value: 'CAMA_BAJA', label: 'Cama Baja' },
     { value: 'HORQUILLA', label: 'Horquilla' },
     { value: 'PLUMA', label: 'Pluma' },
-    { value: 'DESLIZABLE', label: 'Deslizable' },
   ];
 
   const toggleTipoVehiculo = (tipo: string) => {
@@ -167,23 +145,6 @@ export default function PerfilGruero() {
     }
   };
 
-  const verificarDocumentos = async () => {
-    try {
-      const response = await api.get('/gruero/verificar-documentos');
-      if (response.data.success) {
-        setAlertasDocumentos(response.data.data.alertas);
-      }
-    } catch (error) {
-      console.error('Error verificando documentos:', error);
-    }
-  };
-
-  useEffect(() => {
-    if (grueroData) {
-      verificarDocumentos();
-    }
-  }, [grueroData]);
-
   const handleUpdatePerfil = async () => {
     try {
       const response = await api.patch('/gruero/perfil', formPerfil);
@@ -224,57 +185,6 @@ export default function PerfilGruero() {
     }
   };
 
-  const handleUploadDocumento = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('El archivo no debe superar 10MB');
-      return;
-    }
-
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
-    if (!allowedTypes.includes(file.type)) {
-      toast.error('Solo se permiten imágenes (JPG, PNG) o PDF');
-      return;
-    }
-
-    if (!fechaVencimiento) {
-      toast.error('Debe especificar la fecha de vencimiento');
-      return;
-    }
-
-    try {
-      setUploadingDocumento(true);
-      const formData = new FormData();
-      formData.append('documento', file);
-      formData.append('tipoDocumento', tipoDocumentoSeleccionado);
-      formData.append('fechaVencimiento', fechaVencimiento);
-
-      const response = await api.post('/gruero/documento', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      if (response.data.success) {
-        if (response.data.data.documentosVencidos && response.data.data.documentosVencidos.length > 0) {
-          toast.error('Documento subido pero está VENCIDO. Cuenta suspendida.');
-        } else {
-          toast.success('Documento subido exitosamente');
-        }
-        cargarDatos();
-        verificarDocumentos();
-        setShowUploadModal(false);
-        setTipoDocumentoSeleccionado('');
-        setFechaVencimiento('');
-      }
-    } catch (error: any) {
-      console.error('Error subiendo documento:', error);
-      toast.error(error.response?.data?.message || 'Error al subir documento');
-    } finally {
-      setUploadingDocumento(false);
-    }
-  };
-
   const handleEliminarCuenta = async () => {
     if (!passwordEliminar) {
       toast.error('Debes ingresar tu contraseña');
@@ -301,21 +211,6 @@ export default function PerfilGruero() {
     } catch (error: any) {
       console.error('Error al eliminar cuenta:', error);
       toast.error(error.response?.data?.message || 'Error al eliminar cuenta');
-    }
-  };
-
-  const abrirModalDocumento = (tipo: string) => {
-    setTipoDocumentoSeleccionado(tipo);
-    setShowUploadModal(true);
-  };
-
-  const getNombreDocumento = (tipo: string) => {
-    switch (tipo) {
-      case 'licenciaConducir': return 'Licencia de Conducir';
-      case 'seguroVigente': return 'Seguro Vigente';
-      case 'revisionTecnica': return 'Revisión Técnica';
-      case 'permisoCirculacion': return 'Permiso de Circulación';
-      default: return '';
     }
   };
 
@@ -352,58 +247,6 @@ export default function PerfilGruero() {
           <h1 className="text-2xl md:text-3xl font-bold text-[#1e3a5f]">Mi Perfil</h1>
           <p className="text-sm md:text-base text-gray-600 mt-1">Administra tu información y configuración</p>
         </div>
-
-        {/* Alertas de Documentos */}
-        {alertasDocumentos.length > 0 && (
-          <div className="mb-6 space-y-2">
-            {alertasDocumentos.map((alerta, index) => (
-              <div
-                key={index}
-                className={`p-3 md:p-4 rounded-lg flex flex-col sm:flex-row sm:items-center gap-3 ${
-                  alerta.estado === 'vencido'
-                    ? 'bg-red-50 border-2 border-red-500'
-                    : 'bg-yellow-50 border-2 border-yellow-500'
-                }`}
-              >
-                <AlertTriangle
-                  className={`h-5 w-5 md:h-6 md:w-6 flex-shrink-0 ${
-                    alerta.estado === 'vencido' ? 'text-red-500' : 'text-yellow-500'
-                  }`}
-                />
-                <div className="flex-1 min-w-0">
-                  <p className={`font-semibold text-sm md:text-base ${alerta.estado === 'vencido' ? 'text-red-900' : 'text-yellow-900'}`}>
-                    {alerta.mensaje}
-                  </p>
-                  <p className="text-xs md:text-sm text-gray-600">
-                    Vencimiento: {new Date(alerta.fechaVencimiento).toLocaleDateString('es-CL')}
-                  </p>
-                </div>
-                <button
-                  onClick={() => abrirModalDocumento(alerta.tipo)}
-                  className="bg-blue-500 text-white px-3 md:px-4 py-2 rounded-lg hover:bg-blue-600 font-semibold text-sm w-full sm:w-auto"
-                >
-                  Actualizar
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Alerta de Cuenta Suspendida */}
-        {grueroData.cuentaSuspendida && (
-          <div className="mb-6 bg-red-50 border-2 border-red-500 rounded-lg p-4 md:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-              <AlertTriangle className="h-6 w-6 md:h-8 md:w-8 text-red-500 flex-shrink-0" />
-              <div>
-                <h3 className="text-lg md:text-xl font-bold text-red-900">Cuenta Suspendida</h3>
-                <p className="text-sm md:text-base text-red-700 mt-1">{grueroData.motivoSuspension}</p>
-                <p className="text-xs md:text-sm text-red-600 mt-2">
-                  No podrás ponerte disponible hasta que actualices tus documentos vencidos.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Grid Principal */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
@@ -537,7 +380,7 @@ export default function PerfilGruero() {
                     <div className="min-w-0">
                       <p className="text-xs text-gray-500">Estado</p>
                       <p className={`font-semibold text-sm md:text-base ${grueroData.verificado ? 'text-green-600' : 'text-gray-600'}`}>
-                        {grueroData.verificado ? 'Verificado' : 'Pendiente'}
+                        {grueroData.verificado ? 'Verificado' : 'Pendiente de Verificación'}
                       </p>
                     </div>
                   </div>
@@ -745,48 +588,6 @@ export default function PerfilGruero() {
               )}
             </div>
 
-            {/* Documentos */}
-            <div className="bg-white rounded-lg shadow-md p-4 md:p-6">
-              <h2 className="text-lg md:text-xl font-bold text-[#1e3a5f] mb-4 md:mb-6 flex items-center">
-                <Package className="h-5 w-5 md:h-6 md:w-6 mr-2" />
-                Documentos
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-                {[
-                  { key: 'licenciaConducir', file: grueroData.licenciaConducir, venc: grueroData.licenciaVencimiento, nombre: 'Licencia de Conducir' },
-                  { key: 'seguroVigente', file: grueroData.seguroVigente, venc: grueroData.seguroVencimiento, nombre: 'Seguro Vigente' },
-                  { key: 'revisionTecnica', file: grueroData.revisionTecnica, venc: grueroData.revisionVencimiento, nombre: 'Revisión Técnica' },
-                  { key: 'permisoCirculacion', file: grueroData.permisoCirculacion, venc: grueroData.permisoVencimiento, nombre: 'Permiso de Circulación' },
-                ].map((doc) => (
-                  <div key={doc.key} className={`border-2 rounded-lg p-3 md:p-4 ${doc.file ? 'border-green-500 bg-green-50' : 'border-gray-300'}`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <CheckCircle className={`h-5 w-5 md:h-6 md:w-6 ${doc.file ? 'text-green-500' : 'text-gray-400'}`} />
-                      {doc.file && (
-                        <a 
-                          href={doc.file?.startsWith('http') 
-                            ? doc.file 
-                            : `https://gruapp-production.up.railway.app${doc.file}`
-                          } 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          className="text-blue-500 hover:text-blue-600"
-                        >
-                          <FileText className="h-4 w-4 md:h-5 md:w-5" />
-                        </a>
-                      )}
-                    </div>
-                    <p className="font-semibold text-sm md:text-base">{doc.nombre}</p>
-                    {doc.venc && (
-                      <p className="text-xs text-gray-600 mt-1">Vence: {new Date(doc.venc).toLocaleDateString('es-CL')}</p>
-                    )}
-                    <button onClick={() => abrirModalDocumento(doc.key)} className="w-full mt-3 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 text-xs md:text-sm">
-                      {doc.file ? 'Actualizar' : 'Subir'}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             {/* Zona de Peligro */}
             <div className="bg-white rounded-lg shadow-md p-4 md:p-6 border-2 border-red-200">
               <h2 className="text-lg md:text-xl font-bold text-red-600 mb-4">Zona de Peligro</h2>
@@ -895,38 +696,6 @@ export default function PerfilGruero() {
             )}
           </div>
         </div>
-
-        {/* Modal Upload Documento */}
-        {showUploadModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg p-4 md:p-6 w-full max-w-md">
-              <h3 className="text-lg md:text-xl font-bold text-[#1e3a5f] mb-4">
-                Subir {getNombreDocumento(tipoDocumentoSeleccionado)}
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-2">Fecha de Vencimiento</label>
-                  <input type="date" value={fechaVencimiento} onChange={(e) => setFechaVencimiento(e.target.value)} className="input w-full text-base" min={new Date().toISOString().split('T')[0]} />
-                </div>
-                <div>
-                  <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-2">Archivo (JPG, PNG o PDF - Máx 10MB)</label>
-                  <input type="file" accept="image/jpeg,image/jpg,image/png,application/pdf" onChange={handleUploadDocumento} className="w-full text-sm md:text-base" disabled={uploadingDocumento || !fechaVencimiento} />
-                </div>
-                <div className="flex gap-3 mt-6">
-                  <button onClick={() => { setShowUploadModal(false); setTipoDocumentoSeleccionado(''); setFechaVencimiento(''); }} className="flex-1 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600 text-sm md:text-base" disabled={uploadingDocumento}>
-                    Cancelar
-                  </button>
-                </div>
-                {uploadingDocumento && (
-                  <div className="text-center text-gray-600">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff7a3d] mx-auto mb-2"></div>
-                    <p className="text-sm">Subiendo documento...</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </Layout>
   );
