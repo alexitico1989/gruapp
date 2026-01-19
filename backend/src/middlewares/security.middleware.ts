@@ -18,7 +18,7 @@ export const helmetConfig = helmet({
         "https://fonts.googleapis.com",
         "https://unpkg.com", // ✅ Leaflet CSS
         "https://cdnjs.cloudflare.com", // ✅ Leaflet markers
-        "https://onesignal.com" // ✅ OneSignal CSS
+        "https://onesignal.com" // ✅ OneSignal CS
       ],
       scriptSrc: [
         "'self'", 
