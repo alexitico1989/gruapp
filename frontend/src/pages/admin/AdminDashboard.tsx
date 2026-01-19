@@ -24,36 +24,9 @@ interface Estadisticas {
   };
 }
 
-interface Alertas {
-  data: Array<{
-    gruero: {
-      id: string;
-      nombre: string;
-      email: string;
-      telefono: string;
-      patente: string;
-      cuentaSuspendida: boolean;
-    };
-    documentos: Array<{
-      tipo: string;
-      nombre: string;
-      vencimiento: string;
-      diasRestantes: number;
-      estado: 'vencido' | 'critico' | 'proximo';
-    }>;
-  }>;
-  resumen: {
-    total: number;
-    vencidos: number;
-    criticos: number;
-    proximos: number;
-  };
-}
-
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [estadisticas, setEstadisticas] = useState<Estadisticas | null>(null);
-  const [alertas, setAlertas] = useState<Alertas | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -65,52 +38,18 @@ export default function AdminDashboard() {
       setLoading(true);
       const token = localStorage.getItem('adminToken');
 
-      const [estadisticasRes, alertasRes] = await Promise.all([
-        axios.get(`${API_URL}/admin/estadisticas`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        axios.get(`${API_URL}/admin/grueros/documentos-por-vencer`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-      ]);
+      const estadisticasRes = await axios.get(`${API_URL}/admin/estadisticas`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (estadisticasRes.data.success) {
         setEstadisticas(estadisticasRes.data.data);
-      }
-
-      if (alertasRes.data.success) {
-        setAlertas(alertasRes.data);
       }
     } catch (error: any) {
       console.error('Error al cargar datos:', error);
       toast.error('Error al cargar datos del dashboard');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const getEstadoColor = (estado: string) => {
-    switch (estado) {
-      case 'vencido':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'critico':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'proximo':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const getEstadoTexto = (diasRestantes: number) => {
-    if (diasRestantes < 0) {
-      return `Vencido hace ${Math.abs(diasRestantes)} días`;
-    } else if (diasRestantes === 0) {
-      return 'Vence hoy';
-    } else if (diasRestantes === 1) {
-      return 'Vence mañana';
-    } else {
-      return `Vence en ${diasRestantes} días`;
     }
   };
 
@@ -192,131 +131,6 @@ export default function AdminDashboard() {
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-sm md:text-base text-gray-600 mt-1">Resumen general de la plataforma</p>
       </div>
-
-      {/* Alertas de Vencimientos */}
-      {alertas && alertas.resumen.total > 0 && (
-        <div>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-            <h2 className="text-base md:text-lg font-semibold text-gray-900">⚠️ Alertas de Vencimientos</h2>
-            <div className="flex flex-wrap items-center gap-2">
-              {alertas.resumen.vencidos > 0 && (
-                <span className="bg-red-100 text-red-800 text-xs font-semibold px-3 py-1 rounded-full">
-                  {alertas.resumen.vencidos} vencidos
-                </span>
-              )}
-              {alertas.resumen.criticos > 0 && (
-                <span className="bg-orange-100 text-orange-800 text-xs font-semibold px-3 py-1 rounded-full">
-                  {alertas.resumen.criticos} críticos
-                </span>
-              )}
-              {alertas.resumen.proximos > 0 && (
-                <span className="bg-yellow-100 text-yellow-800 text-xs font-semibold px-3 py-1 rounded-full">
-                  {alertas.resumen.proximos} próximos
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Tabla Desktop */}
-          <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="max-h-96 overflow-y-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50 sticky top-0">
-                  <tr>
-                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Gruero
-                    </th>
-                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Documentos
-                    </th>
-                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Estado
-                    </th>
-                    <th className="px-4 lg:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                      Acciones
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {alertas.data.map((alerta, index) => (
-                    <tr key={index} className="hover:bg-gray-50">
-                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{alerta.gruero.nombre}</div>
-                          <div className="text-sm text-gray-500">{alerta.gruero.patente}</div>
-                        </div>
-                      </td>
-                      <td className="px-4 lg:px-6 py-4">
-                        <div className="space-y-1">
-                          {alerta.documentos.map((doc, idx) => (
-                            <div key={idx} className="text-sm">
-                              <span className="font-medium text-gray-700">{doc.nombre}</span>
-                              <span className="text-gray-500 ml-2">{getEstadoTexto(doc.diasRestantes)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="px-4 lg:px-6 py-4">
-                        <div className="space-y-1">
-                          {alerta.documentos.map((doc, idx) => (
-                            <span
-                              key={idx}
-                              className={`inline-block px-2 py-1 text-xs font-semibold rounded-full border ${getEstadoColor(doc.estado)}`}
-                            >
-                              {doc.estado === 'vencido' ? '🔴 Vencido' : doc.estado === 'critico' ? '🟠 Crítico' : '🟡 Próximo'}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-right text-sm">
-                        <button
-                          onClick={() => navigate(`/admin/grueros/${alerta.gruero.id}`)}
-                          className="text-blue-600 hover:text-blue-900 font-medium"
-                        >
-                          Ver Detalle →
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Cards Móvil */}
-          <div className="md:hidden space-y-3">
-            {alertas.data.map((alerta, index) => (
-              <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <p className="font-semibold text-gray-900">{alerta.gruero.nombre}</p>
-                    <p className="text-sm text-gray-500">{alerta.gruero.patente}</p>
-                  </div>
-                </div>
-                <div className="space-y-2 mb-3">
-                  {alerta.documentos.map((doc, idx) => (
-                    <div key={idx} className="flex items-center justify-between text-sm">
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-700">{doc.nombre}</p>
-                        <p className="text-xs text-gray-500">{getEstadoTexto(doc.diasRestantes)}</p>
-                      </div>
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getEstadoColor(doc.estado)} ml-2`}>
-                        {doc.estado === 'vencido' ? '🔴' : doc.estado === 'critico' ? '🟠' : '🟡'}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <button
-                  onClick={() => navigate(`/admin/grueros/${alerta.gruero.id}`)}
-                  className="w-full bg-blue-50 text-blue-600 hover:bg-blue-100 px-4 py-2 rounded-lg text-sm font-medium transition"
-                >
-                  Ver Detalle →
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Estadísticas de Usuarios */}
       <div>
