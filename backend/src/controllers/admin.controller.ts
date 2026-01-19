@@ -495,9 +495,9 @@ export class AdminController {
   }
 
   /**
- * Eliminar cliente permanentemente
- */
-static async eliminarCliente(req: Request, res: Response) {
+   * Eliminar cliente permanentemente
+   */
+  static async eliminarCliente(req: Request, res: Response) {
     const { id } = req.params;
     try {
       // 1. Buscar cliente para obtener userId
@@ -751,347 +751,6 @@ static async eliminarCliente(req: Request, res: Response) {
       res.status(500).json({
         success: false,
         message: 'Error al obtener clientes',
-      });
-    }
-  }
-
-  /**
-   * PATCH /api/admin/grueros/:id/documentos/aprobar
-   * Aprobar documentos de un gruero
-   */
-  static async aprobarDocumentos(req: Request, res: Response): Promise<void> {
-    try {
-      const { id } = req.params;
-      const { documentos } = req.body; // Array de documentos aprobados
-
-      if (!documentos || !Array.isArray(documentos)) {
-        res.status(400).json({
-          success: false,
-          message: 'Debes especificar los documentos a aprobar',
-        });
-        return;
-      }
-
-      // Verificar que todos los documentos requeridos estén aprobados
-      const documentosRequeridos = [
-        'licenciaConducir',
-        'seguroVigente',
-        'revisionTecnica',
-        'permisoCirculacion',
-      ];
-
-      const todosAprobados = documentosRequeridos.every((doc) =>
-        documentos.includes(doc)
-      );
-
-      const gruero = await prisma.gruero.update({
-        where: { id },
-        data: {
-          estadoVerificacion: todosAprobados ? 'APROBADO' : 'PENDIENTE',
-          verificado: todosAprobados,
-        },
-        include: {
-          user: true,
-        },
-      });
-
-      // Enviar notificación
-      if (todosAprobados) {
-        await prisma.notificacion.create({
-          data: {
-            userId: gruero.userId,
-            tipo: 'DOCUMENTOS_APROBADOS',
-            titulo: '✅ Documentos Aprobados',
-            mensaje: 'Todos tus documentos han sido aprobados. Ya puedes empezar a trabajar.',
-          },
-        });
-      }
-
-      res.json({
-        success: true,
-        message: todosAprobados
-          ? 'Documentos aprobados y gruero verificado'
-          : 'Documentos aprobados parcialmente',
-        data: gruero,
-      });
-    } catch (error) {
-      console.error('❌ Error al aprobar documentos:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Error al aprobar documentos',
-      });
-    }
-  }
-
-  /**
-   * PATCH /api/admin/grueros/:id/documentos/rechazar
-   * Rechazar documentos de un gruero
-   */
-  static async rechazarDocumentos(req: Request, res: Response): Promise<void> {
-    try {
-      const { id } = req.params;
-      const { documento, motivo } = req.body;
-
-      if (!documento || !motivo) {
-        res.status(400).json({
-          success: false,
-          message: 'Documento y motivo son requeridos',
-        });
-        return;
-      }
-
-      const gruero = await prisma.gruero.update({
-        where: { id },
-        data: {
-          estadoVerificacion: 'RECHAZADO',
-          verificado: false,
-          motivoRechazo: `Documento ${documento} rechazado: ${motivo}`,
-        },
-        include: {
-          user: true,
-        },
-      });
-
-      // Enviar notificación
-      await prisma.notificacion.create({
-        data: {
-          userId: gruero.userId,
-          tipo: 'DOCUMENTO_RECHAZADO',
-          titulo: '❌ Documento Rechazado',
-          mensaje: `Tu documento ${documento} ha sido rechazado. Motivo: ${motivo}. Por favor, vuelve a subirlo.`,
-        },
-      });
-
-      res.json({
-        success: true,
-        message: 'Documento rechazado',
-        data: gruero,
-      });
-    } catch (error) {
-      console.error('❌ Error al rechazar documento:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Error al rechazar documento',
-      });
-    }
-  }
-
-  /**
-   * GET /api/admin/grueros/documentos-por-vencer
-   * Obtener grueros con documentos próximos a vencer (15 días) o vencidos
-   */
-  static async getDocumentosPorVencer(req: Request, res: Response): Promise<void> {
-    try {
-      const ahora = new Date();
-      const fechaLimite = new Date();
-      fechaLimite.setDate(fechaLimite.getDate() + 15);
-
-      const grueros = await prisma.gruero.findMany({
-        where: {
-          verificado: true,
-          OR: [
-            // Licencia próxima a vencer o vencida
-            {
-              licenciaVencimiento: {
-                lte: fechaLimite,
-              },
-            },
-            // Seguro próximo a vencer o vencido
-            {
-              seguroVencimiento: {
-                lte: fechaLimite,
-              },
-            },
-            // Revisión próxima a vencer o vencida
-            {
-              revisionVencimiento: {
-                lte: fechaLimite,
-              },
-            },
-            // Permiso próximo a vencer o vencido
-            {
-              permisoVencimiento: {
-                lte: fechaLimite,
-              },
-            },
-          ],
-        },
-        include: {
-          user: {
-            select: {
-              nombre: true,
-              apellido: true,
-              email: true,
-              telefono: true,
-            },
-          },
-        },
-        orderBy: {
-          licenciaVencimiento: 'asc', // Los más urgentes primero
-        },
-      });
-
-      // Clasificar alertas por tipo
-      const alertas = grueros.map((gruero) => {
-        const documentosAlerta = [];
-
-        // Verificar cada documento
-        if (gruero.licenciaVencimiento) {
-          const dias = Math.ceil((gruero.licenciaVencimiento.getTime() - ahora.getTime()) / (1000 * 60 * 60 * 24));
-          documentosAlerta.push({
-            tipo: 'licenciaConducir',
-            nombre: 'Licencia de Conducir',
-            vencimiento: gruero.licenciaVencimiento,
-            diasRestantes: dias,
-            estado: dias < 0 ? 'vencido' : dias <= 7 ? 'critico' : 'proximo',
-          });
-        }
-
-        if (gruero.seguroVencimiento) {
-          const dias = Math.ceil((gruero.seguroVencimiento.getTime() - ahora.getTime()) / (1000 * 60 * 60 * 24));
-          documentosAlerta.push({
-            tipo: 'seguroVigente',
-            nombre: 'Seguro',
-            vencimiento: gruero.seguroVencimiento,
-            diasRestantes: dias,
-            estado: dias < 0 ? 'vencido' : dias <= 7 ? 'critico' : 'proximo',
-          });
-        }
-
-        if (gruero.revisionVencimiento) {
-          const dias = Math.ceil((gruero.revisionVencimiento.getTime() - ahora.getTime()) / (1000 * 60 * 60 * 24));
-          documentosAlerta.push({
-            tipo: 'revisionTecnica',
-            nombre: 'Revisión Técnica',
-            vencimiento: gruero.revisionVencimiento,
-            diasRestantes: dias,
-            estado: dias < 0 ? 'vencido' : dias <= 7 ? 'critico' : 'proximo',
-          });
-        }
-
-        if (gruero.permisoVencimiento) {
-          const dias = Math.ceil((gruero.permisoVencimiento.getTime() - ahora.getTime()) / (1000 * 60 * 60 * 24));
-          documentosAlerta.push({
-            tipo: 'permisoCirculacion',
-            nombre: 'Permiso de Circulación',
-            vencimiento: gruero.permisoVencimiento,
-            diasRestantes: dias,
-            estado: dias < 0 ? 'vencido' : dias <= 7 ? 'critico' : 'proximo',
-          });
-        }
-
-        return {
-          gruero: {
-            id: gruero.id,
-            nombre: `${gruero.user.nombre} ${gruero.user.apellido}`,
-            email: gruero.user.email,
-            telefono: gruero.user.telefono,
-            patente: gruero.patente,
-            cuentaSuspendida: gruero.cuentaSuspendida,
-          },
-          documentos: documentosAlerta,
-        };
-      }).filter(alerta => alerta.documentos.length > 0);
-
-      // Contar por estado
-      const resumen = {
-        total: alertas.length,
-        vencidos: alertas.filter(a => a.documentos.some(d => d.estado === 'vencido')).length,
-        criticos: alertas.filter(a => a.documentos.some(d => d.estado === 'critico')).length,
-        proximos: alertas.filter(a => a.documentos.some(d => d.estado === 'proximo')).length,
-      };
-
-      res.json({
-        success: true,
-        data: alertas,
-        resumen,
-      });
-    } catch (error) {
-      console.error('❌ Error al obtener documentos por vencer:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Error al obtener documentos por vencer',
-      });
-    }
-  }
-
-  /**
-   * POST /api/admin/grueros/verificar-vencimientos
-   * Verificar y suspender grueros con documentos vencidos (llamar desde cron job)
-   */
-  static async verificarVencimientos(req: Request, res: Response): Promise<void> {
-    try {
-      const ahora = new Date();
-
-      // Buscar grueros con documentos vencidos
-      const gruerosVencidos = await prisma.gruero.findMany({
-        where: {
-          verificado: true,
-          cuentaSuspendida: false,
-          OR: [
-            { licenciaVencimiento: { lt: ahora } },
-            { seguroVencimiento: { lt: ahora } },
-            { revisionVencimiento: { lt: ahora } },
-            { permisoVencimiento: { lt: ahora } },
-          ],
-        },
-        include: {
-          user: true,
-        },
-      });
-
-      // Suspender cada gruero con documentos vencidos
-      for (const gruero of gruerosVencidos) {
-        const documentosVencidos = [];
-        if (gruero.licenciaVencimiento && gruero.licenciaVencimiento < ahora) {
-          documentosVencidos.push('Licencia de Conducir');
-        }
-        if (gruero.seguroVencimiento && gruero.seguroVencimiento < ahora) {
-          documentosVencidos.push('Seguro');
-        }
-        if (gruero.revisionVencimiento && gruero.revisionVencimiento < ahora) {
-          documentosVencidos.push('Revisión Técnica');
-        }
-        if (gruero.permisoVencimiento && gruero.permisoVencimiento < ahora) {
-          documentosVencidos.push('Permiso de Circulación');
-        }
-
-        await prisma.gruero.update({
-          where: { id: gruero.id },
-          data: {
-            cuentaSuspendida: true,
-            motivoSuspension: `DOCUMENTOS_VENCIDOS: ${documentosVencidos.join(', ')}`,
-            status: 'SUSPENDIDO',
-          },
-        });
-
-        // Notificar al gruero
-        await prisma.notificacion.create({
-          data: {
-            userId: gruero.userId,
-            tipo: 'SUSPENSION_AUTOMATICA',
-            titulo: '⚠️ Cuenta Suspendida por Documentos Vencidos',
-            mensaje: `Tu cuenta ha sido suspendida automáticamente. Documentos vencidos: ${documentosVencidos.join(', ')}. Por favor, actualiza tus documentos.`,
-          },
-        });
-      }
-
-      res.json({
-        success: true,
-        message: `${gruerosVencidos.length} grueros suspendidos por documentos vencidos`,
-        data: {
-          suspendidos: gruerosVencidos.length,
-          grueros: gruerosVencidos.map((g) => ({
-            id: g.id,
-            nombre: `${g.user.nombre} ${g.user.apellido}`,
-          })),
-        },
-      });
-    } catch (error) {
-      console.error('❌ Error al verificar vencimientos:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Error al verificar vencimientos',
       });
     }
   }
@@ -1548,520 +1207,520 @@ static async eliminarCliente(req: Request, res: Response) {
   }
 
   /**
- * GET /api/admin/finanzas/metricas
- * Obtener métricas financieras generales
- */
-static async getMetricasFinancieras(req: Request, res: Response): Promise<void> {
-  try {
-    const ahora = new Date();
-    const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
-    const inicioMesAnterior = new Date(ahora.getFullYear(), ahora.getMonth() - 1, 1);
-    const finMesAnterior = new Date(ahora.getFullYear(), ahora.getMonth(), 0, 23, 59, 59);
+   * GET /api/admin/finanzas/metricas
+   * Obtener métricas financieras generales
+   */
+  static async getMetricasFinancieras(req: Request, res: Response): Promise<void> {
+    try {
+      const ahora = new Date();
+      const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+      const inicioMesAnterior = new Date(ahora.getFullYear(), ahora.getMonth() - 1, 1);
+      const finMesAnterior = new Date(ahora.getFullYear(), ahora.getMonth(), 0, 23, 59, 59);
 
-    // Ingresos totales (todos los tiempos)
-    const ingresosTotal = await prisma.servicio.aggregate({
-      where: {
-        status: 'COMPLETADO',
-        pagado: true,
-      },
-      _sum: {
-        comisionPlataforma: true,
-        totalCliente: true,
-        totalGruero: true,
-      },
-    });
-
-    // Ingresos del mes actual
-    const ingresosMesActual = await prisma.servicio.aggregate({
-      where: {
-        status: 'COMPLETADO',
-        pagado: true,
-        completadoAt: {
-          gte: inicioMes,
+      // Ingresos totales (todos los tiempos)
+      const ingresosTotal = await prisma.servicio.aggregate({
+        where: {
+          status: 'COMPLETADO',
+          pagado: true,
         },
-      },
-      _sum: {
-        comisionPlataforma: true,
-        totalCliente: true,
-        totalGruero: true,
-      },
-    });
-
-    // Ingresos del mes anterior
-    const ingresosMesAnterior = await prisma.servicio.aggregate({
-      where: {
-        status: 'COMPLETADO',
-        pagado: true,
-        completadoAt: {
-          gte: inicioMesAnterior,
-          lte: finMesAnterior,
-        },
-      },
-      _sum: {
-        comisionPlataforma: true,
-      },
-    });
-
-    // Servicios completados este mes
-    const serviciosCompletadosMes = await prisma.servicio.count({
-      where: {
-        status: 'COMPLETADO',
-        completadoAt: {
-          gte: inicioMes,
-        },
-      },
-    });
-
-    // Servicios totales este mes (para calcular tasa de conversión)
-    const serviciosTotalesMes = await prisma.servicio.count({
-      where: {
-        solicitadoAt: {
-          gte: inicioMes,
-        },
-      },
-    });
-
-    // Calcular comisión promedio
-    const comisionPromedio = serviciosCompletadosMes > 0
-      ? (ingresosMesActual._sum.comisionPlataforma || 0) / serviciosCompletadosMes
-      : 0;
-
-    // Calcular porcentaje de cambio vs mes anterior
-    const cambioMensual = ingresosMesAnterior._sum.comisionPlataforma
-      ? ((ingresosMesActual._sum.comisionPlataforma || 0) - (ingresosMesAnterior._sum.comisionPlataforma || 0)) /
-        (ingresosMesAnterior._sum.comisionPlataforma || 1) * 100
-      : 0;
-
-    // Tasa de conversión
-    const tasaConversion = serviciosTotalesMes > 0
-      ? (serviciosCompletadosMes / serviciosTotalesMes) * 100
-      : 0;
-
-    // Proyección mensual (basado en días transcurridos)
-    const diasMes = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 0).getDate();
-    const diasTranscurridos = ahora.getDate();
-    const proyeccionMensual = diasTranscurridos > 0
-      ? ((ingresosMesActual._sum.comisionPlataforma || 0) / diasTranscurridos) * diasMes
-      : 0;
-
-    res.json({
-      success: true,
-      data: {
-        ingresosTotal: ingresosTotal._sum.comisionPlataforma || 0,
-        facturacionTotal: ingresosTotal._sum.totalCliente || 0,
-        pagoGruerosTotal: ingresosTotal._sum.totalGruero || 0,
-        
-        ingresosMesActual: ingresosMesActual._sum.comisionPlataforma || 0,
-        facturacionMesActual: ingresosMesActual._sum.totalCliente || 0,
-        pagoGruerosMesActual: ingresosMesActual._sum.totalGruero || 0,
-        
-        ingresosMesAnterior: ingresosMesAnterior._sum.comisionPlataforma || 0,
-        cambioMensual: Number(cambioMensual.toFixed(2)),
-        
-        serviciosCompletadosMes,
-        serviciosTotalesMes,
-        tasaConversion: Number(tasaConversion.toFixed(2)),
-        
-        comisionPromedio: Number(comisionPromedio.toFixed(2)),
-        proyeccionMensual: Number(proyeccionMensual.toFixed(2)),
-      },
-    });
-  } catch (error) {
-    console.error('❌ Error al obtener métricas financieras:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error al obtener métricas financieras',
-    });
-  }
-}
-
-/**
- * GET /api/admin/finanzas/ingresos-diarios
- * Obtener ingresos diarios para gráfico
- */
-static async getIngresosDiarios(req: Request, res: Response): Promise<void> {
-  try {
-    const { dias = '30' } = req.query;
-    const diasNum = parseInt(dias as string);
-    
-    const fechaInicio = new Date();
-    fechaInicio.setDate(fechaInicio.getDate() - diasNum);
-    fechaInicio.setHours(0, 0, 0, 0);
-
-    const servicios = await prisma.servicio.findMany({
-      where: {
-        status: 'COMPLETADO',
-        pagado: true,
-        completadoAt: {
-          gte: fechaInicio,
-        },
-      },
-      select: {
-        completadoAt: true,
-        comisionPlataforma: true,
-        totalCliente: true,
-        totalGruero: true,
-      },
-      orderBy: {
-        completadoAt: 'asc',
-      },
-    });
-
-    // Agrupar por día
-    const ingresosPorDia: { [key: string]: any } = {};
-    
-    servicios.forEach((servicio) => {
-      if (!servicio.completadoAt) return;
-      
-      const fecha = servicio.completadoAt.toISOString().split('T')[0];
-      
-      if (!ingresosPorDia[fecha]) {
-        ingresosPorDia[fecha] = {
-          fecha,
-          comisionPlataforma: 0,
-          facturacion: 0,
-          pagoGrueros: 0,
-          servicios: 0,
-        };
-      }
-      
-      ingresosPorDia[fecha].comisionPlataforma += servicio.comisionPlataforma;
-      ingresosPorDia[fecha].facturacion += servicio.totalCliente;
-      ingresosPorDia[fecha].pagoGrueros += servicio.totalGruero;
-      ingresosPorDia[fecha].servicios += 1;
-    });
-
-    // Convertir a array y ordenar
-    const resultado = Object.values(ingresosPorDia).map((dia: any) => ({
-      fecha: dia.fecha,
-      comisionPlataforma: Number(dia.comisionPlataforma.toFixed(2)),
-      facturacion: Number(dia.facturacion.toFixed(2)),
-      pagoGrueros: Number(dia.pagoGrueros.toFixed(2)),
-      servicios: dia.servicios,
-    }));
-
-    res.json({
-      success: true,
-      data: resultado,
-    });
-  } catch (error) {
-    console.error('❌ Error al obtener ingresos diarios:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error al obtener ingresos diarios',
-    });
-  }
-}
-
-/**
- * GET /api/admin/finanzas/por-gruero
- * Obtener estadísticas financieras por gruero
- */
-static async getFinanzasPorGruero(req: Request, res: Response): Promise<void> {
-  try {
-    const { limit = '10', orden = 'desc' } = req.query;
-    
-    const grueros = await prisma.gruero.findMany({
-      include: {
-        user: {
-          select: {
-            nombre: true,
-            apellido: true,
-          },
-        },
-        servicios: {
-          where: {
-            status: 'COMPLETADO',
-            pagado: true,
-          },
-          select: {
-            totalGruero: true,
-            comisionPlataforma: true,
-            totalCliente: true,
-          },
-        },
-      },
-    });
-
-    const estadisticas = grueros.map((gruero) => {
-      const totalGanado = gruero.servicios.reduce((sum, s) => sum + s.totalGruero, 0);
-      const comisionGenerada = gruero.servicios.reduce((sum, s) => sum + s.comisionPlataforma, 0);
-      const facturacionTotal = gruero.servicios.reduce((sum, s) => sum + s.totalCliente, 0);
-      
-      return {
-        grueroId: gruero.id,
-        nombre: `${gruero.user.nombre} ${gruero.user.apellido}`,
-        patente: gruero.patente,
-        marca: gruero.marca,
-        modelo: gruero.modelo,
-        serviciosCompletados: gruero.servicios.length,
-        totalGanado: Number(totalGanado.toFixed(2)),
-        comisionGenerada: Number(comisionGenerada.toFixed(2)),
-        facturacionTotal: Number(facturacionTotal.toFixed(2)),
-        promedioServicio: gruero.servicios.length > 0 
-          ? Number((totalGanado / gruero.servicios.length).toFixed(2))
-          : 0,
-      };
-    });
-
-    // Ordenar y limitar
-    estadisticas.sort((a, b) => 
-      orden === 'desc' 
-        ? b.comisionGenerada - a.comisionGenerada
-        : a.comisionGenerada - b.comisionGenerada
-    );
-
-    const resultado = estadisticas.slice(0, parseInt(limit as string));
-
-    res.json({
-      success: true,
-      data: resultado,
-    });
-  } catch (error) {
-    console.error('❌ Error al obtener finanzas por gruero:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error al obtener finanzas por gruero',
-    });
-  }
-}
-
-/**
- * GET /api/admin/finanzas/por-vehiculo
- * Obtener estadísticas financieras por tipo de vehículo
- */
-static async getFinanzasPorVehiculo(req: Request, res: Response): Promise<void> {
-  try {
-    const servicios = await prisma.servicio.findMany({
-      where: {
-        status: 'COMPLETADO',
-        pagado: true,
-      },
-      select: {
-        tipoVehiculo: true,
-        comisionPlataforma: true,
-        totalCliente: true,
-        totalGruero: true,
-      },
-    });
-
-    // Agrupar por tipo de vehículo
-    const estadisticas: { [key: string]: any } = {};
-    
-    servicios.forEach((servicio) => {
-      const tipo = servicio.tipoVehiculo;
-      
-      if (!estadisticas[tipo]) {
-        estadisticas[tipo] = {
-          tipoVehiculo: tipo,
-          servicios: 0,
-          comisionTotal: 0,
-          facturacionTotal: 0,
-          pagoGruerosTotal: 0,
-        };
-      }
-      
-      estadisticas[tipo].servicios += 1;
-      estadisticas[tipo].comisionTotal += servicio.comisionPlataforma;
-      estadisticas[tipo].facturacionTotal += servicio.totalCliente;
-      estadisticas[tipo].pagoGruerosTotal += servicio.totalGruero;
-    });
-
-    // Convertir a array y calcular promedios
-    const resultado = Object.values(estadisticas).map((stat: any) => ({
-      tipoVehiculo: stat.tipoVehiculo,
-      servicios: stat.servicios,
-      comisionTotal: Number(stat.comisionTotal.toFixed(2)),
-      facturacionTotal: Number(stat.facturacionTotal.toFixed(2)),
-      pagoGruerosTotal: Number(stat.pagoGruerosTotal.toFixed(2)),
-      comisionPromedio: Number((stat.comisionTotal / stat.servicios).toFixed(2)),
-      facturacionPromedio: Number((stat.facturacionTotal / stat.servicios).toFixed(2)),
-    }));
-
-    // Ordenar por comisión total descendente
-    resultado.sort((a, b) => b.comisionTotal - a.comisionTotal);
-
-    res.json({
-      success: true,
-      data: resultado,
-    });
-  } catch (error) {
-    console.error('❌ Error al obtener finanzas por vehículo:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error al obtener finanzas por vehículo',
-    });
-  }
-}
-
-/**
- * GET /api/admin/finanzas/transacciones
- * Obtener transacciones recientes con filtros
- */
-static async getTransacciones(req: Request, res: Response): Promise<void> {
-  try {
-    const { 
-      page = '1', 
-      limit = '20',
-      fechaInicio,
-      fechaFin,
-      grueroId,
-      clienteId,
-    } = req.query;
-
-    const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
-    
-    const where: any = {
-      status: 'COMPLETADO',
-      pagado: true,
-    };
-
-    // Filtros opcionales
-    if (fechaInicio || fechaFin) {
-      where.completadoAt = {};
-      if (fechaInicio) {
-        where.completadoAt.gte = new Date(fechaInicio as string);
-      }
-      if (fechaFin) {
-        const fin = new Date(fechaFin as string);
-        fin.setHours(23, 59, 59, 999);
-        where.completadoAt.lte = fin;
-      }
-    }
-
-    if (grueroId) {
-      where.grueroId = grueroId;
-    }
-
-    if (clienteId) {
-      where.clienteId = clienteId;
-    }
-
-    const [transacciones, total] = await Promise.all([
-      prisma.servicio.findMany({
-        where,
-        select: {
-          id: true,
-          tipoVehiculo: true,
-          distanciaKm: true,
+        _sum: {
+          comisionPlataforma: true,
           totalCliente: true,
           totalGruero: true,
+        },
+      });
+
+      // Ingresos del mes actual
+      const ingresosMesActual = await prisma.servicio.aggregate({
+        where: {
+          status: 'COMPLETADO',
+          pagado: true,
+          completadoAt: {
+            gte: inicioMes,
+          },
+        },
+        _sum: {
           comisionPlataforma: true,
-          comisionMP: true,
+          totalCliente: true,
+          totalGruero: true,
+        },
+      });
+
+      // Ingresos del mes anterior
+      const ingresosMesAnterior = await prisma.servicio.aggregate({
+        where: {
+          status: 'COMPLETADO',
+          pagado: true,
+          completadoAt: {
+            gte: inicioMesAnterior,
+            lte: finMesAnterior,
+          },
+        },
+        _sum: {
+          comisionPlataforma: true,
+        },
+      });
+
+      // Servicios completados este mes
+      const serviciosCompletadosMes = await prisma.servicio.count({
+        where: {
+          status: 'COMPLETADO',
+          completadoAt: {
+            gte: inicioMes,
+          },
+        },
+      });
+
+      // Servicios totales este mes (para calcular tasa de conversión)
+      const serviciosTotalesMes = await prisma.servicio.count({
+        where: {
+          solicitadoAt: {
+            gte: inicioMes,
+          },
+        },
+      });
+
+      // Calcular comisión promedio
+      const comisionPromedio = serviciosCompletadosMes > 0
+        ? (ingresosMesActual._sum.comisionPlataforma || 0) / serviciosCompletadosMes
+        : 0;
+
+      // Calcular porcentaje de cambio vs mes anterior
+      const cambioMensual = ingresosMesAnterior._sum.comisionPlataforma
+        ? ((ingresosMesActual._sum.comisionPlataforma || 0) - (ingresosMesAnterior._sum.comisionPlataforma || 0)) /
+          (ingresosMesAnterior._sum.comisionPlataforma || 1) * 100
+        : 0;
+
+      // Tasa de conversión
+      const tasaConversion = serviciosTotalesMes > 0
+        ? (serviciosCompletadosMes / serviciosTotalesMes) * 100
+        : 0;
+
+      // Proyección mensual (basado en días transcurridos)
+      const diasMes = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 0).getDate();
+      const diasTranscurridos = ahora.getDate();
+      const proyeccionMensual = diasTranscurridos > 0
+        ? ((ingresosMesActual._sum.comisionPlataforma || 0) / diasTranscurridos) * diasMes
+        : 0;
+
+      res.json({
+        success: true,
+        data: {
+          ingresosTotal: ingresosTotal._sum.comisionPlataforma || 0,
+          facturacionTotal: ingresosTotal._sum.totalCliente || 0,
+          pagoGruerosTotal: ingresosTotal._sum.totalGruero || 0,
+          
+          ingresosMesActual: ingresosMesActual._sum.comisionPlataforma || 0,
+          facturacionMesActual: ingresosMesActual._sum.totalCliente || 0,
+          pagoGruerosMesActual: ingresosMesActual._sum.totalGruero || 0,
+          
+          ingresosMesAnterior: ingresosMesAnterior._sum.comisionPlataforma || 0,
+          cambioMensual: Number(cambioMensual.toFixed(2)),
+          
+          serviciosCompletadosMes,
+          serviciosTotalesMes,
+          tasaConversion: Number(tasaConversion.toFixed(2)),
+          
+          comisionPromedio: Number(comisionPromedio.toFixed(2)),
+          proyeccionMensual: Number(proyeccionMensual.toFixed(2)),
+        },
+      });
+    } catch (error) {
+      console.error('❌ Error al obtener métricas financieras:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error al obtener métricas financieras',
+      });
+    }
+  }
+
+  /**
+   * GET /api/admin/finanzas/ingresos-diarios
+   * Obtener ingresos diarios para gráfico
+   */
+  static async getIngresosDiarios(req: Request, res: Response): Promise<void> {
+    try {
+      const { dias = '30' } = req.query;
+      const diasNum = parseInt(dias as string);
+      
+      const fechaInicio = new Date();
+      fechaInicio.setDate(fechaInicio.getDate() - diasNum);
+      fechaInicio.setHours(0, 0, 0, 0);
+
+      const servicios = await prisma.servicio.findMany({
+        where: {
+          status: 'COMPLETADO',
+          pagado: true,
+          completadoAt: {
+            gte: fechaInicio,
+          },
+        },
+        select: {
           completadoAt: true,
-          mpPaymentId: true,
-          cliente: {
-            select: {
-              user: {
-                select: {
-                  nombre: true,
-                  apellido: true,
-                },
-              },
-            },
-          },
-          gruero: {
-            select: {
-              user: {
-                select: {
-                  nombre: true,
-                  apellido: true,
-                },
-              },
-              patente: true,
-            },
-          },
+          comisionPlataforma: true,
+          totalCliente: true,
+          totalGruero: true,
         },
         orderBy: {
-          completadoAt: 'desc',
+          completadoAt: 'asc',
         },
-        skip,
-        take: parseInt(limit as string),
-      }),
-      prisma.servicio.count({ where }),
-    ]);
+      });
 
-    // Calcular totales de la página actual
-    const totalesPagina = transacciones.reduce(
-      (acc, t) => ({
-        facturacion: acc.facturacion + t.totalCliente,
-        pagoGrueros: acc.pagoGrueros + t.totalGruero,
-        comisionPlataforma: acc.comisionPlataforma + t.comisionPlataforma,
-        comisionMP: acc.comisionMP + t.comisionMP,
-      }),
-      { facturacion: 0, pagoGrueros: 0, comisionPlataforma: 0, comisionMP: 0 }
-    );
+      // Agrupar por día
+      const ingresosPorDia: { [key: string]: any } = {};
+      
+      servicios.forEach((servicio) => {
+        if (!servicio.completadoAt) return;
+        
+        const fecha = servicio.completadoAt.toISOString().split('T')[0];
+        
+        if (!ingresosPorDia[fecha]) {
+          ingresosPorDia[fecha] = {
+            fecha,
+            comisionPlataforma: 0,
+            facturacion: 0,
+            pagoGrueros: 0,
+            servicios: 0,
+          };
+        }
+        
+        ingresosPorDia[fecha].comisionPlataforma += servicio.comisionPlataforma;
+        ingresosPorDia[fecha].facturacion += servicio.totalCliente;
+        ingresosPorDia[fecha].pagoGrueros += servicio.totalGruero;
+        ingresosPorDia[fecha].servicios += 1;
+      });
 
-    res.json({
-      success: true,
-      data: transacciones,
-      totales: {
-        facturacion: Number(totalesPagina.facturacion.toFixed(2)),
-        pagoGrueros: Number(totalesPagina.pagoGrueros.toFixed(2)),
-        comisionPlataforma: Number(totalesPagina.comisionPlataforma.toFixed(2)),
-        comisionMP: Number(totalesPagina.comisionMP.toFixed(2)),
-      },
-      pagination: {
-        page: parseInt(page as string),
-        limit: parseInt(limit as string),
-        total,
-        pages: Math.ceil(total / parseInt(limit as string)),
-      },
-    });
-  } catch (error) {
-    console.error('❌ Error al obtener transacciones:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error al obtener transacciones',
-    });
+      // Convertir a array y ordenar
+      const resultado = Object.values(ingresosPorDia).map((dia: any) => ({
+        fecha: dia.fecha,
+        comisionPlataforma: Number(dia.comisionPlataforma.toFixed(2)),
+        facturacion: Number(dia.facturacion.toFixed(2)),
+        pagoGrueros: Number(dia.pagoGrueros.toFixed(2)),
+        servicios: dia.servicios,
+      }));
+
+      res.json({
+        success: true,
+        data: resultado,
+      });
+    } catch (error) {
+      console.error('❌ Error al obtener ingresos diarios:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error al obtener ingresos diarios',
+      });
+    }
   }
-}
 
-/**
- * POST /api/admin/debug/marcar-pagados
- * Marcar todos los servicios completados como pagados (SOLO DESARROLLO)
- */
-static async marcarServiciosPagados(req: Request, res: Response): Promise<void> {
-  try {
-    // Primero, ver cuántos servicios hay
-    const completados = await prisma.servicio.count({
-      where: { status: 'COMPLETADO' }
-    });
+  /**
+   * GET /api/admin/finanzas/por-gruero
+   * Obtener estadísticas financieras por gruero
+   */
+  static async getFinanzasPorGruero(req: Request, res: Response): Promise<void> {
+    try {
+      const { limit = '10', orden = 'desc' } = req.query;
+      
+      const grueros = await prisma.gruero.findMany({
+        include: {
+          user: {
+            select: {
+              nombre: true,
+              apellido: true,
+            },
+          },
+          servicios: {
+            where: {
+              status: 'COMPLETADO',
+              pagado: true,
+            },
+            select: {
+              totalGruero: true,
+              comisionPlataforma: true,
+              totalCliente: true,
+            },
+          },
+        },
+      });
 
-    const yaPagados = await prisma.servicio.count({
-      where: { 
+      const estadisticas = grueros.map((gruero) => {
+        const totalGanado = gruero.servicios.reduce((sum, s) => sum + s.totalGruero, 0);
+        const comisionGenerada = gruero.servicios.reduce((sum, s) => sum + s.comisionPlataforma, 0);
+        const facturacionTotal = gruero.servicios.reduce((sum, s) => sum + s.totalCliente, 0);
+        
+        return {
+          grueroId: gruero.id,
+          nombre: `${gruero.user.nombre} ${gruero.user.apellido}`,
+          patente: gruero.patente,
+          marca: gruero.marca,
+          modelo: gruero.modelo,
+          serviciosCompletados: gruero.servicios.length,
+          totalGanado: Number(totalGanado.toFixed(2)),
+          comisionGenerada: Number(comisionGenerada.toFixed(2)),
+          facturacionTotal: Number(facturacionTotal.toFixed(2)),
+          promedioServicio: gruero.servicios.length > 0 
+            ? Number((totalGanado / gruero.servicios.length).toFixed(2))
+            : 0,
+        };
+      });
+
+      // Ordenar y limitar
+      estadisticas.sort((a, b) => 
+        orden === 'desc' 
+          ? b.comisionGenerada - a.comisionGenerada
+          : a.comisionGenerada - b.comisionGenerada
+      );
+
+      const resultado = estadisticas.slice(0, parseInt(limit as string));
+
+      res.json({
+        success: true,
+        data: resultado,
+      });
+    } catch (error) {
+      console.error('❌ Error al obtener finanzas por gruero:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error al obtener finanzas por gruero',
+      });
+    }
+  }
+
+  /**
+   * GET /api/admin/finanzas/por-vehiculo
+   * Obtener estadísticas financieras por tipo de vehículo
+   */
+  static async getFinanzasPorVehiculo(req: Request, res: Response): Promise<void> {
+    try {
+      const servicios = await prisma.servicio.findMany({
+        where: {
+          status: 'COMPLETADO',
+          pagado: true,
+        },
+        select: {
+          tipoVehiculo: true,
+          comisionPlataforma: true,
+          totalCliente: true,
+          totalGruero: true,
+        },
+      });
+
+      // Agrupar por tipo de vehículo
+      const estadisticas: { [key: string]: any } = {};
+      
+      servicios.forEach((servicio) => {
+        const tipo = servicio.tipoVehiculo;
+        
+        if (!estadisticas[tipo]) {
+          estadisticas[tipo] = {
+            tipoVehiculo: tipo,
+            servicios: 0,
+            comisionTotal: 0,
+            facturacionTotal: 0,
+            pagoGruerosTotal: 0,
+          };
+        }
+        
+        estadisticas[tipo].servicios += 1;
+        estadisticas[tipo].comisionTotal += servicio.comisionPlataforma;
+        estadisticas[tipo].facturacionTotal += servicio.totalCliente;
+        estadisticas[tipo].pagoGruerosTotal += servicio.totalGruero;
+      });
+
+      // Convertir a array y calcular promedios
+      const resultado = Object.values(estadisticas).map((stat: any) => ({
+        tipoVehiculo: stat.tipoVehiculo,
+        servicios: stat.servicios,
+        comisionTotal: Number(stat.comisionTotal.toFixed(2)),
+        facturacionTotal: Number(stat.facturacionTotal.toFixed(2)),
+        pagoGruerosTotal: Number(stat.pagoGruerosTotal.toFixed(2)),
+        comisionPromedio: Number((stat.comisionTotal / stat.servicios).toFixed(2)),
+        facturacionPromedio: Number((stat.facturacionTotal / stat.servicios).toFixed(2)),
+      }));
+
+      // Ordenar por comisión total descendente
+      resultado.sort((a, b) => b.comisionTotal - a.comisionTotal);
+
+      res.json({
+        success: true,
+        data: resultado,
+      });
+    } catch (error) {
+      console.error('❌ Error al obtener finanzas por vehículo:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error al obtener finanzas por vehículo',
+      });
+    }
+  }
+
+  /**
+   * GET /api/admin/finanzas/transacciones
+   * Obtener transacciones recientes con filtros
+   */
+  static async getTransacciones(req: Request, res: Response): Promise<void> {
+    try {
+      const { 
+        page = '1', 
+        limit = '20',
+        fechaInicio,
+        fechaFin,
+        grueroId,
+        clienteId,
+      } = req.query;
+
+      const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
+      
+      const where: any = {
         status: 'COMPLETADO',
-        pagado: true 
-      }
-    });
-
-    // Actualizar los que NO están pagados
-    const result = await prisma.servicio.updateMany({
-      where: {
-        status: 'COMPLETADO',
-        pagado: false,
-      },
-      data: {
         pagado: true,
-      }
-    });
+      };
 
-    res.json({
-      success: true,
-      message: `Servicios actualizados exitosamente`,
-      data: {
-        totalCompletados: completados,
-        yaPagados: yaPagados,
-        recienMarcados: result.count,
-        totalPagadosAhora: yaPagados + result.count,
+      // Filtros opcionales
+      if (fechaInicio || fechaFin) {
+        where.completadoAt = {};
+        if (fechaInicio) {
+          where.completadoAt.gte = new Date(fechaInicio as string);
+        }
+        if (fechaFin) {
+          const fin = new Date(fechaFin as string);
+          fin.setHours(23, 59, 59, 999);
+          where.completadoAt.lte = fin;
+        }
       }
-    });
-  } catch (error) {
-    console.error('❌ Error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error al actualizar servicios',
-    });
+
+      if (grueroId) {
+        where.grueroId = grueroId;
+      }
+
+      if (clienteId) {
+        where.clienteId = clienteId;
+      }
+
+      const [transacciones, total] = await Promise.all([
+        prisma.servicio.findMany({
+          where,
+          select: {
+            id: true,
+            tipoVehiculo: true,
+            distanciaKm: true,
+            totalCliente: true,
+            totalGruero: true,
+            comisionPlataforma: true,
+            comisionMP: true,
+            completadoAt: true,
+            mpPaymentId: true,
+            cliente: {
+              select: {
+                user: {
+                  select: {
+                    nombre: true,
+                    apellido: true,
+                  },
+                },
+              },
+            },
+            gruero: {
+              select: {
+                user: {
+                  select: {
+                    nombre: true,
+                    apellido: true,
+                  },
+                },
+                patente: true,
+              },
+            },
+          },
+          orderBy: {
+            completadoAt: 'desc',
+          },
+          skip,
+          take: parseInt(limit as string),
+        }),
+        prisma.servicio.count({ where }),
+      ]);
+
+      // Calcular totales de la página actual
+      const totalesPagina = transacciones.reduce(
+        (acc, t) => ({
+          facturacion: acc.facturacion + t.totalCliente,
+          pagoGrueros: acc.pagoGrueros + t.totalGruero,
+          comisionPlataforma: acc.comisionPlataforma + t.comisionPlataforma,
+          comisionMP: acc.comisionMP + t.comisionMP,
+        }),
+        { facturacion: 0, pagoGrueros: 0, comisionPlataforma: 0, comisionMP: 0 }
+      );
+
+      res.json({
+        success: true,
+        data: transacciones,
+        totales: {
+          facturacion: Number(totalesPagina.facturacion.toFixed(2)),
+          pagoGrueros: Number(totalesPagina.pagoGrueros.toFixed(2)),
+          comisionPlataforma: Number(totalesPagina.comisionPlataforma.toFixed(2)),
+          comisionMP: Number(totalesPagina.comisionMP.toFixed(2)),
+        },
+        pagination: {
+          page: parseInt(page as string),
+          limit: parseInt(limit as string),
+          total,
+          pages: Math.ceil(total / parseInt(limit as string)),
+        },
+      });
+    } catch (error) {
+      console.error('❌ Error al obtener transacciones:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error al obtener transacciones',
+      });
+    }
   }
-}
+
+  /**
+   * POST /api/admin/debug/marcar-pagados
+   * Marcar todos los servicios completados como pagados (SOLO DESARROLLO)
+   */
+  static async marcarServiciosPagados(req: Request, res: Response): Promise<void> {
+    try {
+      // Primero, ver cuántos servicios hay
+      const completados = await prisma.servicio.count({
+        where: { status: 'COMPLETADO' }
+      });
+
+      const yaPagados = await prisma.servicio.count({
+        where: { 
+          status: 'COMPLETADO',
+          pagado: true 
+        }
+      });
+
+      // Actualizar los que NO están pagados
+      const result = await prisma.servicio.updateMany({
+        where: {
+          status: 'COMPLETADO',
+          pagado: false,
+        },
+        data: {
+          pagado: true,
+        }
+      });
+
+      res.json({
+        success: true,
+        message: `Servicios actualizados exitosamente`,
+        data: {
+          totalCompletados: completados,
+          yaPagados: yaPagados,
+          recienMarcados: result.count,
+          totalPagadosAhora: yaPagados + result.count,
+        }
+      });
+    } catch (error) {
+      console.error('❌ Error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error al actualizar servicios',
+      });
+    }
+  }
 }

@@ -232,7 +232,7 @@ export class AuthController {
       console.log('🔵 Enviando respuesta exitosa');
       return res.status(201).json({
         success: true,
-        message: 'Gruero registrado exitosamente. Pendiente de verificación.',
+        message: 'Gruero registrado exitosamente. Tu cuenta será verificada por un administrador.',
         data: {
           user: {
             id: user.id,
@@ -359,7 +359,6 @@ export class AuthController {
           clienteProfile: true,
           grueroProfile: true,
         },
-        
       });
       
       if (!user) {

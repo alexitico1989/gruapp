@@ -56,23 +56,6 @@ model Gruero {
   capacidadToneladas    Float
   tiposVehiculosAtiende String         @default("[]") // JSON array: ["AUTOMOVIL", "SUV", "CAMION_LIVIANO", etc]
   
-  // Fotos
-  fotoGruero            String?        // URL de la foto del gruero
-  fotoGrua              String?        // URL de la foto de la grúa
-  
-  // Documentos con fechas de vencimiento
-  licenciaConducir      String?
-  licenciaVencimiento   DateTime?
-  
-  seguroVigente         String?
-  seguroVencimiento     DateTime?
-  
-  revisionTecnica       String?
-  revisionVencimiento   DateTime?
-  
-  permisoCirculacion    String?
-  permisoVencimiento    DateTime?
-  
   // Ubicación y estado
   status                String         @default("OFFLINE") // DISPONIBLE, OCUPADO, OFFLINE, SUSPENDIDO
   latitud               Float?
@@ -83,7 +66,7 @@ model Gruero {
   estadoVerificacion    String         @default("PENDIENTE") // PENDIENTE, APROBADO, RECHAZADO
   motivoRechazo         String?
   cuentaSuspendida      Boolean        @default(false)
-  motivoSuspension      String?        // "DOCUMENTOS_VENCIDOS", "MANUAL", etc.
+  motivoSuspension      String?
   
   // Estadísticas
   totalServicios        Int            @default(0)
@@ -222,7 +205,7 @@ model Admin {
 model Notificacion {
   id          String    @id @default(uuid())
   userId      String
-  tipo        String    // NUEVO_SERVICIO, SERVICIO_ACEPTADO, EN_CAMINO, EN_SITIO, COMPLETADO, CANCELADO, CALIFICACION, DOCUMENTO_VENCE
+  tipo        String    // NUEVO_SERVICIO, SERVICIO_ACEPTADO, EN_CAMINO, EN_SITIO, COMPLETADO, CANCELADO, CALIFICACION
   titulo      String
   mensaje     String
   leida       Boolean   @default(false)
