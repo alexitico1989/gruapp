@@ -17,7 +17,8 @@ export const helmetConfig = helmet({
         "'unsafe-inline'", 
         "https://fonts.googleapis.com",
         "https://unpkg.com", // ✅ Leaflet CSS
-        "https://cdnjs.cloudflare.com" // ✅ Leaflet markers
+        "https://cdnjs.cloudflare.com", // ✅ Leaflet markers
+        "https://onesignal.com" // ✅ OneSignal CSS
       ],
       scriptSrc: [
         "'self'", 
