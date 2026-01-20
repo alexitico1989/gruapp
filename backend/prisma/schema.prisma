@@ -16,14 +16,14 @@ model User {
   apellido      String
   telefono      String
   rut           String?   @unique
-  
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-  
+
   clienteProfile   Cliente?
   grueroProfile    Gruero?
   securityLogs     SecurityLog[]
-  
+
   @@map("users")
 }
 
@@ -31,14 +31,17 @@ model Cliente {
   id              String    @id @default(uuid())
   userId          String    @unique
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   // Suspensión de cuenta
   cuentaSuspendida  Boolean   @default(false)
   motivoSuspension  String?
-  
+
+  // ✅ NUEVO: Expo Push Token para notificaciones móviles
+  expoPushToken     String?
+
   servicios       Servicio[]
   calificacionesDadas  Calificacion[] @relation("CalificacionesCliente")
-  
+
   @@map("clientes")
 }
 
@@ -46,7 +49,7 @@ model Gruero {
   id                    String         @id @default(uuid())
   userId                String         @unique
   user                  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   // Información del vehículo
   patente               String         @unique
   marca                 String
@@ -55,56 +58,59 @@ model Gruero {
   tipoGrua              String         @default("CAMA_BAJA") // CAMA_BAJA, HORQUILLA, PLUMA
   capacidadToneladas    Float
   tiposVehiculosAtiende String         @default("[]") // JSON array: ["AUTOMOVIL", "SUV", "CAMION_LIVIANO", etc]
-  
+
   // Ubicación y estado
   status                String         @default("OFFLINE") // DISPONIBLE, OCUPADO, OFFLINE, SUSPENDIDO
   latitud               Float?
   longitud              Float?
 
-  // OneSignal Push Notifications
+  // OneSignal Push Notifications (Web)
   oneSignalPlayerId     String?        // Player ID de OneSignal
   notificationsEnabled  Boolean        @default(false) // Si tiene notificaciones activas
-  
+
+  // ✅ NUEVO: Expo Push Token para notificaciones móviles
+  expoPushToken         String?
+
   // Verificación y suspensión
   verificado            Boolean        @default(false)
   estadoVerificacion    String         @default("PENDIENTE") // PENDIENTE, APROBADO, RECHAZADO
   motivoRechazo         String?
   cuentaSuspendida      Boolean        @default(false)
   motivoSuspension      String?
-  
+
   // Estadísticas
   totalServicios        Int            @default(0)
   calificacionPromedio  Float          @default(0)
-  
+
   // Relaciones
   servicios             Servicio[]
   calificacionesRecibidas Calificacion[] @relation("CalificacionesGruero")
-  
+
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt @default(now())
-  
+
   @@map("grueros")
 }
 
 model Servicio {
   id                String         @id @default(uuid())
-  
+
   clienteId         String
   cliente           Cliente        @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-  
+
   grueroId          String?
   gruero            Gruero?        @relation(fields: [grueroId], references: [id], onDelete: SetNull)
-  
+
   origenLat         Float
   origenLng         Float
   origenDireccion   String
-  
+
   destinoLat        Float
   destinoLng        Float
   destinoDireccion  String
-  
+
   tipoVehiculo      String         @default("AUTOMOVIL") // AUTOMOVIL, SUV, CAMION_LIVIANO, etc
-  
+
   distanciaKm       Float
   tarifaBase        Float
   tarifaDistancia   Float
@@ -113,25 +119,25 @@ model Servicio {
   comisionMP        Float
   totalCliente      Float
   totalGruero       Float
-  
+
   status            String         @default("SOLICITADO") // SOLICITADO, ACEPTADO, EN_CAMINO, EN_SITIO, COMPLETADO, CANCELADO
-  
+
   solicitadoAt      DateTime       @default(now())
   aceptadoAt        DateTime?
   enCaminoAt        DateTime?
   enSitioAt         DateTime?
   completadoAt      DateTime?
   canceladoAt       DateTime?
-  
+
   observaciones     String?
   motivoCancelacion String?
-  
+
   pagado            Boolean        @default(false)
-  
+
   // Mercado Pago
   mpPreferenceId    String?
   mpPaymentId       String?
-  
+
   calificacion      Calificacion?
   reclamos          Reclamo[]
 
@@ -140,24 +146,24 @@ model Servicio {
 
 model Calificacion {
   id            String    @id @default(uuid())
-  
+
   servicioId    String    @unique
   servicio      Servicio  @relation(fields: [servicioId], references: [id], onDelete: Cascade)
-  
+
   clienteId     String
   cliente       Cliente   @relation("CalificacionesCliente", fields: [clienteId], references: [id], onDelete: Cascade)
-  
+
   grueroId      String
   gruero        Gruero    @relation("CalificacionesGruero", fields: [grueroId], references: [id], onDelete: Cascade)
-  
+
   puntuacionGruero  Int
   comentarioGruero  String?
-  
+
   puntuacionCliente Int
   comentarioCliente String?
-  
+
   createdAt     DateTime  @default(now())
-  
+
   @@map("calificaciones")
 }
 
@@ -165,31 +171,31 @@ model Reclamo {
   id              String    @id @default(uuid())
   servicioId      String
   servicio        Servicio  @relation(fields: [servicioId], references: [id], onDelete: Cascade)
-  
+
   // Tipo y descripción
   tipo            String    // PROBLEMA_SERVICIO, PROBLEMA_PAGO, MALTRATO, OTRO
   descripcion     String
-  
+
   // Estado y prioridad
   estado          String    @default("PENDIENTE") // PENDIENTE, EN_REVISION, RESUELTO, RECHAZADO
   prioridad       String    @default("MEDIA") // BAJA, MEDIA, ALTA
-  
+
   // Quién reporta
   reportadoPor    String    // CLIENTE, GRUERO
   reportadorId    String    // userId del que reporta
-  
+
   // Resolución
   resolucion      String?
   resueltoAt      DateTime?
   resueltoBy      String?   // adminId que resolvió
-  
+
   // Adjuntos y notas
   adjuntos        String?   // JSON array de URLs
   notasInternas   String?   // Notas del admin
-  
+
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
-  
+
   @@map("reclamos")
 }
 
@@ -199,10 +205,10 @@ model Admin {
   password      String
   nombre        String
   apellido      String
-  
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-  
+
   @@map("admins")
 }
 
@@ -216,7 +222,7 @@ model Notificacion {
   data        String?   // JSON con datos adicionales (servicioId, distancia, grueroId, etc)
   referencia  String?
   createdAt   DateTime  @default(now())
-  
+
   @@index([userId, leida])
   @@index([createdAt])
   @@map("notificaciones")
@@ -257,7 +263,7 @@ model IPBlacklist {
   permanente     Boolean   @default(false)
   notas          String?
   createdBy      String?   // Admin que bloqueó manualmente
-  
+
   @@index([ip])
   @@index([bloqueadoAt])
   @@map("ip_blacklist")
@@ -269,7 +275,7 @@ model IPWhitelist {
   descripcion String   // "Oficina Santiago", "VPN Empresa", etc
   createdBy   String
   createdAt   DateTime @default(now())
-  
+
   @@index([ip])
   @@map("ip_whitelist")
 }

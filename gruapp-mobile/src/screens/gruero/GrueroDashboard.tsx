@@ -15,10 +15,17 @@ import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
-import { useSocket } from '../../contexts/SocketContext'; // ✅ IMPORTAR
+import { useSocket } from '../../contexts/SocketContext';
 import api from '../../services/api';
 import { colors, spacing } from '../../theme/colors';
 import TruckIcon from '../../components/TruckIcon';
+import * as Notifications from 'expo-notifications';
+import { 
+  registerForPushNotificationsAsync, 
+  savePushTokenToBackend,
+  addNotificationReceivedListener,
+  addNotificationResponseReceivedListener 
+} from '../../services/notifications';
 
 interface Servicio {
   id: string;
@@ -39,7 +46,7 @@ interface Servicio {
 
 export default function GrueroDashboard() {
   const { user, logout } = useAuthStore();
-  const { socket, connected } = useSocket(); // ✅ USAR SOCKET
+  const { socket, connected } = useSocket();
   const mapRef = useRef<MapView>(null);
 
   const [location, setLocation] = useState<{
@@ -50,7 +57,6 @@ export default function GrueroDashboard() {
   const [disponible, setDisponible] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   
-  // ✅ NUEVOS ESTADOS
   const [nuevaSolicitud, setNuevaSolicitud] = useState<Servicio | null>(null);
   const [showNuevaSolicitud, setShowNuevaSolicitud] = useState(false);
   const [servicioActivo, setServicioActivo] = useState<Servicio | null>(null);
@@ -67,14 +73,12 @@ export default function GrueroDashboard() {
 
     console.log('📡 Configurando listeners de gruero...');
 
-    // Nueva solicitud
     socket.on('gruero:nuevaSolicitud', (data: Servicio) => {
       console.log('🆕 Nueva solicitud recibida:', data);
       setNuevaSolicitud(data);
       setShowNuevaSolicitud(true);
     });
 
-    // Servicio cancelado por cliente
     socket.on('servicio:canceladoNotificacion', (data: any) => {
       console.log('🚫 Servicio cancelado:', data);
       
@@ -94,7 +98,6 @@ export default function GrueroDashboard() {
       setServicioActivo(null);
     });
 
-    // Estado actualizado por cliente
     socket.on('cliente:estadoActualizado', (data: { servicioId: string; status: string }) => {
       console.log('📢 Estado actualizado por cliente:', data);
       
@@ -116,6 +119,41 @@ export default function GrueroDashboard() {
       socket.off('cliente:estadoActualizado');
     };
   }, [socket, disponible, nuevaSolicitud]);
+
+  // 📱 CONFIGURAR NOTIFICACIONES PUSH
+  useEffect(() => {
+    const setupNotifications = async () => {
+      if (!user?.id) return;
+
+      const token = await registerForPushNotificationsAsync();
+      if (token) {
+        await savePushTokenToBackend(user.id, token, 'GRUERO');
+      }
+
+      // Listener cuando llega una notificación
+      const receivedSubscription = addNotificationReceivedListener(notification => {
+        console.log('🔔 Notificación recibida:', notification);
+      });
+
+      // Listener cuando el usuario toca la notificación
+      const responseSubscription = addNotificationResponseReceivedListener(response => {
+        console.log('👆 Usuario tocó notificación:', response);
+        const data = response.notification.request.content.data;
+        
+        if (data.tipo === 'NUEVO_SERVICIO' && data.servicio) {
+          setNuevaSolicitud(data.servicio);
+          setShowNuevaSolicitud(true);
+        }
+      });
+
+      return () => {
+        receivedSubscription.remove();
+        responseSubscription.remove();
+      };
+    };
+
+    setupNotifications();
+  }, [user?.id]);
 
   const getLocation = async () => {
     try {
@@ -194,7 +232,6 @@ export default function GrueroDashboard() {
         status: 'DISPONIBLE',
       });
 
-      // 2️⃣ Emitir en tiempo real al cliente
       if (socket && user?.id) {
         socket.emit('gruero:locationUpdated', {
           grueroId: user.id,
@@ -204,8 +241,6 @@ export default function GrueroDashboard() {
           },
         });
       }
-
-
     } catch (error) {
       console.error('Error actualizando ubicación:', error);
     }
@@ -335,7 +370,6 @@ export default function GrueroDashboard() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>Hola, {user?.nombre}! 🚚</Text>
@@ -354,7 +388,6 @@ export default function GrueroDashboard() {
         </TouchableOpacity>
       </View>
 
-      {/* Estado de disponibilidad */}
       <View style={styles.statusBar}>
         <View style={styles.statusInfo}>
           <View style={[
@@ -380,7 +413,6 @@ export default function GrueroDashboard() {
         </View>
       </View>
 
-      {/* Servicio Activo */}
       {servicioActivo && (
         <View style={styles.servicioActivoContainer}>
           <Text style={styles.servicioActivoTitle}>
@@ -431,7 +463,6 @@ export default function GrueroDashboard() {
         </View>
       )}
 
-      {/* Mapa */}
       <View style={styles.mapContainer}>
         <MapView
           ref={mapRef}
@@ -467,7 +498,6 @@ export default function GrueroDashboard() {
         </TouchableOpacity>
       </View>
 
-      {/* Info Bottom */}
       <View style={styles.bottomContainer}>
         {!disponible ? (
           <View style={styles.infoBox}>
@@ -490,7 +520,6 @@ export default function GrueroDashboard() {
         ) : null}
       </View>
 
-      {/* Modal Nueva Solicitud */}
       {showNuevaSolicitud && nuevaSolicitud && (
         <Modal
           visible={true}
@@ -569,326 +598,62 @@ export default function GrueroDashboard() {
   );
 }
 
-// ✅ AGREGAR ESTILOS ADICIONALES AL FINAL
 const styles = StyleSheet.create({
-  // ... (estilos existentes) ...
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-  },
-  loadingText: {
-    marginTop: spacing.md,
-    color: colors.text.secondary,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: spacing.md,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  greeting: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: colors.secondary,
-  },
-  connectionStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-    gap: 6,
-  },
-  connectionIndicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  connectionText: {
-    fontSize: 12,
-    color: colors.text.secondary,
-  },
-  logoutButton: {
-    padding: spacing.xs,
-  },
-  statusBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: spacing.md,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  statusInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  statusIndicator: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  statusText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.secondary,
-  },
-  switchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  switchLabel: {
-    fontSize: 14,
-    color: colors.text.secondary,
-  },
-  servicioActivoContainer: {
-    backgroundColor: '#fff',
-    padding: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  servicioActivoTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.secondary,
-    marginBottom: spacing.sm,
-  },
-  servicioInfo: {
-    backgroundColor: '#f0f9ff',
-    padding: spacing.md,
-    borderRadius: 8,
-    marginBottom: spacing.sm,
-  },
-  clienteNombre: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.secondary,
-    marginBottom: 4,
-  },
-  direccion: {
-    fontSize: 13,
-    color: colors.text.secondary,
-    marginBottom: 2,
-  },
-  ganancia: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#16a34a',
-    marginTop: 8,
-  },
-  accionesContainer: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  accionButton: {
-    flex: 1,
-    padding: spacing.md,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  accionButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  mapContainer: {
-    flex: 1,
-    position: 'relative',
-  },
-  map: {
-    flex: 1,
-  },
-  markerContainer: {
-    backgroundColor: colors.primary,
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  centerButton: {
-    position: 'absolute',
-    top: spacing.md,
-    right: spacing.md,
-    backgroundColor: '#fff',
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  bottomContainer: {
-    backgroundColor: '#fff',
-    padding: spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  infoBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.md,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 8,
-  },
-  infoText: {
-    flex: 1,
-    fontSize: 14,
-    color: colors.text.secondary,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  statItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: colors.text.secondary,
-  },
-  // ✅ ESTILOS DEL MODAL
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.lg,
-  },
-  modalContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    width: '100%',
-    maxHeight: '80%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  modalHeader: {
-    backgroundColor: colors.primary,
-    padding: spacing.lg,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
-    textAlign: 'center',
-  },
-  modalContent: {
-    padding: spacing.lg,
-  },
-  clienteInfo: {
-    backgroundColor: '#f0f9ff',
-    padding: spacing.md,
-    borderRadius: 8,
-    marginBottom: spacing.md,
-  },
-  clienteLabel: {
-    fontSize: 12,
-    color: colors.text.secondary,
-    marginBottom: 4,
-  },
-  clienteNombreModal: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.secondary,
-  },
-  direccionContainer: {
-    gap: spacing.md,
-    marginBottom: spacing.md,
-  },
-  direccionItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-  },
-  direccionTexto: {
-    flex: 1,
-  },
-  direccionLabel: {
-    fontSize: 12,
-    color: colors.text.secondary,
-    marginBottom: 2,
-  },
-  direccionValor: {
-    fontSize: 14,
-    color: colors.secondary,
-    fontWeight: '500',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  statBox: {
-    flex: 1,
-    backgroundColor: '#f3f4f6',
-    padding: spacing.md,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  statBoxLabel: {
-    fontSize: 12,
-    color: colors.text.secondary,
-    marginBottom: 4,
-  },
-  statBoxValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.secondary,
-  },
-  modalFooter: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    padding: spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  modalButton: {
-    flex: 1,
-    padding: spacing.md,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  rechazarButton: {
-    backgroundColor: '#f3f4f6',
-  },
-  rechazarButtonText: {
-    color: colors.text.primary,
-    fontWeight: 'bold',
-  },
-  aceptarButton: {
-    backgroundColor: colors.primary,
-  },
-  aceptarButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
+  container: { flex: 1, backgroundColor: colors.background },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background },
+  loadingText: { marginTop: spacing.md, color: colors.text.secondary },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.md, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: colors.border },
+  greeting: { fontSize: 20, fontWeight: 'bold', color: colors.secondary },
+  connectionStatus: { flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 6 },
+  connectionIndicator: { width: 8, height: 8, borderRadius: 4 },
+  connectionText: { fontSize: 12, color: colors.text.secondary },
+  logoutButton: { padding: spacing.xs },
+  statusBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.md, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: colors.border },
+  statusInfo: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  statusIndicator: { width: 12, height: 12, borderRadius: 6 },
+  statusText: { fontSize: 16, fontWeight: '600', color: colors.secondary },
+  switchContainer: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  switchLabel: { fontSize: 14, color: colors.text.secondary },
+  servicioActivoContainer: { backgroundColor: '#fff', padding: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
+  servicioActivoTitle: { fontSize: 16, fontWeight: 'bold', color: colors.secondary, marginBottom: spacing.sm },
+  servicioInfo: { backgroundColor: '#f0f9ff', padding: spacing.md, borderRadius: 8, marginBottom: spacing.sm },
+  clienteNombre: { fontSize: 16, fontWeight: '600', color: colors.secondary, marginBottom: 4 },
+  direccion: { fontSize: 13, color: colors.text.secondary, marginBottom: 2 },
+  ganancia: { fontSize: 18, fontWeight: 'bold', color: '#16a34a', marginTop: 8 },
+  accionesContainer: { flexDirection: 'row', gap: spacing.sm },
+  accionButton: { flex: 1, padding: spacing.md, borderRadius: 8, alignItems: 'center' },
+  accionButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
+  mapContainer: { flex: 1, position: 'relative' },
+  map: { flex: 1 },
+  markerContainer: { backgroundColor: colors.primary, width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: '#fff', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 4 },
+  centerButton: { position: 'absolute', top: spacing.md, right: spacing.md, backgroundColor: '#fff', width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 4 },
+  bottomContainer: { backgroundColor: '#fff', padding: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border },
+  infoBox: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md, backgroundColor: '#f3f4f6', borderRadius: 8 },
+  infoText: { flex: 1, fontSize: 14, color: colors.text.secondary },
+  statsContainer: { flexDirection: 'row', justifyContent: 'space-around' },
+  statItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  statLabel: { fontSize: 12, color: colors.text.secondary },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.7)', justifyContent: 'center', alignItems: 'center', padding: spacing.lg },
+  modalContainer: { backgroundColor: '#fff', borderRadius: 16, width: '100%', maxHeight: '80%', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 },
+  modalHeader: { backgroundColor: colors.primary, padding: spacing.lg, borderTopLeftRadius: 16, borderTopRightRadius: 16 },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', color: '#fff', textAlign: 'center' },
+  modalContent: { padding: spacing.lg },
+  clienteInfo: { backgroundColor: '#f0f9ff', padding: spacing.md, borderRadius: 8, marginBottom: spacing.md },
+  clienteLabel: { fontSize: 12, color: colors.text.secondary, marginBottom: 4 },
+  clienteNombreModal: { fontSize: 18, fontWeight: 'bold', color: colors.secondary },
+  direccionContainer: { gap: spacing.md, marginBottom: spacing.md },
+  direccionItem: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+  direccionTexto: { flex: 1 },
+  direccionLabel: { fontSize: 12, color: colors.text.secondary, marginBottom: 2 },
+  direccionValor: { fontSize: 14, color: colors.secondary, fontWeight: '500' },
+  statsRow: { flexDirection: 'row', gap: spacing.sm },
+  statBox: { flex: 1, backgroundColor: '#f3f4f6', padding: spacing.md, borderRadius: 8, alignItems: 'center' },
+  statBoxLabel: { fontSize: 12, color: colors.text.secondary, marginBottom: 4 },
+  statBoxValue: { fontSize: 18, fontWeight: 'bold', color: colors.secondary },
+  modalFooter: { flexDirection: 'row', gap: spacing.sm, padding: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border },
+  modalButton: { flex: 1, padding: spacing.md, borderRadius: 8, alignItems: 'center' },
+  rechazarButton: { backgroundColor: '#f3f4f6' },
+  rechazarButtonText: { color: colors.text.primary, fontWeight: 'bold' },
+  aceptarButton: { backgroundColor: colors.primary },
+  aceptarButtonText: { color: '#fff', fontWeight: 'bold' },
 });
