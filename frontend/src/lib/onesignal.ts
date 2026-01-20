@@ -57,22 +57,42 @@ export const requestNotificationPermission = async (): Promise<boolean> => {
   try {
     console.log('🔔 Solicitando permisos de notificación...');
     
-    // Verificar si ya tiene permisos
-    const currentPermission = await OneSignal.Notifications.permissionNative;
-    console.log('🔔 Permiso actual:', currentPermission);
+    // Verificar si Notification API está disponible
+    if (!('Notification' in window)) {
+      console.error('❌ Notification API no disponible en este navegador');
+      alert('Tu navegador no soporta notificaciones push');
+      return false;
+    }
     
-    if (currentPermission === 'granted') {
+    // Verificar permiso actual
+    console.log('🔔 Permiso actual:', Notification.permission);
+    
+    if (Notification.permission === 'granted') {
       console.log('✅ Permisos ya otorgados');
       return true;
     }
     
-    // Usar el método nativo del navegador en lugar del slidedown
+    if (Notification.permission === 'denied') {
+      console.error('❌ Permisos denegados previamente');
+      alert('Has bloqueado las notificaciones. Por favor, actívalas manualmente en la configuración del navegador.');
+      return false;
+    }
+    
+    // Solicitar permisos
+    console.log('🔔 Solicitando permiso al usuario...');
     const permission = await Notification.requestPermission();
     console.log('🔔 Resultado de permiso:', permission);
     
-    return permission === 'granted';
+    if (permission === 'granted') {
+      console.log('✅ Permiso otorgado');
+      return true;
+    } else {
+      console.log('❌ Permiso denegado por el usuario');
+      return false;
+    }
   } catch (error) {
     console.error('❌ Error solicitando permisos:', error);
+    alert('Error al solicitar permisos: ' + error);
     return false;
   }
 };
