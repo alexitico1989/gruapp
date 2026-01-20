@@ -5,6 +5,7 @@ import { RoutingService } from '../utils/routing';
 import { PricingService } from '../utils/pricing';
 import { calcularDistancia, filtrarGruerosPorDistancia } from '../utils/distance';
 import { NotificacionController } from './notificacion.controller';
+import OneSignalService from '../services/onesignal.service';
 
 const prisma = new PrismaClient();
 
@@ -132,6 +133,21 @@ export class ServicioController {
             console.log('✅ [Backend] Notificación emitida');
           }
         });
+      }
+
+      
+      
+      // 🔔 NUEVO: Enviar notificaciones PUSH a todos los grueros cercanos
+      if (gruerosCercanos.length > 0) {
+        console.log(`🔔 Enviando notificaciones push a ${gruerosCercanos.length} grueros...`);
+        for (const gruero of gruerosCercanos) {
+          await OneSignalService.notifyNuevoServicio(
+            gruero.userId,
+            servicio.id,
+            tipoVehiculo,
+            gruero.distancia
+          );
+        }
       }
       
       return res.status(201).json({
