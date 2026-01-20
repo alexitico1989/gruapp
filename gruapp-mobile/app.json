@@ -22,13 +22,20 @@
         "ACCESS_COARSE_LOCATION",
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "WRITE_EXTERNAL_STORAGE",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ]
     },
     "plugins": [
       "expo-location",
       "expo-notifications"
     ],
-    "scheme": "gruapp"
+    "scheme": "gruapp",
+    "extra": {
+      "eas": {
+        "projectId": "6e449d79-e723-429b-9a76-565675596d24"
+      }
+    }
   }
 }
