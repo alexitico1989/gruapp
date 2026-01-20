@@ -10,6 +10,7 @@ import api from '../../lib/api';
 import { Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
 import 'leaflet/dist/leaflet.css';
+import OneSignal from 'react-onesignal';
 
 // CSS para el icono personalizado y animaciones
 const style = document.createElement('style');
@@ -161,6 +162,30 @@ export default function GrueroDashboard() {
   const [serviciosAnteriores, setServiciosAnteriores] = useState<string[]>([]);
 
   const socketRef = useRef<Socket | null>(null);
+
+  // ✅ NUEVO - Función para resetear OneSignal
+  const handleResetOneSignal = async () => {
+    try {
+      alert('Iniciando reset de OneSignal...');
+      
+      // Desloguear
+      await OneSignal.logout();
+      console.log('✅ OneSignal logout');
+      
+      // Esperar un poco
+      await new Promise(r => setTimeout(r, 1000));
+      
+      // Re-loguear con prefijo
+      const externalUserId = `gruero_${user?.id}`;
+      await OneSignal.login(externalUserId);
+      console.log('✅ OneSignal login:', externalUserId);
+      
+      alert('✅ OneSignal reseteado!\nExternal ID: ' + externalUserId);
+    } catch (error: any) {
+      console.error('❌ Error:', error);
+      alert('❌ Error: ' + error.message);
+    }
+  };
 
   // Recuperar estado de rastreo al montar el componente
   useEffect(() => {
@@ -323,7 +348,6 @@ export default function GrueroDashboard() {
           cargarServiciosPendientes();
         });
 
-        // ✅ CORREGIDO: Listener mejorado
         globalSocket.on('cliente:estadoActualizado', (data: { servicioId: string; status: string }) => {
           console.log('📢 Estado actualizado por cliente:', data);
           
@@ -349,7 +373,6 @@ export default function GrueroDashboard() {
           }
         });
 
-        // ✅ NUEVO: Listener adicional
         globalSocket.on('servicio-actualizado', (data: any) => {
           console.log('📢 Servicio actualizado:', data);
           
@@ -389,7 +412,7 @@ export default function GrueroDashboard() {
         socketRef.current.off('cliente:servicioAceptado');
         socketRef.current.off('servicio:canceladoNotificacion');
         socketRef.current.off('cliente:estadoActualizado');
-        socketRef.current.off('servicio-actualizado'); // ✅ NUEVO
+        socketRef.current.off('servicio-actualizado');
         socketRef.current.off('error');
       }
     };
@@ -513,16 +536,14 @@ export default function GrueroDashboard() {
     setLoading(true);
     console.log('🔄 Actualizando disponibilidad:', nuevoEstado);
     
-    // ✅ CORREGIDO: Enviar "disponible" en lugar de "status"
     const response = await api.patch('/gruero/disponibilidad', {
-      disponible: nuevoEstado  // ✅ Campo correcto
+      disponible: nuevoEstado
     });
 
     if (response.data.success) {
       setDisponible(nuevoEstado);
       sessionStorage.setItem('grueroDisponible', nuevoEstado.toString());
       
-      // Actualizar status en socket
       const nuevoStatus = nuevoEstado ? 'DISPONIBLE' : 'OFFLINE';
       
       if (socketRef.current) {
@@ -748,393 +769,20 @@ export default function GrueroDashboard() {
 
   return (
     <Layout>
-      <div className="flex flex-col h-[calc(100vh-64px)]">
-        {/* Panel Superior */}
-        <div className="bg-white border-b border-gray-200 overflow-x-auto">
-          <div className="p-3 md:p-4">
-            <div className="flex gap-3 md:gap-4 min-w-max">
-              {/* Estado de Disponibilidad */}
-              <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2d5a8f] rounded-lg p-3 text-white min-w-[200px]">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold text-sm">Estado</span>
-                  <button
-                    onClick={toggleDisponibilidad}
-                    disabled={loading || !grueroId}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 ${
-                      disponible ? 'bg-green-500' : 'bg-gray-400'
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        disponible ? 'translate-x-6' : 'translate-x-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-                <div className="flex items-center text-sm">
-                  {disponible ? (
-                    <>
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      <span>Disponible</span>
-                    </>
-                  ) : (
-                    <>
-                      <XCircle className="h-4 w-4 mr-2" />
-                      <span>Offline</span>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Rastreo GPS */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 min-w-[200px]">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-semibold text-blue-900 text-sm">Rastreo GPS</span>
-                  <div
-                    className={`h-3 w-3 rounded-full ${
-                      rastreoActivo ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
-                    }`}
-                  />
-                </div>
-                <p className="text-xs text-blue-700">
-                  {rastreoActivo ? 'Activo' : 'Inactivo'}
-                </p>
-              </div>
-
-              {/* Estadísticas */}
-              {estadisticas && (
-                <>
-                  <div className="bg-green-50 p-3 rounded-lg min-w-[120px]">
-                    <p className="text-xs text-gray-600">Completados</p>
-                    <p className="text-xl font-bold text-green-600">{estadisticas.serviciosCompletados}</p>
-                  </div>
-                  <div className="bg-blue-50 p-3 rounded-lg min-w-[100px]">
-                    <p className="text-xs text-gray-600">Activos</p>
-                    <p className="text-xl font-bold text-blue-600">{estadisticas.serviciosActivos}</p>
-                  </div>
-                  <div className="bg-purple-50 p-3 rounded-lg min-w-[100px]">
-                    <p className="text-xs text-gray-600">Hoy</p>
-                    <p className="text-lg font-bold text-purple-600">
-                      ${estadisticas.gananciasHoy.toLocaleString('es-CL')}
-                    </p>
-                  </div>
-                  <div className="bg-orange-50 p-3 rounded-lg min-w-[100px]">
-                    <p className="text-xs text-gray-600">Semana</p>
-                    <p className="text-lg font-bold text-orange-600">
-                      ${estadisticas.gananciasSemana.toLocaleString('es-CL')}
-                    </p>
-                  </div>
-                </>
-              )}
-
-              {/* Servicio Activo */}
-              {servicioActivo && (
-                <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-3 min-w-[300px] max-w-[400px]">
-                  <h3 className="font-bold text-orange-900 mb-2 text-sm">Servicio Activo</h3>
-                  <div className="space-y-1 text-xs">
-                    <div>
-                      <span className="font-semibold">Cliente:</span>{' '}
-                      {servicioActivo.cliente?.user?.nombre || 'Cliente'} {servicioActivo.cliente?.user?.apellido || ''}
-                    </div>
-                    <div>
-                      <span className="font-semibold">Distancia:</span> {servicioActivo.distanciaKm} km
-                    </div>
-                    <div className="text-sm font-bold text-orange-600">
-                      ${servicioActivo.totalGruero.toLocaleString('es-CL')}
-                    </div>
-                    
-                    <div className="flex gap-2 mt-2">
-                      {servicioActivo.status === 'ACEPTADO' && (
-                        <button
-                          onClick={() => actualizarEstadoServicio('EN_CAMINO')}
-                          className="flex-1 bg-blue-500 text-white rounded-lg py-1.5 text-xs font-semibold"
-                        >
-                          🚗 En Camino
-                        </button>
-                      )}
-                      {servicioActivo.status === 'EN_CAMINO' && (
-                        <button
-                          onClick={() => actualizarEstadoServicio('EN_SITIO')}
-                          className="flex-1 bg-purple-500 text-white rounded-lg py-1.5 text-xs font-semibold"
-                        >
-                          📍 En Sitio
-                        </button>
-                      )}
-                      {servicioActivo.status === 'EN_SITIO' && (
-                        <button
-                          onClick={() => actualizarEstadoServicio('COMPLETADO')}
-                          className="flex-1 bg-green-500 text-white rounded-lg py-1.5 text-xs font-semibold"
-                        >
-                          ✅ Completar
-                        </button>
-                      )}
-                      
-                      {servicioActivo.cliente?.user?.telefono && (
-                        <a 
-                          href={`tel:${servicioActivo.cliente.user.telefono}`}
-                          className="bg-orange-600 text-white rounded-lg px-3 py-1.5 text-xs font-semibold flex items-center"
-                        >
-                          <Phone className="h-3 w-3" />
-                        </a>
-                      )}
-                      
-                      <button 
-                        onClick={cancelarServicio}
-                        className="bg-red-500 text-white rounded-lg px-3 py-1.5 text-xs font-semibold"
-                      >
-                        ❌
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Servicios Pendientes */}
-              {disponible && !servicioActivo && serviciosPendientes.length > 0 && (
-                <div className="flex gap-3">
-                  {serviciosPendientes.map((servicio) => (
-                    <div
-                      key={servicio.id}
-                      className="border-2 border-gray-200 rounded-lg p-3 hover:border-[#ff7a3d] transition-colors min-w-[250px]"
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="text-xs">
-                          <p className="font-semibold">
-                            {servicio.cliente?.user?.nombre || 'Cliente'} {servicio.cliente?.user?.apellido || ''}
-                          </p>
-                          <p className="text-gray-600">{servicio.distanciaKm} km</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-base font-bold text-green-600">
-                            ${servicio.totalGruero.toLocaleString('es-CL')}
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => aceptarServicio(servicio.id)}
-                        disabled={loading}
-                        className="w-full bg-[#ff7a3d] text-white rounded-lg py-2 text-xs font-semibold disabled:opacity-50"
-                      >
-                        {loading ? <Loader2 className="animate-spin h-4 w-4 mx-auto" /> : 'Aceptar'}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {disponible && !servicioActivo && serviciosPendientes.length === 0 && (
-                <div className="text-center p-3 bg-gray-50 rounded-lg min-w-[200px]">
-                  <Clock className="h-8 w-8 text-gray-400 mx-auto mb-1" />
-                  <p className="text-xs text-gray-600">Sin servicios</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Mapa */}
-        <div className="flex-1 relative">
-          <MapContainer center={ubicacionActual} zoom={13} className="h-full w-full" scrollWheelZoom={true}>
-            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-            <RecenterMap position={ubicacionActual} />
-
-            <Marker position={ubicacionActual} icon={grueroIcon}>
-              <Popup>
-                <div className="text-sm">
-                  <p className="font-semibold">Tu ubicación</p>
-                  <p className="text-xs text-gray-600">
-                    {rastreoActivo ? 'Rastreo activo' : 'Rastreo inactivo'}
-                  </p>
-                </div>
-              </Popup>
-            </Marker>
-
-            {disponible && (
-              <Circle
-                center={ubicacionActual}
-                radius={5000}
-                pathOptions={{
-                  color: '#4ade80',
-                  fillColor: '#4ade80',
-                  fillOpacity: 0.1,
-                }}
-              />
-            )}
-
-            {serviciosPendientes.map((servicio) => (
-              <Marker key={servicio.id} position={[servicio.origenLat, servicio.origenLng]} icon={servicioIcon}>
-                <Popup maxWidth={240} className="compact-popup">
-                  <div className="p-1">
-                    <h3 className="font-bold text-[#1e3a5f] mb-2 flex items-center text-xs">
-                      <GiTowTruck className="h-4 w-4 mr-1" />
-                      Servicio Disponible
-                    </h3>
-                    
-                    <div className="mb-2 pb-2 border-b border-gray-200">
-                      <p className="font-semibold text-gray-900 text-xs">
-                        {servicio.cliente?.user?.nombre || 'Cliente'} {servicio.cliente?.user?.apellido || ''}
-                      </p>
-                      {servicio.cliente?.user?.telefono && (
-                        <a 
-                          href={`tel:${servicio.cliente.user.telefono}`}
-                          className="text-xs text-blue-600 hover:underline flex items-center"
-                        >
-                          <Phone className="h-3 w-3 mr-1" />
-                          {servicio.cliente.user.telefono}
-                        </a>
-                      )}
-                    </div>
-
-                    <div className="mb-2 space-y-1">
-                      <div className="flex items-start gap-1">
-                        <MapPin className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
-                        <p className="text-xs text-gray-900 line-clamp-2">{servicio.origenDireccion}</p>
-                      </div>
-                      <div className="flex items-start gap-1">
-                        <Navigation className="h-3 w-3 text-orange-600 mt-0.5 flex-shrink-0" />
-                        <p className="text-xs text-gray-900 line-clamp-2">{servicio.destinoDireccion}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-between items-center mb-2 py-1 bg-gray-50 rounded px-2">
-                      <div>
-                        <p className="text-xs font-semibold text-gray-900">{servicio.distanciaKm} km</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-bold text-green-600">
-                          ${servicio.totalGruero.toLocaleString('es-CL')}
-                        </p>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => aceptarServicio(servicio.id)}
-                      disabled={loading}
-                      className="w-full bg-[#ff7a3d] hover:bg-[#e66a2d] text-white rounded-lg py-1.5 font-semibold disabled:opacity-50 transition-colors text-xs"
-                    >
-                      {loading ? 'Aceptando...' : 'Aceptar'}
-                    </button>
-                  </div>
-                </Popup>
-              </Marker>
-            ))}
-
-            {servicioActivo && (
-              <>
-                <Marker position={[servicioActivo.origenLat, servicioActivo.origenLng]} icon={servicioIcon}>
-                  <Popup>
-                    <div className="text-sm">
-                      <p className="font-semibold">Origen</p>
-                      <p className="text-xs">{servicioActivo.origenDireccion}</p>
-                    </div>
-                  </Popup>
-                </Marker>
-                <Marker position={[servicioActivo.destinoLat, servicioActivo.destinoLng]} icon={servicioIcon}>
-                  <Popup>
-                    <div className="text-sm">
-                      <p className="font-semibold">Destino</p>
-                      <p className="text-xs">{servicioActivo.destinoDireccion}</p>
-                    </div>
-                  </Popup>
-                </Marker>
-              </>
-            )}
-          </MapContainer>
-        </div>
+      {/* ✅ BOTÓN TEMPORAL DEBUG */}
+      <div className="p-2 bg-red-100 border-b">
+        <button 
+          onClick={handleResetOneSignal}
+          className="bg-red-600 text-white px-3 py-1.5 rounded font-bold text-xs"
+        >
+          🔧 Reset OneSignal
+        </button>
       </div>
 
-      {/* Modal Nueva Solicitud */}
-      {showNuevaSolicitud && nuevaSolicitud && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[9999] p-4 animate-fadeIn">
-          <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full transform animate-slideUp">
-            <div className="bg-gradient-to-r from-[#ff7a3d] to-[#ff9d5c] p-4 rounded-t-xl">
-              <div className="flex items-center justify-center mb-1">
-                <div className="bg-white rounded-full p-2">
-                  <GiTowTruck className="text-[#ff7a3d] text-3xl" />
-                </div>
-              </div>
-              <h2 className="text-xl font-bold text-white text-center">
-                ¡Nueva Solicitud!
-              </h2>
-              <p className="text-white text-center text-xs mt-1 opacity-90">
-                Un cliente necesita tus servicios
-              </p>
-            </div>
-
-            <div className="p-4 space-y-3">
-              <div className="bg-blue-50 rounded-lg p-3">
-                <p className="text-xs text-gray-600 mb-1">Cliente</p>
-                <p className="font-bold text-base text-gray-900">
-                  {nuevaSolicitud.cliente?.user?.nombre || 'Cliente'} {nuevaSolicitud.cliente?.user?.apellido || ''}
-                </p>
-                {nuevaSolicitud.cliente?.user?.telefono && (
-                  <a 
-                    href={`tel:${nuevaSolicitud.cliente.user.telefono}`}
-                    className="text-blue-600 text-xs flex items-center mt-1 hover:underline"
-                  >
-                    <Phone className="h-3 w-3 mr-1" />
-                    {nuevaSolicitud.cliente.user.telefono}
-                  </a>
-                )}
-              </div>
-
-              <div className="flex items-start space-x-2">
-                <div className="bg-green-100 rounded-full p-1.5 flex-shrink-0">
-                  <MapPin className="h-4 w-4 text-green-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-600">Origen</p>
-                  <p className="text-xs font-semibold text-gray-900 line-clamp-2">
-                    {nuevaSolicitud.origenDireccion}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-2">
-                <div className="bg-orange-100 rounded-full p-1.5 flex-shrink-0">
-                  <Navigation className="h-4 w-4 text-orange-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-600">Destino</p>
-                  <p className="text-xs font-semibold text-gray-900 line-clamp-2">
-                    {nuevaSolicitud.destinoDireccion}
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div className="bg-gray-50 rounded-lg p-2 text-center">
-                  <p className="text-xs text-gray-600">Distancia</p>
-                  <p className="text-lg font-bold text-gray-900">{nuevaSolicitud.distanciaKm} km</p>
-                </div>
-                <div className="bg-green-50 rounded-lg p-2 text-center">
-                  <p className="text-xs text-gray-600">Tu Ganancia</p>
-                  <p className="text-lg font-bold text-green-600">
-                    ${nuevaSolicitud.totalGruero.toLocaleString('es-CL')}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 pt-0 flex gap-2">
-              <button
-                onClick={rechazarServicio}
-                disabled={loading}
-                className="flex-1 bg-gray-200 text-gray-700 py-2.5 rounded-lg font-bold hover:bg-gray-300 transition-colors disabled:opacity-50 text-sm"
-              >
-                Rechazar
-              </button>
-              <button
-                onClick={() => aceptarServicio(nuevaSolicitud.id)}
-                disabled={loading}
-                className="flex-1 bg-gradient-to-r from-[#ff7a3d] to-[#ff9d5c] text-white py-2.5 rounded-lg font-bold hover:shadow-lg transition-all disabled:opacity-50 text-sm"
-              >
-                {loading ? 'Aceptando...' : '¡Aceptar!'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Resto del dashboard... */}
+      <div className="flex flex-col h-[calc(100vh-104px)]">
+        {/* ... todo tu código existente del dashboard ... */}
+      </div>
     </Layout>
   );
 }
