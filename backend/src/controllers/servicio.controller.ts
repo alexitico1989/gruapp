@@ -137,16 +137,31 @@ export class ServicioController {
 
       
       
-      // 🔔 NUEVO: Enviar notificaciones PUSH a todos los grueros cercanos
+      // 🔔 Enviar notificaciones PUSH (OneSignal web + Expo móvil)
       if (gruerosCercanos.length > 0) {
         console.log(`🔔 Enviando notificaciones push a ${gruerosCercanos.length} grueros...`);
+        
+        // Importar servicio de Expo
+        const ExpoPushService = (await import('../services/expoPush.service')).default;
+        
         for (const gruero of gruerosCercanos) {
+          // 1. OneSignal para web
           await OneSignalService.notifyNuevoServicio(
             gruero.userId,
             servicio.id,
             tipoVehiculo,
             gruero.distancia
           );
+          
+          // 2. Expo para app móvil
+          if (gruero.expoPushToken) {
+            await ExpoPushService.notifyNuevoServicio(
+              gruero.expoPushToken,
+              servicio.id,
+              tipoVehiculo,
+              gruero.distancia
+            );
+          }
         }
       }
       
