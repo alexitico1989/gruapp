@@ -55,44 +55,32 @@ export const initOneSignal = async (): Promise<void> => {
  */
 export const requestNotificationPermission = async (): Promise<boolean> => {
   try {
-    console.log('🔔 Solicitando permisos de notificación...');
+    alert('1. Iniciando solicitud de permisos...');
     
-    // Verificar si Notification API está disponible
     if (!('Notification' in window)) {
-      console.error('❌ Notification API no disponible en este navegador');
-      alert('Tu navegador no soporta notificaciones push');
+      alert('2. ERROR: Notification API no disponible');
       return false;
     }
     
-    // Verificar permiso actual
-    console.log('🔔 Permiso actual:', Notification.permission);
+    alert('2. Notification API disponible. Permiso actual: ' + Notification.permission);
     
     if (Notification.permission === 'granted') {
-      console.log('✅ Permisos ya otorgados');
+      alert('3. Ya tienes permisos otorgados');
       return true;
     }
     
     if (Notification.permission === 'denied') {
-      console.error('❌ Permisos denegados previamente');
-      alert('Has bloqueado las notificaciones. Por favor, actívalas manualmente en la configuración del navegador.');
+      alert('3. Los permisos fueron denegados previamente');
       return false;
     }
     
-    // Solicitar permisos
-    console.log('🔔 Solicitando permiso al usuario...');
+    alert('3. Solicitando permiso ahora...');
     const permission = await Notification.requestPermission();
-    console.log('🔔 Resultado de permiso:', permission);
+    alert('4. Resultado: ' + permission);
     
-    if (permission === 'granted') {
-      console.log('✅ Permiso otorgado');
-      return true;
-    } else {
-      console.log('❌ Permiso denegado por el usuario');
-      return false;
-    }
-  } catch (error) {
-    console.error('❌ Error solicitando permisos:', error);
-    alert('Error al solicitar permisos: ' + error);
+    return permission === 'granted';
+  } catch (error: any) {
+    alert('ERROR: ' + error.message);
     return false;
   }
 };
