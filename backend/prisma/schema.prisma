@@ -60,6 +60,10 @@ model Gruero {
   status                String         @default("OFFLINE") // DISPONIBLE, OCUPADO, OFFLINE, SUSPENDIDO
   latitud               Float?
   longitud              Float?
+
+  // OneSignal Push Notifications
+  oneSignalPlayerId     String?        // Player ID de OneSignal
+  notificationsEnabled  Boolean        @default(false) // Si tiene notificaciones activas
   
   // Verificación y suspensión
   verificado            Boolean        @default(false)
