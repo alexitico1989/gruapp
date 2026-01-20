@@ -117,8 +117,12 @@ export const subscribeUser = async (
   try {
     console.log('🔔 Suscribiendo usuario a OneSignal...');
     
-    // Establecer el External User ID (tu ID de base de datos)
-    await OneSignal.login(userId);
+    // ✅ CAMBIO: Usar external_user_id con prefijo (gruero_xxx o cliente_xxx)
+    const externalUserId = `${userType.toLowerCase()}_${userId}`;
+    console.log('🔔 External User ID:', externalUserId);
+    
+    // Establecer el External User ID con prefijo
+    await OneSignal.login(externalUserId);
 
     // Agregar tags para segmentación
     await OneSignal.User.addTags({
@@ -132,7 +136,7 @@ export const subscribeUser = async (
     const playerId = OneSignal.User.PushSubscription.id;
     
     console.log('✅ Usuario suscrito a notificaciones push');
-    console.log('   User ID:', userId);
+    console.log('   External User ID:', externalUserId);
     console.log('   Player ID:', playerId);
     console.log('   Tipo:', userType);
 
