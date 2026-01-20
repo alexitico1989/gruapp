@@ -55,32 +55,36 @@ export const initOneSignal = async (): Promise<void> => {
  */
 export const requestNotificationPermission = async (): Promise<boolean> => {
   try {
-    alert('1. Iniciando solicitud de permisos...');
+    console.log('🔔 Solicitando permisos de notificación...');
     
+    // Verificar si Notification API está disponible
     if (!('Notification' in window)) {
-      alert('2. ERROR: Notification API no disponible');
+      console.error('❌ Notification API no disponible en este navegador');
       return false;
     }
     
-    alert('2. Notification API disponible. Permiso actual: ' + Notification.permission);
+    console.log('🔔 Permiso actual:', Notification.permission);
     
+    // Si ya tiene permisos, retornar true
     if (Notification.permission === 'granted') {
-      alert('3. Ya tienes permisos otorgados');
+      console.log('✅ Permisos ya otorgados');
       return true;
     }
     
+    // Si fue denegado previamente
     if (Notification.permission === 'denied') {
-      alert('3. Los permisos fueron denegados previamente');
+      console.error('❌ Permisos denegados previamente');
       return false;
     }
     
-    alert('3. Solicitando permiso ahora...');
+    // Solicitar permisos
+    console.log('🔔 Solicitando permiso al usuario...');
     const permission = await Notification.requestPermission();
-    alert('4. Resultado: ' + permission);
+    console.log('🔔 Resultado de permiso:', permission);
     
     return permission === 'granted';
   } catch (error: any) {
-    alert('ERROR: ' + error.message);
+    console.error('❌ Error solicitando permisos:', error);
     return false;
   }
 };
