@@ -82,14 +82,16 @@ export default function RatingModal({
   const handlePagar = async () => {
     try {
       setPagando(true);
-      
+
       const response = await api.post('/pagos/crear-preferencia', {
         servicioId: servicio.id
       });
-      
+
       if (response.data.success) {
         const { initPoint } = response.data.data;
-        window.location.href = initPoint;
+
+        // ✅ Abrir checkout fuera del SPA (CRÍTICO)
+        window.open(initPoint, '_blank', 'noopener,noreferrer');
       }
     } catch (error: any) {
       console.error('Error al crear preferencia:', error);
@@ -97,6 +99,7 @@ export default function RatingModal({
       setPagando(false);
     }
   };
+
 
   const puedeCalificar = rating > 0 && !calificado; // ← MODIFICADO: también verificar calificado
 

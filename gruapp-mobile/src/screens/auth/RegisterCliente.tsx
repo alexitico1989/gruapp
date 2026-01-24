@@ -6,7 +6,6 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,6 +16,7 @@ import api from '../../services/api';
 import Button from '../../components/Button';
 import Input from '../../components/Input';
 import { colors, spacing, fontSize } from '../../theme/colors';
+import Toast from 'react-native-toast-message'; // ✅ IMPORTAR TOAST
 
 export default function RegisterClienteScreen() {
   const navigation = useNavigation();
@@ -146,18 +146,26 @@ export default function RegisterClienteScreen() {
         // Guardar auth
         await setAuth(response.data.data.user, response.data.data.token);
 
-        Alert.alert(
-          '¡Registro Exitoso!',
-          'Tu cuenta ha sido creada correctamente',
-          [{ text: 'OK' }]
-        );
+        // ✅ TOAST PROFESIONAL - SIN EMOJIS
+        Toast.show({
+          type: 'success',
+          text1: 'Registro Exitoso',
+          text2: 'Tu cuenta ha sido creada correctamente',
+          position: 'top',
+          visibilityTime: 3000,
+        });
       }
     } catch (error: any) {
       console.error('Error registro:', error.response?.data);
-      Alert.alert(
-        'Error',
-        error.response?.data?.message || 'Error al registrar cuenta'
-      );
+      
+      // ✅ TOAST PROFESIONAL - SIN EMOJIS
+      Toast.show({
+        type: 'error',
+        text1: 'Error al Registrar',
+        text2: error.response?.data?.message || 'No se pudo crear la cuenta',
+        position: 'top',
+        visibilityTime: 4000,
+      });
     } finally {
       setLoading(false);
     }

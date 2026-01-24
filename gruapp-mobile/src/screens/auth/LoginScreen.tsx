@@ -8,7 +8,6 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +17,7 @@ import api from '../../services/api';
 import Button from '../../components/Button';
 import Input from '../../components/Input';
 import { colors, spacing, fontSize } from '../../theme/colors';
+import Toast from 'react-native-toast-message'; // ✅ IMPORTAR TOAST
 
 export default function LoginScreen() {
   const navigation = useNavigation();
@@ -63,13 +63,24 @@ export default function LoginScreen() {
 
       if (response.data.success) {
         await setAuth(response.data.data.user, response.data.data.token);
-        Alert.alert('Éxito', '¡Bienvenido de vuelta!');
+        
+        // ✅ REEMPLAZAR Alert por Toast
+        Toast.show({
+          type: 'success',
+          text2: '¡Bienvenido de vuelta!',
+          position: 'top',
+          visibilityTime: 2000,
+        });
       }
     } catch (error: any) {
-      Alert.alert(
-        'Error',
-        error.response?.data?.message || 'Error al iniciar sesión'
-      );
+      // ✅ REEMPLAZAR Alert por Toast
+      Toast.show({
+        type: 'error',
+        text1: '❌ Error',
+        text2: error.response?.data?.message || 'Error al iniciar sesión',
+        position: 'top',
+        visibilityTime: 3000,
+      });
     } finally {
       setLoading(false);
     }
@@ -85,7 +96,7 @@ export default function LoginScreen() {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
-          {/* ✅ HEADER SIN LOGO - SOLO TÍTULO */}
+          {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>Iniciar Sesión</Text>
             <Text style={styles.subtitle}>

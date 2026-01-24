@@ -4,26 +4,39 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE, MapPressEvent } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import { useSocket } from '../../contexts/SocketContext';
+import { useNotificacionesStore } from '../../store/notificacionesStore'; // ✅ NUEVO
 import { colors, spacing } from '../../theme/colors';
 import SolicitarServicioModal from '../../components/SolicitarServicioModal';
+import ServicioCompletadoModal from '../../components/ServicioCompletadoModal';
 import api from '../../services/api';
+import { RoutingService } from '../../services/routing.service';
+import { GeocodingService } from '../../services/geocoding.service';
+import GruaIcon from '../../components/GruaIcon';
+import Toast from 'react-native-toast-message';
 
 interface Servicio {
   id: string;
   origenDireccion: string;
   destinoDireccion: string;
+  origenLat: number;
+  origenLng: number;
+  destinoLat: number;
+  destinoLng: number;
   status: string;
   totalCliente: number;
+  distanciaKm: number;
   gruero?: {
+    id?: string;
+    latitud?: number;
+    longitud?: number;
     user: {
       nombre: string;
       apellido: string;
@@ -38,6 +51,7 @@ interface Servicio {
 export default function ClienteDashboard() {
   const { user, logout } = useAuthStore();
   const { socket, connected } = useSocket();
+  const agregarNotificacion = useNotificacionesStore((state) => state.agregarNotificacion); // ✅ NUEVO
   const mapRef = useRef<MapView>(null);
 
   const [location, setLocation] = useState<{
@@ -45,8 +59,23 @@ export default function ClienteDashboard() {
     longitude: number;
   } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showSolicitarModal, setShowSolicitarModal] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
   const [servicioActivo, setServicioActivo] = useState<Servicio | null>(null);
+  const [routeCoordinates, setRouteCoordinates] = useState<{ latitude: number; longitude: number }[]>([]);
+  const [mostrarModalCompletado, setMostrarModalCompletado] = useState(false);
+  const [gruerosDisponibles, setGruerosDisponibles] = useState<any[]>([]);
+  const [grueroAsignadoUbicacion, setGrueroAsignadoUbicacion] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+
+  // Estados para selección de destino en el mapa
+  const [modoSeleccionDestino, setModoSeleccionDestino] = useState(false);
+  const [destinoSeleccionado, setDestinoSeleccionado] = useState<{
+    latitude: number;
+    longitude: number;
+    direccion: string;
+  } | null>(null);
 
   useEffect(() => {
     getLocation();
@@ -57,67 +86,202 @@ export default function ClienteDashboard() {
   useEffect(() => {
     if (!socket) return;
 
-    console.log('📡 Configurando listeners de cliente...');
+    console.log('Configurando listeners de cliente...');
 
-    // Servicio aceptado por gruero
     socket.on('cliente:servicioAceptado', (data: any) => {
-      console.log('✅ Servicio aceptado:', data);
-      Alert.alert(
-        '¡Gruero en Camino! 🚚',
-        `${data.gruero?.user?.nombre || 'Un gruero'} aceptó tu solicitud`,
-        [{ text: 'Ver Detalles' }]
-      );
+      console.log('Servicio aceptado:', data);
+
+      if (data.gruero?.latitud && data.gruero?.longitud) {
+        console.log('Seteando ubicación inicial del gruero desde socket');
+        setGrueroAsignadoUbicacion({
+          latitude: data.gruero.latitud,
+          longitude: data.gruero.longitud,
+        });
+      }
+
+      // ✅ NUEVO: Agregar notificación
+      agregarNotificacion({
+        tipo: 'SERVICIO_ACEPTADO',
+        titulo: '¡Gruero en Camino!',
+        mensaje: `${data.gruero?.user?.nombre || 'Un gruero'} aceptó tu solicitud`,
+        servicioId: data.servicioId,
+      });
+
+      Toast.show({
+        type: 'success',
+        text1: '¡Gruero en Camino!',
+        text2: `${data.gruero?.user?.nombre || 'Un gruero'} aceptó tu solicitud`,
+        position: 'top',
+        visibilityTime: 4000,
+      });
       cargarServicioActivo();
     });
 
-    // Estado actualizado por gruero
-    socket.on('cliente:estadoActualizado', (data: { servicioId: string; status: string }) => {
-      console.log('📢 Estado actualizado:', data);
+    socket.on('cliente:estadoActualizado', (data: { servicioId: string; status: string; servicio?: any; gruero?: any }) => {
+      console.log('Estado actualizado:', data);
       
-      const mensajes: Record<string, string> = {
-        EN_CAMINO: '🚗 El gruero está en camino',
-        EN_SITIO: '📍 El gruero llegó al lugar',
-        COMPLETADO: '✅ Servicio completado',
+      const mensajes: Record<string, { text1: string; text2: string }> = {
+        EN_CAMINO: { text1: 'Gruero en Camino', text2: 'El gruero está en camino' },
+        EN_SITIO: { text1: 'Gruero Llegó', text2: 'El gruero llegó al lugar' },
+        COMPLETADO: { text1: 'Servicio Completado', text2: 'El servicio ha sido completado' },
       };
 
       if (mensajes[data.status]) {
-        Alert.alert('Estado Actualizado', mensajes[data.status]);
+        // ✅ NUEVO: Agregar notificación
+        agregarNotificacion({
+          tipo: 'ESTADO_ACTUALIZADO',
+          titulo: mensajes[data.status].text1,
+          mensaje: mensajes[data.status].text2,
+          servicioId: data.servicioId,
+        });
+
+        Toast.show({
+          type: 'info',
+          text1: mensajes[data.status].text1,
+          text2: mensajes[data.status].text2,
+          position: 'top',
+          visibilityTime: 3000,
+        });
       }
 
-      cargarServicioActivo();
+      if (data.status === 'COMPLETADO') {
+        if (data.servicio && data.gruero) {
+          setServicioActivo({
+            id: data.servicioId,
+            origenDireccion: data.servicio.origenDireccion,
+            destinoDireccion: data.servicio.destinoDireccion,
+            origenLat: 0,
+            origenLng: 0,
+            destinoLat: 0,
+            destinoLng: 0,
+            status: 'COMPLETADO',
+            totalCliente: data.servicio.totalCliente,
+            distanciaKm: data.servicio.distanciaKm,
+            gruero: {
+              user: {
+                nombre: data.gruero.nombre,
+                apellido: data.gruero.apellido,
+                telefono: data.gruero.telefono,
+              },
+              patente: data.gruero.patente,
+              marca: data.gruero.marca,
+              modelo: data.gruero.modelo,
+            },
+          });
+        }
+        
+        setMostrarModalCompletado(true);
+      } else {
+        cargarServicioActivo();
+      }
     });
 
-    // Servicio cancelado
     socket.on('servicio:canceladoNotificacion', (data: any) => {
-      console.log('🚫 Servicio cancelado:', data);
+      console.log('Servicio cancelado:', data);
       
       if (data.canceladoPor === 'GRUERO') {
-        Alert.alert(
-          'Servicio Cancelado',
-          'El gruero canceló el servicio. Puedes solicitar otro.',
-          [{ text: 'OK' }]
-        );
+        // ✅ NUEVO: Agregar notificación
+        agregarNotificacion({
+          tipo: 'SERVICIO_CANCELADO',
+          titulo: 'Servicio Cancelado',
+          mensaje: 'El gruero canceló el servicio. Puedes solicitar otro.',
+          servicioId: data.servicioId,
+        });
+
+        Toast.show({
+          type: 'error',
+          text1: 'Servicio Cancelado',
+          text2: 'El gruero canceló el servicio. Puedes solicitar otro.',
+          position: 'top',
+          visibilityTime: 4000,
+        });
       }
       
       setServicioActivo(null);
+      setRouteCoordinates([]);
+      setGrueroAsignadoUbicacion(null);
     });
+
+    socket.on('cliente:gruasDisponibles', (gruas: any[]) => {
+      console.log('Grueros disponibles recibidos:', gruas.length);
+      setGruerosDisponibles(gruas);
+    });
+
+    socket.on('gruero:disponible', (grua: any) => {
+      console.log('Nuevo gruero disponible:', grua);
+      setGruerosDisponibles(prev => {
+        const exists = prev.find(g => g.id === grua.id);
+        if (exists) {
+          return prev.map(g => g.id === grua.id ? grua : g);
+        }
+        return [...prev, grua];
+      });
+    });
+
+    socket.on('gruero:locationUpdated', (data: { grueroId: string; ubicacion: { lat: number; lng: number } }) => {
+      console.log('Ubicación gruero actualizada:', data);
+      
+      if (servicioActivo && servicioActivo.gruero?.id === data.grueroId) {
+        console.log('Actualizando ubicación del gruero asignado');
+        setGrueroAsignadoUbicacion({
+          latitude: data.ubicacion.lat,
+          longitude: data.ubicacion.lng,
+        });
+      }
+      
+      setGruerosDisponibles(prev =>
+        prev.map(g => g.id === data.grueroId
+          ? { ...g, ubicacion: data.ubicacion }
+          : g
+        )
+      );
+    });
+
+    socket.on('gruero:desconectado', (data: { grueroId: string }) => {
+      console.log('Gruero desconectado:', data.grueroId);
+      setGruerosDisponibles(prev => prev.filter(g => g.id !== data.grueroId));
+    });
+
+    socket.on('gruero:statusUpdated', (data: { grueroId: string; status: string }) => {
+      console.log('🔄 Estado de gruero actualizado:', data);
+      
+      if (data.status === 'DISPONIBLE') {
+        console.log('Gruero ahora DISPONIBLE:', data.grueroId);
+        solicitarGruerosDisponibles();
+      } else if (data.status === 'OFFLINE' || data.status === 'OCUPADO') {
+        console.log('Gruero ahora OFFLINE/OCUPADO:', data.grueroId);
+        setGruerosDisponibles(prev => prev.filter(g => g.id !== data.grueroId));
+      }
+    });
+
+    if (connected) {
+      solicitarGruerosDisponibles();
+    }
 
     return () => {
       socket.off('cliente:servicioAceptado');
       socket.off('cliente:estadoActualizado');
       socket.off('servicio:canceladoNotificacion');
+      socket.off('cliente:gruasDisponibles');
+      socket.off('gruero:disponible');
+      socket.off('gruero:locationUpdated');
+      socket.off('gruero:desconectado');
+      socket.off('gruero:statusUpdated');
     };
-  }, [socket]);
+  }, [socket, connected, servicioActivo]);
 
   const getLocation = async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       
       if (status !== 'granted') {
-        Alert.alert(
-          'Permiso Requerido',
-          'Necesitamos acceso a tu ubicación para mostrarte grueros cercanos'
-        );
+        Toast.show({
+          type: 'error',
+          text1: 'Permiso Requerido',
+          text2: 'Necesitamos acceso a tu ubicación para mostrarte grueros cercanos',
+          position: 'top',
+          visibilityTime: 4000,
+        });
         setLoading(false);
         return;
       }
@@ -140,113 +304,254 @@ export default function ClienteDashboard() {
       }
     } catch (error) {
       console.error('Error obteniendo ubicación:', error);
-      Alert.alert('Error', 'No se pudo obtener tu ubicación');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'No se pudo obtener tu ubicación',
+        position: 'top',
+        visibilityTime: 3000,
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const cargarServicioActivo = async () => {
-    try {
-      const response = await api.get('/servicios/mis-servicios');
-      if (response.data.success) {
-        const activo = response.data.data.find(
-          (s: Servicio) => !['COMPLETADO', 'CANCELADO'].includes(s.status)
-        );
-        setServicioActivo(activo || null);
-      }
-    } catch (error: any) {
-      if (error.response?.status !== 404) {
-        console.error('Error cargando servicio activo:', error);
-      }
+  const solicitarGruerosDisponibles = () => {
+    if (socket && connected) {
+      console.log('Solicitando grueros disponibles...');
+      socket.emit('cliente:getGruasDisponibles');
     }
   };
 
-  const cancelarServicio = async () => {
-    if (!servicioActivo) return;
+  const cargarRuta = async (servicio: Servicio) => {
+    try {
+      console.log('Calculando ruta...');
+      const route = await RoutingService.getRoute(
+        { latitude: servicio.origenLat, longitude: servicio.origenLng },
+        { latitude: servicio.destinoLat, longitude: servicio.destinoLng }
+      );
 
-    Alert.alert(
-      'Cancelar Servicio',
-      '¿Estás seguro de cancelar este servicio?',
-      [
-        { text: 'No', style: 'cancel' },
-        {
-          text: 'Sí, Cancelar',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const response = await api.patch(`/servicios/${servicioActivo.id}/cancelar`);
-              
-              if (response.data.success) {
-                if (socket) {
-                  socket.emit('servicio:cancelado', {
-                    servicioId: servicioActivo.id,
-                    canceladoPor: 'CLIENTE',
-                  });
-                }
-                
-                Alert.alert('Servicio Cancelado', 'El servicio ha sido cancelado correctamente');
-                setServicioActivo(null);
-              }
-            } catch (error: any) {
-              console.error('Error cancelando servicio:', error);
-              Alert.alert('Error', 'No se pudo cancelar el servicio');
-            }
-          },
-        },
-      ]
-    );
+      if (route) {
+        console.log(`Ruta calculada: ${route.distance.toFixed(2)} km, ${Math.round(route.duration)} min`);
+        setRouteCoordinates(route.coordinates);
+
+        if (mapRef.current && route.coordinates.length > 0) {
+          mapRef.current.fitToCoordinates(route.coordinates, {
+            edgePadding: {
+              top: 100,
+              right: 50,
+              bottom: 100,
+              left: 50,
+            },
+            animated: true,
+          });
+        }
+      } else {
+        setRouteCoordinates([]);
+      }
+    } catch (error) {
+      console.error('Error calculando ruta:', error);
+      setRouteCoordinates([]);
+    }
   };
 
-  const marcarComoCompletado = async () => {
+  const cargarServicioActivo = async () => {
+    try {
+      console.log('Cargando servicio activo...');
+      const response = await api.get('/servicios/activo');
+      console.log('Respuesta servicio activo:', response.data);
+      
+      if (response.data.success && response.data.data) {
+        const servicio = response.data.data;
+        setServicioActivo(servicio);
+        console.log('Servicio activo cargado:', servicio);
+        
+        await cargarRuta(servicio);
+        
+        if (servicio.gruero?.latitud && servicio.gruero?.longitud && servicio.status !== 'SOLICITADO') {
+          console.log('Seteando ubicación inicial del gruero desde servicio activo');
+          setGrueroAsignadoUbicacion({
+            latitude: servicio.gruero.latitud,
+            longitude: servicio.gruero.longitud,
+          });
+        }
+      } else {
+        setServicioActivo(null);
+        setRouteCoordinates([]);
+        setGrueroAsignadoUbicacion(null);
+        console.log('ℹNo hay servicio activo');
+      }
+    } catch (error: any) {
+      console.error('Error cargando servicio activo:', error.response?.data || error.message);
+      if (error.response?.status !== 404) {
+        console.error('Error completo:', error);
+      }
+      setServicioActivo(null);
+      setRouteCoordinates([]);
+      setGrueroAsignadoUbicacion(null);
+    }
+  };
+
+  const activarSeleccionDestino = () => {
+    setModoSeleccionDestino(true);
+    setDestinoSeleccionado(null);
+    Toast.show({
+      type: 'info',
+      text1: '📍 Selecciona el Destino',
+      text2: 'Toca en el mapa donde quieres ir',
+      position: 'top',
+      visibilityTime: 3000,
+    });
+  };
+
+  const handleMapPress = async (event: MapPressEvent) => {
+    if (!modoSeleccionDestino) return;
+
+    const { latitude, longitude } = event.nativeEvent.coordinate;
+    
+    Toast.show({
+      type: 'info',
+      text1: 'Obteniendo dirección...',
+      text2: 'Por favor espera',
+      position: 'top',
+      visibilityTime: 2000,
+    });
+
+    try {
+      const direccion = await GeocodingService.reverseGeocode(latitude, longitude);
+      
+      setDestinoSeleccionado({
+        latitude,
+        longitude,
+        direccion,
+      });
+
+      Toast.show({
+        type: 'success',
+        text1: '✅ Destino Seleccionado',
+        text2: direccion.substring(0, 50) + '...',
+        position: 'top',
+        visibilityTime: 3000,
+      });
+    } catch (error) {
+      console.error('Error obteniendo dirección:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'No se pudo obtener la dirección',
+        position: 'top',
+        visibilityTime: 3000,
+      });
+    }
+  };
+
+  const confirmarDestino = () => {
+    if (!destinoSeleccionado) return;
+    
+    setModoSeleccionDestino(false);
+    setModalVisible(true);
+  };
+
+  const cancelarSeleccionDestino = () => {
+    setModoSeleccionDestino(false);
+    setDestinoSeleccionado(null);
+  };
+
+  const cancelarServicio = () => {
     if (!servicioActivo) return;
 
-    Alert.alert(
-      'Completar Servicio',
-      '¿Confirmas que el servicio fue completado?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Confirmar',
-          onPress: async () => {
-            try {
-              const response = await api.patch(`/servicios/${servicioActivo.id}/estado`, {
+    Toast.show({
+      type: 'error',
+      text1: '¿Cancelar Servicio?',
+      text2: 'Presiona para confirmar',
+      position: 'top',
+      visibilityTime: 3000,
+      onPress: async () => {
+        try {
+          const response = await api.patch(`/servicios/${servicioActivo.id}/cancelar`);
+          
+          if (response.data.success) {
+            if (socket) {
+              socket.emit('servicio:cancelado', {
+                servicioId: servicioActivo.id,
+                canceladoPor: 'CLIENTE',
+              });
+            }
+            
+            Toast.show({
+              type: 'success',
+              text1: 'Servicio Cancelado',
+              text2: 'El servicio ha sido cancelado correctamente',
+              position: 'top',
+              visibilityTime: 3000,
+            });
+            
+            setServicioActivo(null);
+            setRouteCoordinates([]);
+            setGrueroAsignadoUbicacion(null);
+          }
+        } catch (error: any) {
+          console.error('Error cancelando servicio:', error);
+          Toast.show({
+            type: 'error',
+            text1: 'Error',
+            text2: 'No se pudo cancelar el servicio',
+            position: 'top',
+            visibilityTime: 3000,
+          });
+        }
+      },
+    });
+  };
+
+  const marcarComoCompletado = () => {
+    if (!servicioActivo) return;
+
+    Toast.show({
+      type: 'info',
+      text1: '¿Completar Servicio?',
+      text2: 'Presiona para confirmar',
+      position: 'top',
+      visibilityTime: 3000,
+      onPress: async () => {
+        try {
+          const response = await api.patch(`/servicios/${servicioActivo.id}/estado`, {
+            status: 'COMPLETADO',
+          });
+          
+          if (response.data.success) {
+            if (socket) {
+              socket.emit('servicio:estadoActualizado', {
+                servicioId: servicioActivo.id,
                 status: 'COMPLETADO',
               });
-              
-              if (response.data.success) {
-                if (socket) {
-                  socket.emit('servicio:estadoActualizado', {
-                    servicioId: servicioActivo.id,
-                    status: 'COMPLETADO',
-                  });
-                }
-                
-                Alert.alert(
-                  '¡Servicio Completado! 🎉',
-                  `Total pagado: $${servicioActivo.totalCliente.toLocaleString('es-CL')}`
-                );
-                setServicioActivo(null);
-              }
-            } catch (error: any) {
-              console.error('Error completando servicio:', error);
-              Alert.alert('Error', 'No se pudo completar el servicio');
             }
-          },
-        },
-      ]
-    );
+            
+            setMostrarModalCompletado(true);
+          }
+        } catch (error: any) {
+          console.error('Error completando servicio:', error);
+          Toast.show({
+            type: 'error',
+            text1: 'Error',
+            text2: 'No se pudo completar el servicio',
+            position: 'top',
+            visibilityTime: 3000,
+          });
+        }
+      },
+    });
   };
 
   const handleLogout = () => {
-    Alert.alert('Cerrar Sesión', '¿Estás seguro?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Salir',
-        style: 'destructive',
-        onPress: () => logout(),
-      },
-    ]);
+    Toast.show({
+      type: 'error',
+      text1: '¿Cerrar Sesión?',
+      text2: 'Presiona para confirmar',
+      position: 'top',
+      visibilityTime: 3000,
+      onPress: () => logout(),
+    });
   };
 
   if (loading) {
@@ -263,7 +568,7 @@ export default function ClienteDashboard() {
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>Hola, {user?.nombre}! 👋</Text>
+          <Text style={styles.greeting}>Hola, {user?.nombre}! </Text>
           <View style={styles.connectionStatus}>
             <View style={[
               styles.connectionIndicator,
@@ -272,6 +577,11 @@ export default function ClienteDashboard() {
             <Text style={styles.connectionText}>
               {connected ? 'Conectado' : 'Desconectado'}
             </Text>
+            {(!servicioActivo || servicioActivo.status === 'SOLICITADO') && gruerosDisponibles.length > 0 && (
+              <Text style={styles.connectionText}>
+                • {gruerosDisponibles.length} {gruerosDisponibles.length === 1 ? 'grúa' : 'grúas'} cerca
+              </Text>
+            )}
           </View>
         </View>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
@@ -279,15 +589,25 @@ export default function ClienteDashboard() {
         </TouchableOpacity>
       </View>
 
+      {/* Banner de modo selección */}
+      {modoSeleccionDestino && (
+        <View style={styles.seleccionBanner}>
+          <Ionicons name="information-circle" size={20} color={colors.primary} />
+          <Text style={styles.seleccionBannerText}>
+            Toca en el mapa para seleccionar el destino
+          </Text>
+        </View>
+      )}
+
       {/* Servicio Activo */}
       {servicioActivo && (
         <View style={styles.servicioActivoContainer}>
           <View style={styles.servicioActivoHeader}>
             <Text style={styles.servicioActivoTitle}>
-              {servicioActivo.status === 'PENDIENTE' && '⏳ Buscando Gruero...'}
-              {servicioActivo.status === 'ACEPTADO' && '✅ Gruero Asignado'}
-              {servicioActivo.status === 'EN_CAMINO' && '🚗 Gruero en Camino'}
-              {servicioActivo.status === 'EN_SITIO' && '📍 Gruero en el Lugar'}
+              {servicioActivo.status === 'SOLICITADO' && 'Buscando Gruero...'}
+              {servicioActivo.status === 'ACEPTADO' && 'Gruero Asignado'}
+              {servicioActivo.status === 'EN_CAMINO' && 'Gruero en Camino'}
+              {servicioActivo.status === 'EN_SITIO' && 'Gruero en el Lugar'}
             </Text>
           </View>
 
@@ -321,12 +641,12 @@ export default function ClienteDashboard() {
               </TouchableOpacity>
             )}
             
-            {servicioActivo.status === 'PENDIENTE' && (
+            {servicioActivo.status === 'SOLICITADO' && (
               <TouchableOpacity
                 style={styles.cancelarButton}
                 onPress={cancelarServicio}
               >
-                <Text style={styles.cancelarButtonText}>Cancelar</Text>
+                <Text style={styles.cancelarButtonText}>Cancelar Servicio</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -347,6 +667,7 @@ export default function ClienteDashboard() {
           }}
           showsUserLocation
           showsMyLocationButton
+          onPress={handleMapPress}
         >
           {location && (
             <Marker
@@ -355,9 +676,69 @@ export default function ClienteDashboard() {
               pinColor={colors.primary}
             />
           )}
+
+          {destinoSeleccionado && (
+            <Marker
+              coordinate={{
+                latitude: destinoSeleccionado.latitude,
+                longitude: destinoSeleccionado.longitude,
+              }}
+              title="Destino seleccionado"
+              description={destinoSeleccionado.direccion}
+              pinColor="#ef4444"
+            />
+          )}
+
+          {(!servicioActivo || servicioActivo.status === 'SOLICITADO') && gruerosDisponibles.map((gruero) => (
+            <Marker
+              key={gruero.id}
+              coordinate={{
+                latitude: gruero.ubicacion.lat,
+                longitude: gruero.ubicacion.lng,
+              }}
+              title={gruero.nombre}
+              description={`${gruero.marca} ${gruero.modelo} - ${gruero.patente}`}
+            >
+              <View style={styles.grueroMarker}>
+                <GruaIcon size={18} color="#fff" />
+              </View>
+            </Marker>
+          ))}
+
+          {servicioActivo && servicioActivo.status !== 'SOLICITADO' && grueroAsignadoUbicacion && (
+            <Marker
+              coordinate={grueroAsignadoUbicacion}
+              title={`${servicioActivo.gruero?.user.nombre} ${servicioActivo.gruero?.user.apellido}`}
+              description="Tu gruero asignado"
+            >
+              <View style={styles.grueroAsignadoMarker}>
+                <GruaIcon size={20} color="#fff" />
+              </View>
+            </Marker>
+          )}
+
+          {servicioActivo && (
+            <Marker
+              coordinate={{
+                latitude: servicioActivo.destinoLat,
+                longitude: servicioActivo.destinoLng,
+              }}
+              title="Destino"
+              description={servicioActivo.destinoDireccion}
+              pinColor="#ef4444"
+            />
+          )}
+
+          {routeCoordinates.length > 0 && (
+            <Polyline
+              coordinates={routeCoordinates}
+              strokeWidth={6}
+              strokeColor="#FF7A3D"
+              lineDashPattern={[0]}
+            />
+          )}
         </MapView>
 
-        {/* Botón centrar */}
         <TouchableOpacity
           style={styles.centerButton}
           onPress={getLocation}
@@ -366,12 +747,38 @@ export default function ClienteDashboard() {
         </TouchableOpacity>
       </View>
 
-      {/* Botón Solicitar */}
-      {!servicioActivo && (
+      {/* Botones de confirmación cuando se selecciona destino */}
+      {modoSeleccionDestino && destinoSeleccionado && (
+        <View style={styles.confirmacionContainer}>
+          <View style={styles.destinoInfo}>
+            <Ionicons name="navigate" size={20} color={colors.primary} />
+            <Text style={styles.destinoTexto} numberOfLines={2}>
+              {destinoSeleccionado.direccion}
+            </Text>
+          </View>
+          <View style={styles.confirmacionBotones}>
+            <TouchableOpacity
+              style={styles.cancelarSeleccionButton}
+              onPress={cancelarSeleccionDestino}
+            >
+              <Text style={styles.cancelarSeleccionText}>Cancelar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.confirmarButton}
+              onPress={confirmarDestino}
+            >
+              <Ionicons name="checkmark" size={20} color="#fff" />
+              <Text style={styles.confirmarButtonText}>Confirmar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {!servicioActivo && !modoSeleccionDestino && (
         <View style={styles.bottomContainer}>
           <TouchableOpacity
             style={styles.requestButton}
-            onPress={() => setShowSolicitarModal(true)}
+            onPress={() => setModalVisible(true)}
             activeOpacity={0.8}
           >
             <Ionicons name="car-sport" size={28} color="#fff" />
@@ -391,14 +798,32 @@ export default function ClienteDashboard() {
         </View>
       )}
 
-      {/* Modal Solicitar */}
       <SolicitarServicioModal
-        visible={showSolicitarModal}
+        visible={modalVisible}
         onClose={() => {
-          setShowSolicitarModal(false);
+          setModalVisible(false);
+          setDestinoSeleccionado(null);
+        }}
+        onSelectDestinationOnMap={activarSeleccionDestino}
+        ubicacionActual={location}
+        destinoSeleccionadoMapa={destinoSeleccionado}
+        onSuccess={() => {
+          console.log('🎉 Servicio solicitado exitosamente, recargando...');
+          setDestinoSeleccionado(null);
           cargarServicioActivo();
         }}
-        ubicacionActual={location}
+      />
+
+      <ServicioCompletadoModal
+        visible={mostrarModalCompletado}
+        servicio={servicioActivo}
+        onClose={() => {
+          setMostrarModalCompletado(false);
+          setServicioActivo(null);
+          setRouteCoordinates([]);
+          setGrueroAsignadoUbicacion(null);
+          cargarServicioActivo();
+        }}
       />
     </SafeAreaView>
   );
@@ -450,6 +875,21 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     padding: spacing.xs,
+  },
+  seleccionBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: '#f0f9ff',
+    padding: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: '#bfdbfe',
+  },
+  seleccionBannerText: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '600',
   },
   servicioActivoContainer: {
     backgroundColor: '#fff',
@@ -525,6 +965,36 @@ const styles = StyleSheet.create({
   map: {
     flex: 1,
   },
+  grueroMarker: {
+    backgroundColor: '#1e40af',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  grueroAsignadoMarker: {
+    backgroundColor: '#10b981',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
   centerButton: {
     position: 'absolute',
     top: spacing.md,
@@ -540,6 +1010,59 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 4,
+  },
+  confirmacionContainer: {
+    backgroundColor: '#fff',
+    padding: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  destinoInfo: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+    padding: spacing.md,
+    backgroundColor: '#f0f9ff',
+    borderRadius: 8,
+  },
+  destinoTexto: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.text.primary,
+    lineHeight: 20,
+  },
+  confirmacionBotones: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  cancelarSeleccionButton: {
+    flex: 1,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelarSeleccionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text.primary,
+  },
+  confirmarButton: {
+    flex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    padding: spacing.md,
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+  },
+  confirmarButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#fff',
   },
   bottomContainer: {
     backgroundColor: '#fff',

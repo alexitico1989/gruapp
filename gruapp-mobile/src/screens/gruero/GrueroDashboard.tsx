@@ -4,11 +4,8 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
   Switch,
-  Modal,
-  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
@@ -16,9 +13,10 @@ import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import { useSocket } from '../../contexts/SocketContext';
+import { useNotificacionesStore } from '../../store/notificacionesStore'; // ✅ NUEVO
 import api from '../../services/api';
 import { colors, spacing } from '../../theme/colors';
-import TruckIcon from '../../components/TruckIcon';
+import ServicioDisponibleModal from '../../components/ServicioDisponibleModal';
 import * as Notifications from 'expo-notifications';
 import { 
   registerForPushNotificationsAsync, 
@@ -26,6 +24,7 @@ import {
   addNotificationReceivedListener,
   addNotificationResponseReceivedListener 
 } from '../../services/notifications';
+import Toast from 'react-native-toast-message';
 
 interface Servicio {
   id: string;
@@ -34,6 +33,8 @@ interface Servicio {
   distanciaKm: number;
   totalGruero: number;
   totalCliente: number;
+  tipoVehiculo: string;
+  observaciones?: string;
   status: string;
   cliente: {
     user: {
@@ -47,6 +48,7 @@ interface Servicio {
 export default function GrueroDashboard() {
   const { user, logout } = useAuthStore();
   const { socket, connected } = useSocket();
+  const agregarNotificacion = useNotificacionesStore((state) => state.agregarNotificacion); // ✅ NUEVO
   const mapRef = useRef<MapView>(null);
 
   const [location, setLocation] = useState<{
@@ -57,8 +59,10 @@ export default function GrueroDashboard() {
   const [disponible, setDisponible] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   
-  const [nuevaSolicitud, setNuevaSolicitud] = useState<Servicio | null>(null);
-  const [showNuevaSolicitud, setShowNuevaSolicitud] = useState(false);
+  const [servicioDisponible, setServicioDisponible] = useState<Servicio | null>(null);
+  const [mostrarModalServicio, setMostrarModalServicio] = useState(false);
+  const [aceptandoServicio, setAceptandoServicio] = useState(false);
+  
   const [servicioActivo, setServicioActivo] = useState<Servicio | null>(null);
 
   useEffect(() => {
@@ -67,46 +71,78 @@ export default function GrueroDashboard() {
     cargarServicioActivo();
   }, []);
 
-  // ✅ SOCKET LISTENERS
+  // ✅ SOCKET LISTENERS CON NOTIFICACIONES
   useEffect(() => {
     if (!socket || !disponible) return;
 
     console.log('📡 Configurando listeners de gruero...');
 
-    socket.on('gruero:nuevaSolicitud', (data: Servicio) => {
-      console.log('🆕 Nueva solicitud recibida:', data);
-      setNuevaSolicitud(data);
-      setShowNuevaSolicitud(true);
+    // ✅ Nuevo servicio disponible
+    socket.on('nuevo-servicio', (data: any) => {
+      console.log('Nuevo servicio disponible:', data);
+      
+      // ✅ NUEVO: Agregar notificación
+      agregarNotificacion({
+        tipo: 'NUEVO_SERVICIO',
+        titulo: '🚗 Nuevo Servicio Disponible',
+        mensaje: `${data.servicio.origenDireccion} → ${data.servicio.destinoDireccion}`,
+        servicioId: data.servicio.id,
+      });
+      
+      setServicioDisponible(data.servicio);
+      setMostrarModalServicio(true);
     });
 
-    socket.on('servicio:canceladoNotificacion', (data: any) => {
+    // ✅ Servicio cancelado
+    socket.on('servicio-cancelado', (data: any) => {
       console.log('🚫 Servicio cancelado:', data);
       
       if (data.canceladoPor === 'CLIENTE') {
-        Alert.alert(
-          'Servicio Cancelado',
-          'El cliente canceló el servicio',
-          [{ text: 'OK' }]
-        );
+        // ✅ NUEVO: Agregar notificación
+        agregarNotificacion({
+          tipo: 'SERVICIO_CANCELADO',
+          titulo: '❌ Servicio Cancelado',
+          mensaje: 'El cliente canceló el servicio',
+          servicioId: data.servicioId,
+        });
+        
+        Toast.show({
+          type: 'error',
+          text1: 'Servicio Cancelado',
+          text2: 'El cliente canceló el servicio',
+          position: 'top',
+          visibilityTime: 3000,
+        });
       }
       
-      if (nuevaSolicitud && nuevaSolicitud.id === data.servicioId) {
-        setShowNuevaSolicitud(false);
-        setNuevaSolicitud(null);
+      if (servicioDisponible && servicioDisponible.id === data.servicioId) {
+        setMostrarModalServicio(false);
+        setServicioDisponible(null);
       }
       
       setServicioActivo(null);
     });
 
+    // ✅ Estado actualizado por cliente
     socket.on('cliente:estadoActualizado', (data: { servicioId: string; status: string }) => {
       console.log('📢 Estado actualizado por cliente:', data);
       
       if (data.status === 'COMPLETADO') {
-        Alert.alert(
-          '✅ Servicio Completado',
-          'El cliente marcó el servicio como completado',
-          [{ text: 'OK' }]
-        );
+        // ✅ NUEVO: Agregar notificación
+        agregarNotificacion({
+          tipo: 'SERVICIO_COMPLETADO',
+          titulo: '✅ Servicio Completado',
+          mensaje: 'El cliente marcó el servicio como completado',
+          servicioId: data.servicioId,
+        });
+        
+        Toast.show({
+          type: 'success',
+          text1: 'Servicio Completado',
+          text2: 'El cliente marcó el servicio como completado',
+          position: 'top',
+          visibilityTime: 3000,
+        });
         setServicioActivo(null);
       } else {
         cargarServicioActivo();
@@ -114,11 +150,11 @@ export default function GrueroDashboard() {
     });
 
     return () => {
-      socket.off('gruero:nuevaSolicitud');
-      socket.off('servicio:canceladoNotificacion');
+      socket.off('nuevo-servicio');
+      socket.off('servicio-cancelado');
       socket.off('cliente:estadoActualizado');
     };
-  }, [socket, disponible, nuevaSolicitud]);
+  }, [socket, disponible, servicioDisponible]);
 
   // 📱 CONFIGURAR NOTIFICACIONES PUSH
   useEffect(() => {
@@ -130,19 +166,17 @@ export default function GrueroDashboard() {
         await savePushTokenToBackend(user.id, token, 'GRUERO');
       }
 
-      // Listener cuando llega una notificación
       const receivedSubscription = addNotificationReceivedListener(notification => {
-        console.log('🔔 Notificación recibida:', notification);
+        console.log('Notificación recibida:', notification);
       });
 
-      // Listener cuando el usuario toca la notificación
       const responseSubscription = addNotificationResponseReceivedListener(response => {
-        console.log('👆 Usuario tocó notificación:', response);
+        console.log('Usuario tocó notificación:', response);
         const data = response.notification.request.content.data;
         
         if (data.tipo === 'NUEVO_SERVICIO' && data.servicio) {
-          setNuevaSolicitud(data.servicio);
-          setShowNuevaSolicitud(true);
+          setServicioDisponible(data.servicio);
+          setMostrarModalServicio(true);
         }
       });
 
@@ -160,10 +194,13 @@ export default function GrueroDashboard() {
       const { status } = await Location.requestForegroundPermissionsAsync();
       
       if (status !== 'granted') {
-        Alert.alert(
-          'Permiso Requerido',
-          'Necesitamos acceso a tu ubicación para que los clientes te encuentren'
-        );
+        Toast.show({
+          type: 'error',
+          text1: 'Permiso Requerido',
+          text2: 'Necesitamos acceso a tu ubicación para que los clientes te encuentren',
+          position: 'top',
+          visibilityTime: 4000,
+        });
         setLoading(false);
         return;
       }
@@ -190,7 +227,13 @@ export default function GrueroDashboard() {
       }
     } catch (error) {
       console.error('Error obteniendo ubicación:', error);
-      Alert.alert('Error', 'No se pudo obtener tu ubicación');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'No se pudo obtener tu ubicación',
+        position: 'top',
+        visibilityTime: 3000,
+      });
     } finally {
       setLoading(false);
     }
@@ -262,55 +305,87 @@ export default function GrueroDashboard() {
           await updateLocationOnServer(location);
         }
 
-        Alert.alert(
-          'Estado Actualizado',
-          nuevoEstado 
+        Toast.show({
+          type: nuevoEstado ? 'success' : 'info',
+          text1: 'Estado Actualizado',
+          text2: nuevoEstado 
             ? 'Ahora estás DISPONIBLE y visible para clientes'
-            : 'Ahora estás OFFLINE y no recibirás solicitudes'
-        );
+            : 'Ahora estás OFFLINE y no recibirás solicitudes',
+          position: 'top',
+          visibilityTime: 3000,
+        });
       }
     } catch (error: any) {
       console.error('Error cambiando disponibilidad:', error);
-      Alert.alert(
-        'Error',
-        error.response?.data?.message || 'No se pudo actualizar el estado'
-      );
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.response?.data?.message || 'No se pudo actualizar el estado',
+        position: 'top',
+        visibilityTime: 3000,
+      });
     } finally {
       setUpdatingStatus(false);
     }
   };
 
   const aceptarServicio = async () => {
-    if (!nuevaSolicitud) return;
+    if (!servicioDisponible) return;
 
     try {
-      setLoading(true);
-      const response = await api.post(`/servicios/${nuevaSolicitud.id}/aceptar`);
+      setAceptandoServicio(true);
+      const response = await api.post(`/servicios/${servicioDisponible.id}/aceptar`);
 
       if (response.data.success) {
+        Toast.show({
+          type: 'success',
+          text1: 'Servicio Aceptado',
+          text2: 'El cliente ha sido notificado. Dirígete al punto de origen.',
+          position: 'top',
+          visibilityTime: 4000,
+        });
+        
         if (socket) {
           socket.emit('servicio:aceptado', {
-            servicioId: nuevaSolicitud.id,
+            servicioId: servicioDisponible.id,
           });
         }
 
-        Alert.alert('¡Servicio Aceptado!', 'El cliente ha sido notificado');
-        setShowNuevaSolicitud(false);
-        setNuevaSolicitud(null);
+        setMostrarModalServicio(false);
+        setServicioDisponible(null);
+        
         cargarServicioActivo();
       }
     } catch (error: any) {
       console.error('Error aceptando servicio:', error);
-      Alert.alert('Error', error.response?.data?.message || 'No se pudo aceptar el servicio');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.response?.data?.message || 'No se pudo aceptar el servicio',
+        position: 'top',
+        visibilityTime: 3000,
+      });
     } finally {
-      setLoading(false);
+      setAceptandoServicio(false);
     }
   };
 
   const rechazarServicio = () => {
-    setShowNuevaSolicitud(false);
-    setNuevaSolicitud(null);
-  };
+  // ✅ Cerrar modal inmediatamente
+  setMostrarModalServicio(false);
+  setServicioDisponible(null);
+  
+  // ✅ Mostrar notificación de rechazo
+  Toast.show({
+    type: 'info',
+    text1: 'Servicio Rechazado',
+    text2: 'Has rechazado el servicio',
+    position: 'top',
+    visibilityTime: 2000,
+  });
+  
+  console.log('❌ Servicio rechazado');
+};
 
   const actualizarEstadoServicio = async (nuevoEstado: string) => {
     if (!servicioActivo) return;
@@ -328,15 +403,31 @@ export default function GrueroDashboard() {
           });
         }
 
-        const mensajes: Record<string, string> = {
-          EN_CAMINO: '🚗 Estado actualizado: En Camino',
-          EN_SITIO: '📍 Estado actualizado: En el Sitio',
-          COMPLETADO: '✅ Servicio Completado',
+        const mensajes: Record<string, { text1: string; text2: string }> = {
+          EN_CAMINO: { text1: 'Estado Actualizado', text2: 'En Camino al origen' },
+          EN_SITIO: { text1: 'Estado Actualizado', text2: 'Has llegado al sitio' },
+          COMPLETADO: { text1: 'Servicio Completado', text2: 'El servicio ha sido marcado como completado' },
         };
 
-        Alert.alert('Estado Actualizado', mensajes[nuevoEstado] || 'Estado actualizado');
+        if (mensajes[nuevoEstado]) {
+          Toast.show({
+            type: 'success',
+            text1: mensajes[nuevoEstado].text1,
+            text2: mensajes[nuevoEstado].text2,
+            position: 'top',
+            visibilityTime: 3000,
+          });
+        }
         
         if (nuevoEstado === 'COMPLETADO') {
+          // ✅ NUEVO: Agregar notificación de servicio completado
+          agregarNotificacion({
+            tipo: 'SERVICIO_COMPLETADO',
+            titulo: '✅ Servicio Completado',
+            mensaje: `Has completado el servicio. Ganancia: $${servicioActivo.totalGruero.toLocaleString('es-CL')}`,
+            servicioId: servicioActivo.id,
+          });
+          
           setServicioActivo(null);
         } else {
           cargarServicioActivo();
@@ -344,19 +435,25 @@ export default function GrueroDashboard() {
       }
     } catch (error: any) {
       console.error('Error actualizando estado:', error);
-      Alert.alert('Error', 'No se pudo actualizar el estado');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'No se pudo actualizar el estado',
+        position: 'top',
+        visibilityTime: 3000,
+      });
     }
   };
 
   const handleLogout = () => {
-    Alert.alert('Cerrar Sesión', '¿Estás seguro?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Salir',
-        style: 'destructive',
-        onPress: () => logout(),
-      },
-    ]);
+    Toast.show({
+      type: 'error',
+      text1: '¿Cerrar Sesión?',
+      text2: 'Presiona para confirmar',
+      position: 'top',
+      visibilityTime: 3000,
+      onPress: () => logout(),
+    });
   };
 
   if (loading) {
@@ -372,7 +469,7 @@ export default function GrueroDashboard() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>Hola, {user?.nombre}! 🚚</Text>
+          <Text style={styles.greeting}>Hola, {user?.nombre}!</Text>
           <View style={styles.connectionStatus}>
             <View style={[
               styles.connectionIndicator,
@@ -416,9 +513,9 @@ export default function GrueroDashboard() {
       {servicioActivo && (
         <View style={styles.servicioActivoContainer}>
           <Text style={styles.servicioActivoTitle}>
-            {servicioActivo.status === 'ACEPTADO' && '✅ Servicio Aceptado'}
-            {servicioActivo.status === 'EN_CAMINO' && '🚗 En Camino'}
-            {servicioActivo.status === 'EN_SITIO' && '📍 En el Sitio'}
+            {servicioActivo.status === 'ACEPTADO' && 'Servicio Aceptado'}
+            {servicioActivo.status === 'EN_CAMINO' && 'En Camino'}
+            {servicioActivo.status === 'EN_SITIO' && 'En el Sitio'}
           </Text>
           
           <View style={styles.servicioInfo}>
@@ -482,11 +579,7 @@ export default function GrueroDashboard() {
               coordinate={location}
               title="Tu ubicación"
               description="Visible para clientes"
-            >
-              <View style={styles.markerContainer}>
-                <TruckIcon size={28} color="#fff" />
-              </View>
-            </Marker>
+            />
           )}
         </MapView>
 
@@ -520,80 +613,13 @@ export default function GrueroDashboard() {
         ) : null}
       </View>
 
-      {showNuevaSolicitud && nuevaSolicitud && (
-        <Modal
-          visible={true}
-          animationType="slide"
-          transparent={true}
-          onRequestClose={rechazarServicio}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContainer}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>🆕 ¡Nueva Solicitud!</Text>
-              </View>
-
-              <ScrollView style={styles.modalContent}>
-                <View style={styles.clienteInfo}>
-                  <Text style={styles.clienteLabel}>Cliente</Text>
-                  <Text style={styles.clienteNombreModal}>
-                    {nuevaSolicitud.cliente.user.nombre} {nuevaSolicitud.cliente.user.apellido}
-                  </Text>
-                </View>
-
-                <View style={styles.direccionContainer}>
-                  <View style={styles.direccionItem}>
-                    <Ionicons name="location" size={20} color="#10b981" />
-                    <View style={styles.direccionTexto}>
-                      <Text style={styles.direccionLabel}>Origen</Text>
-                      <Text style={styles.direccionValor}>{nuevaSolicitud.origenDireccion}</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.direccionItem}>
-                    <Ionicons name="navigate" size={20} color={colors.primary} />
-                    <View style={styles.direccionTexto}>
-                      <Text style={styles.direccionLabel}>Destino</Text>
-                      <Text style={styles.direccionValor}>{nuevaSolicitud.destinoDireccion}</Text>
-                    </View>
-                  </View>
-                </View>
-
-                <View style={styles.statsRow}>
-                  <View style={styles.statBox}>
-                    <Text style={styles.statBoxLabel}>Distancia</Text>
-                    <Text style={styles.statBoxValue}>{nuevaSolicitud.distanciaKm} km</Text>
-                  </View>
-                  <View style={[styles.statBox, { backgroundColor: '#dcfce7' }]}>
-                    <Text style={styles.statBoxLabel}>Tu Ganancia</Text>
-                    <Text style={[styles.statBoxValue, { color: '#16a34a' }]}>
-                      ${nuevaSolicitud.totalGruero.toLocaleString('es-CL')}
-                    </Text>
-                  </View>
-                </View>
-              </ScrollView>
-
-              <View style={styles.modalFooter}>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.rechazarButton]}
-                  onPress={rechazarServicio}
-                >
-                  <Text style={styles.rechazarButtonText}>Rechazar</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.aceptarButton]}
-                  onPress={aceptarServicio}
-                  disabled={loading}
-                >
-                  <Text style={styles.aceptarButtonText}>
-                    {loading ? 'Aceptando...' : '¡Aceptar!'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
-      )}
+      <ServicioDisponibleModal
+        visible={mostrarModalServicio}
+        servicio={servicioDisponible}
+        onAceptar={aceptarServicio}
+        onRechazar={rechazarServicio}
+        loading={aceptandoServicio}
+      />
     </SafeAreaView>
   );
 }
@@ -625,7 +651,6 @@ const styles = StyleSheet.create({
   accionButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
   mapContainer: { flex: 1, position: 'relative' },
   map: { flex: 1 },
-  markerContainer: { backgroundColor: colors.primary, width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: '#fff', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 4 },
   centerButton: { position: 'absolute', top: spacing.md, right: spacing.md, backgroundColor: '#fff', width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 4 },
   bottomContainer: { backgroundColor: '#fff', padding: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border },
   infoBox: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md, backgroundColor: '#f3f4f6', borderRadius: 8 },
@@ -633,27 +658,4 @@ const styles = StyleSheet.create({
   statsContainer: { flexDirection: 'row', justifyContent: 'space-around' },
   statItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   statLabel: { fontSize: 12, color: colors.text.secondary },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.7)', justifyContent: 'center', alignItems: 'center', padding: spacing.lg },
-  modalContainer: { backgroundColor: '#fff', borderRadius: 16, width: '100%', maxHeight: '80%', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 },
-  modalHeader: { backgroundColor: colors.primary, padding: spacing.lg, borderTopLeftRadius: 16, borderTopRightRadius: 16 },
-  modalTitle: { fontSize: 20, fontWeight: 'bold', color: '#fff', textAlign: 'center' },
-  modalContent: { padding: spacing.lg },
-  clienteInfo: { backgroundColor: '#f0f9ff', padding: spacing.md, borderRadius: 8, marginBottom: spacing.md },
-  clienteLabel: { fontSize: 12, color: colors.text.secondary, marginBottom: 4 },
-  clienteNombreModal: { fontSize: 18, fontWeight: 'bold', color: colors.secondary },
-  direccionContainer: { gap: spacing.md, marginBottom: spacing.md },
-  direccionItem: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
-  direccionTexto: { flex: 1 },
-  direccionLabel: { fontSize: 12, color: colors.text.secondary, marginBottom: 2 },
-  direccionValor: { fontSize: 14, color: colors.secondary, fontWeight: '500' },
-  statsRow: { flexDirection: 'row', gap: spacing.sm },
-  statBox: { flex: 1, backgroundColor: '#f3f4f6', padding: spacing.md, borderRadius: 8, alignItems: 'center' },
-  statBoxLabel: { fontSize: 12, color: colors.text.secondary, marginBottom: 4 },
-  statBoxValue: { fontSize: 18, fontWeight: 'bold', color: colors.secondary },
-  modalFooter: { flexDirection: 'row', gap: spacing.sm, padding: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border },
-  modalButton: { flex: 1, padding: spacing.md, borderRadius: 8, alignItems: 'center' },
-  rechazarButton: { backgroundColor: '#f3f4f6' },
-  rechazarButtonText: { color: colors.text.primary, fontWeight: 'bold' },
-  aceptarButton: { backgroundColor: colors.primary },
-  aceptarButtonText: { color: '#fff', fontWeight: 'bold' },
 });

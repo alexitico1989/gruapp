@@ -6,7 +6,6 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +17,7 @@ import Button from '../../components/Button';
 import Input from '../../components/Input';
 import { colors, spacing, fontSize } from '../../theme/colors';
 import { Picker } from '@react-native-picker/picker';
+import Toast from 'react-native-toast-message'; // ✅ IMPORTAR TOAST
 
 export default function RegisterGrueroScreen() {
   const navigation = useNavigation();
@@ -169,25 +169,34 @@ export default function RegisterGrueroScreen() {
         patente: formData.patente.toUpperCase().trim(),
         marca: formData.marca.trim(),
         modelo: formData.modelo.trim(),
-        anio: parseInt(formData.anio), // ✅ AGREGADO
+        anio: parseInt(formData.anio),
         capacidadToneladas: parseFloat(formData.capacidadToneladas),
         tipoGrua: formData.tipoGrua,
       });
 
       if (response.data.success) {
         await setAuth(response.data.data.user, response.data.data.token);
-        Alert.alert(
-          '¡Registro Exitoso!',
-          'Tu cuenta de gruero ha sido creada correctamente',
-          [{ text: 'OK' }]
-        );
+        
+        // ✅ TOAST PROFESIONAL - SIN EMOJIS
+        Toast.show({
+          type: 'success',
+          text1: 'Registro Exitoso',
+          text2: 'Tu cuenta de gruero ha sido creada correctamente',
+          position: 'top',
+          visibilityTime: 3000,
+        });
       }
     } catch (error: any) {
       console.error('Error registro gruero:', error.response?.data);
-      Alert.alert(
-        'Error',
-        error.response?.data?.message || 'Error al registrar cuenta'
-      );
+      
+      // ✅ TOAST PROFESIONAL - SIN EMOJIS
+      Toast.show({
+        type: 'error',
+        text1: 'Error al Registrar',
+        text2: error.response?.data?.message || 'No se pudo crear la cuenta',
+        position: 'top',
+        visibilityTime: 4000,
+      });
     } finally {
       setLoading(false);
     }
@@ -225,7 +234,8 @@ export default function RegisterGrueroScreen() {
 
           {/* Sección: Datos Personales */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>📋 Datos Personales</Text>
+            {/* ✅ SIN EMOJI */}
+            <Text style={styles.sectionTitle}>Datos Personales</Text>
 
             <Input
               label="Nombre"
@@ -278,7 +288,8 @@ export default function RegisterGrueroScreen() {
 
           {/* Sección: Datos del Vehículo */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>🚚 Datos del Vehículo</Text>
+            {/* ✅ SIN EMOJI */}
+            <Text style={styles.sectionTitle}>Datos del Vehículo</Text>
 
             <Input
               label="Patente"
@@ -309,7 +320,6 @@ export default function RegisterGrueroScreen() {
               error={errors.modelo}
             />
 
-            {/* ✅ INPUT AÑO AGREGADO */}
             <Input
               label="Año"
               placeholder="2020"
@@ -350,7 +360,8 @@ export default function RegisterGrueroScreen() {
 
           {/* Sección: Contraseña */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>🔒 Contraseña</Text>
+            {/* ✅ SIN EMOJI */}
+            <Text style={styles.sectionTitle}>Contraseña</Text>
 
             <Input
               label="Contraseña"
