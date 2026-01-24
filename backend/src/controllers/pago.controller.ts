@@ -110,7 +110,7 @@ export class PagoController {
             title: `Servicio de Grúa - GruApp`,
             description: `Servicio de grúa desde ${servicio.origenDireccion} hasta ${servicio.destinoDireccion}`,
             quantity: 1,
-            unit_price: Number(servicio.totalCliente),
+            unit_price: Math.max(Number(servicio.totalCliente), 100), // Mínimo 100 CLP
             currency_id: 'CLP',
           },
         ],
@@ -124,7 +124,7 @@ export class PagoController {
           failure: `${process.env.FRONTEND_URL}/cliente/servicios?payment=failure&servicioId=${servicioId}`,
           pending: `${process.env.FRONTEND_URL}/cliente/servicios?payment=pending&servicioId=${servicioId}`,
         },
-        auto_return: 'approved' as any,
+        auto_return: 'all' as any,
         notification_url: `${process.env.BACKEND_URL}/api/pagos/webhook`,
         external_reference: servicioId,
         statement_descriptor: 'GRUAPP',
