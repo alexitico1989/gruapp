@@ -40,7 +40,6 @@ export class PagoController {
         });
       }
 
-      // Buscar el servicio
       const servicio = await prisma.servicio.findUnique({
         where: { id: servicioId },
         include: {
@@ -50,16 +49,6 @@ export class PagoController {
                 select: {
                   id: true,
                   email: true,
-                  nombre: true,
-                  apellido: true,
-                },
-              },
-            },
-          },
-          gruero: {
-            include: {
-              user: {
-                select: {
                   nombre: true,
                   apellido: true,
                 },
@@ -76,7 +65,6 @@ export class PagoController {
         });
       }
 
-      // Verificar que el servicio pertenece al cliente autenticado
       if (servicio.cliente.userId !== userId) {
         return res.status(403).json({
           success: false,
@@ -84,7 +72,6 @@ export class PagoController {
         });
       }
 
-      // Verificar que el servicio esté completado
       if (servicio.status !== 'COMPLETADO') {
         return res.status(400).json({
           success: false,
@@ -92,7 +79,6 @@ export class PagoController {
         });
       }
 
-      // Verificar que no esté ya pagado
       if (servicio.pagado) {
         return res.status(400).json({
           success: false,
@@ -100,65 +86,63 @@ export class PagoController {
         });
       }
 
-      // Crear instancia de Preference
+      // ✅ CONVERTIR MONTO A NÚMERO ENTERO SIN DECIMALES
+      const montoEntero = Math.round(Number(servicio.totalCliente));
+
+      console.log('📝 [DEBUG] Tipo de totalCliente:', typeof servicio.totalCliente);
+      console.log('📝 [DEBUG] Valor de totalCliente:', servicio.totalCliente);
+      console.log('📝 [DEBUG] Monto parseado:', montoEntero);
+
+      if (isNaN(montoEntero) || montoEntero < 100) {
+        return res.status(400).json({
+          success: false,
+          message: `Monto inválido: ${montoEntero}. Debe ser al menos 100 CLP`,
+        });
+      }
+
       const preference = new Preference(client);
 
-      // Crear preferencia de pago
-const body: any = {
-  items: [
-    {
-      title: 'Servicio de Grúa - GruApp',
-      description: `Servicio de grúa - ${servicio.distanciaKm.toFixed(1)} km`,
-      quantity: 1,
-      unit_price: parseInt(String(servicio.totalCliente)), // ✅ FORZAR A ENTERO
-      currency_id: 'CLP',
-    },
-  ],
-  payer: {
-    name: servicio.cliente.user.nombre,
-    surname: servicio.cliente.user.apellido,
-    email: servicio.cliente.user.email,
-  },
-  back_urls: {
-    success: `${process.env.FRONTEND_URL}/cliente/servicios?payment=success&servicioId=${servicioId}`,
-    failure: `${process.env.FRONTEND_URL}/cliente/servicios?payment=failure&servicioId=${servicioId}`,
-    pending: `${process.env.FRONTEND_URL}/cliente/servicios?payment=pending&servicioId=${servicioId}`,
-  },
-  auto_return: 'approved' as any,
-  notification_url: `${process.env.BACKEND_URL}/api/pagos/webhook`,
-  external_reference: servicioId,
-  statement_descriptor: 'GRUAPP',
-  // ✅ QUITAMOS expires y expiration_date
-};
+      // ✅ CONFIGURACIÓN MÍNIMA Y SIMPLIFICADA
+      const body = {
+        items: [
+          {
+            title: 'Servicio de Grúa',
+            quantity: 1,
+            unit_price: montoEntero,
+            currency_id: 'CLP',
+          },
+        ],
+        payer: {
+          email: servicio.cliente.user.email,
+        },
+        notification_url: `${process.env.BACKEND_URL}/api/pagos/webhook`,
+        external_reference: servicioId,
+        statement_descriptor: 'GRUAPP',
+      };
 
-console.log('📝 Creando preferencia MP para servicio:', servicioId);
-console.log('💰 Monto ANTES de parsear:', servicio.totalCliente);
-console.log('💰 Monto PARSEADO:', parseInt(String(servicio.totalCliente)));
-console.log('📦 Body completo:', JSON.stringify(body, null, 2));
+      console.log('📦 Body de preferencia:', JSON.stringify(body, null, 2));
 
-const result = await preference.create({ body });
+      const result = await preference.create({ body });
 
-console.log('✅ Preferencia creada:', result.id);
-console.log('🔗 Init Point:', result.init_point);
+      console.log('✅ Preferencia creada:', result.id);
 
-// Guardar el ID de preferencia en el servicio
-await prisma.servicio.update({
-  where: { id: servicioId },
-  data: {
-    mpPreferenceId: result.id,
-  },
-});
+      await prisma.servicio.update({
+        where: { id: servicioId },
+        data: {
+          mpPreferenceId: result.id,
+        },
+      });
 
       return res.json({
         success: true,
         data: {
           preferenceId: result.id,
-          initPoint: result.init_point, // URL de PRODUCCIÓN
+          initPoint: result.init_point,
         },
       });
     } catch (error: any) {
       console.error('❌ Error al crear preferencia:', error);
-      console.error('❌ Detalles:', error.message);
+      console.error('❌ Error completo:', JSON.stringify(error, null, 2));
       return res.status(500).json({
         success: false,
         message: 'Error al crear preferencia de pago',
