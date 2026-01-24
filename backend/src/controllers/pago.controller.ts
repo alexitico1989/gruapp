@@ -104,51 +104,50 @@ export class PagoController {
       const preference = new Preference(client);
 
       // Crear preferencia de pago
-      const body: any = {
-        items: [
-          {
-            title: `Servicio de Grúa - GruApp`,
-            description: `Servicio de grúa desde ${servicio.origenDireccion} hasta ${servicio.destinoDireccion}`,
-            quantity: 1,
-            unit_price: Math.max(Number(servicio.totalCliente), 100), // Mínimo 100 CLP
-            currency_id: 'CLP',
-          },
-        ],
-        payer: {
-          name: servicio.cliente.user.nombre,
-          surname: servicio.cliente.user.apellido,
-          email: servicio.cliente.user.email,
-        },
-        back_urls: {
-          success: `${process.env.FRONTEND_URL}/cliente/servicios?payment=success&servicioId=${servicioId}`,
-          failure: `${process.env.FRONTEND_URL}/cliente/servicios?payment=failure&servicioId=${servicioId}`,
-          pending: `${process.env.FRONTEND_URL}/cliente/servicios?payment=pending&servicioId=${servicioId}`,
-        },
-        auto_return: 'all' as any,
-        notification_url: `${process.env.BACKEND_URL}/api/pagos/webhook`,
-        external_reference: servicioId,
-        statement_descriptor: 'GRUAPP',
-        expires: true,
-        expiration_date_from: new Date().toISOString(),
-        expiration_date_to: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 horas
-      };
+const body: any = {
+  items: [
+    {
+      title: 'Servicio de Grúa - GruApp',
+      description: `Servicio de grúa - ${servicio.distanciaKm.toFixed(1)} km`,
+      quantity: 1,
+      unit_price: parseInt(String(servicio.totalCliente)), // ✅ FORZAR A ENTERO
+      currency_id: 'CLP',
+    },
+  ],
+  payer: {
+    name: servicio.cliente.user.nombre,
+    surname: servicio.cliente.user.apellido,
+    email: servicio.cliente.user.email,
+  },
+  back_urls: {
+    success: `${process.env.FRONTEND_URL}/cliente/servicios?payment=success&servicioId=${servicioId}`,
+    failure: `${process.env.FRONTEND_URL}/cliente/servicios?payment=failure&servicioId=${servicioId}`,
+    pending: `${process.env.FRONTEND_URL}/cliente/servicios?payment=pending&servicioId=${servicioId}`,
+  },
+  auto_return: 'approved' as any,
+  notification_url: `${process.env.BACKEND_URL}/api/pagos/webhook`,
+  external_reference: servicioId,
+  statement_descriptor: 'GRUAPP',
+  // ✅ QUITAMOS expires y expiration_date
+};
 
-      console.log('📝 Creando preferencia MP para servicio:', servicioId);
-      console.log('💰 Monto:', servicio.totalCliente.toLocaleString('es-CL'));
-      console.log('🔗 Webhook URL:', body.notification_url);
+console.log('📝 Creando preferencia MP para servicio:', servicioId);
+console.log('💰 Monto ANTES de parsear:', servicio.totalCliente);
+console.log('💰 Monto PARSEADO:', parseInt(String(servicio.totalCliente)));
+console.log('📦 Body completo:', JSON.stringify(body, null, 2));
 
-      const result = await preference.create({ body });
+const result = await preference.create({ body });
 
-      console.log('✅ Preferencia creada:', result.id);
-      console.log('🔗 Init Point:', result.init_point);
+console.log('✅ Preferencia creada:', result.id);
+console.log('🔗 Init Point:', result.init_point);
 
-      // Guardar el ID de preferencia en el servicio
-      await prisma.servicio.update({
-        where: { id: servicioId },
-        data: {
-          mpPreferenceId: result.id,
-        },
-      });
+// Guardar el ID de preferencia en el servicio
+await prisma.servicio.update({
+  where: { id: servicioId },
+  data: {
+    mpPreferenceId: result.id,
+  },
+});
 
       return res.json({
         success: true,
