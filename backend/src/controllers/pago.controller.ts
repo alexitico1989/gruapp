@@ -127,7 +127,6 @@ export class PagoController {
         auto_return: 'approved' as any,
         notification_url: `${process.env.BACKEND_URL}/api/pagos/webhook`,
         external_reference: servicioId,
-        statement_descriptor: 'GRUAPP',
         expires: true,
         expiration_date_from: new Date().toISOString(),
         expiration_date_to: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 horas
