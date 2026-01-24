@@ -11,7 +11,31 @@ import {
 
 const router = Router();
 
-// Todas las rutas requieren autenticación
+console.log('📌 [GRUERO.ROUTES.TS] Configurando rutas de gruero...');
+
+/**
+ * GET /api/gruero/disponibles
+ * Obtener grueros disponibles cercanos
+ * ⚠️ ANTES del middleware de autenticación global
+ */
+router.get('/disponibles', (req, res, next) => {
+  console.log('🔍 [ROUTE] /disponibles alcanzado');
+  next();
+}, GrueroController.getGruerosDisponibles);
+
+/**
+ * GET /api/gruero/:id/ubicacion
+ * Obtener ubicación de un gruero específico
+ * ⚠️ Con autenticación individual
+ */
+router.get('/:id/ubicacion', (req, res, next) => {
+  console.log('🔍 [ROUTE] /:id/ubicacion alcanzado, ID:', req.params.id);
+  next();
+}, AuthMiddleware.authenticate, GrueroController.getUbicacionGruero);
+
+// ============================================
+// ✅ A PARTIR DE AQUÍ: Todas las rutas requieren autenticación Y rol GRUERO
+// ============================================
 router.use(AuthMiddleware.authenticate);
 
 /**
@@ -73,12 +97,6 @@ router.put(
 );
 
 /**
- * GET /api/gruero/disponibles
- * Obtener grueros disponibles cercanos
- */
-router.get('/disponibles', GrueroController.getGruerosDisponibles);
-
-/**
  * GET /api/gruero/estadisticas
  * Obtener estadísticas del gruero autenticado
  */
@@ -86,6 +104,36 @@ router.get(
   '/estadisticas',
   AuthMiddleware.authorize('GRUERO'),
   GrueroController.getEstadisticas
+);
+
+/**
+ * GET /api/gruero/ganancias
+ * Obtener estadísticas detalladas de ganancias
+ */
+router.get(
+  '/ganancias',
+  AuthMiddleware.authorize('GRUERO'),
+  GrueroController.getGanancias
+);
+
+/**
+ * GET /api/gruero/pagos-pendientes
+ * Obtener pagos pendientes y historial
+ */
+router.get(
+  '/pagos-pendientes',
+  AuthMiddleware.authorize('GRUERO'),
+  GrueroController.getPagosPendientes
+);
+
+/**
+ * PUT /api/gruero/cuenta-bancaria
+ * Actualizar datos de cuenta bancaria
+ */
+router.put(
+  '/cuenta-bancaria',
+  AuthMiddleware.authorize('GRUERO'),
+  GrueroController.updateCuentaBancaria
 );
 
 /**
@@ -107,5 +155,7 @@ router.delete(
   AuthMiddleware.authorize('GRUERO'),
   GrueroController.eliminarCuenta
 );
+
+console.log('✅ [GRUERO.ROUTES.TS] Rutas de gruero configuradas');
 
 export default router;

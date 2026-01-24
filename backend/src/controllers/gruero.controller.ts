@@ -8,8 +8,8 @@ const prisma = new PrismaClient();
 
 export class GrueroController {
   /**
-   * Obtener perfil del gruero autenticado
-   */
+ * Obtener perfil del gruero autenticado
+ */
   static async getPerfil(req: Request, res: Response) {
     try {
       const userId = req.user?.userId;
@@ -58,6 +58,13 @@ export class GrueroController {
           calificacionPromedio: gruero.calificacionPromedio,
           cuentaSuspendida: gruero.cuentaSuspendida,
           motivoSuspension: gruero.motivoSuspension,
+          // ✅ NUEVO: Campos de cuenta bancaria
+          banco: gruero.banco,
+          tipoCuenta: gruero.tipoCuenta,
+          numeroCuenta: gruero.numeroCuenta,
+          nombreTitular: gruero.nombreTitular,
+          rutTitular: gruero.rutTitular,
+          emailTransferencia: gruero.emailTransferencia,
           user: gruero.user,
         },
       });
@@ -66,6 +73,64 @@ export class GrueroController {
       return res.status(500).json({
         success: false,
         message: 'Error al obtener perfil',
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * Obtener ubicación actual de un gruero específico
+   * GET /api/grueros/:id/ubicacion
+   */
+  static async getUbicacionGruero(req: Request, res: Response) {
+    console.log('🎯 [CONTROLLER] getUbicacionGruero EJECUTADO');
+    console.log('🎯 [CONTROLLER] ID recibido:', req.params.id);
+    console.log('🎯 [CONTROLLER] URL:', req.originalUrl);
+    console.log('🎯 [CONTROLLER] Method:', req.method);
+    
+    try {
+      const { id } = req.params;
+
+      const gruero = await prisma.gruero.findUnique({
+        where: { id },
+        select: {
+          latitud: true,
+          longitud: true,
+          status: true,
+        },
+      });
+
+      if (!gruero) {
+        console.log('❌ [CONTROLLER] Gruero no encontrado:', id);
+        return res.status(404).json({
+          success: false,
+          message: 'Gruero no encontrado',
+        });
+      }
+
+      if (!gruero.latitud || !gruero.longitud) {
+        console.log('❌ [CONTROLLER] Gruero sin ubicación:', id);
+        return res.status(404).json({
+          success: false,
+          message: 'Gruero sin ubicación registrada',
+        });
+      }
+
+      console.log('✅ [CONTROLLER] Ubicación encontrada');
+      
+      return res.json({
+        success: true,
+        data: {
+          lat: gruero.latitud,
+          lng: gruero.longitud,
+          status: gruero.status,
+        },
+      });
+    } catch (error: any) {
+      console.error('❌ [CONTROLLER] Error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error al obtener ubicación del gruero',
         error: error.message,
       });
     }
@@ -755,5 +820,305 @@ export class GrueroController {
     
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
+  }
+
+  /**
+ * GET /api/gruero/ganancias
+ * Obtener estadísticas detalladas de ganancias
+ */
+  static async getGanancias(req: Request, res: Response) {
+    try {
+      const userId = req.user?.userId;
+
+      const gruero = await prisma.gruero.findUnique({
+        where: { userId },
+      });
+
+      if (!gruero) {
+        return res.status(404).json({
+          success: false,
+          message: 'Gruero no encontrado',
+        });
+      }
+
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+
+      // Ganancias hoy
+      const serviciosHoy = await prisma.servicio.findMany({
+        where: {
+          grueroId: gruero.id,
+          status: 'COMPLETADO',
+          completadoAt: { gte: hoy },
+        },
+        select: { totalGruero: true },
+      });
+      const gananciasHoy = serviciosHoy.reduce((sum, s) => sum + s.totalGruero, 0);
+
+      // Ganancias esta semana
+      const inicioSemana = new Date();
+      inicioSemana.setDate(inicioSemana.getDate() - inicioSemana.getDay());
+      inicioSemana.setHours(0, 0, 0, 0);
+
+      const serviciosSemana = await prisma.servicio.findMany({
+        where: {
+          grueroId: gruero.id,
+          status: 'COMPLETADO',
+          completadoAt: { gte: inicioSemana },
+        },
+        select: { totalGruero: true, completadoAt: true },
+      });
+      const gananciasSemana = serviciosSemana.reduce((sum, s) => sum + s.totalGruero, 0);
+
+      // Ganancias mes actual
+      const inicioMes = new Date();
+      inicioMes.setDate(1);
+      inicioMes.setHours(0, 0, 0, 0);
+
+      const serviciosMes = await prisma.servicio.findMany({
+        where: {
+          grueroId: gruero.id,
+          status: 'COMPLETADO',
+          completadoAt: { gte: inicioMes },
+        },
+        select: { totalGruero: true },
+      });
+      const gananciasMes = serviciosMes.reduce((sum, s) => sum + s.totalGruero, 0);
+
+      // Ganancias año actual
+      const inicioAno = new Date();
+      inicioAno.setMonth(0, 1);
+      inicioAno.setHours(0, 0, 0, 0);
+
+      const serviciosAno = await prisma.servicio.findMany({
+        where: {
+          grueroId: gruero.id,
+          status: 'COMPLETADO',
+          completadoAt: { gte: inicioAno },
+        },
+        select: { totalGruero: true },
+      });
+      const gananciasAno = serviciosAno.reduce((sum, s) => sum + s.totalGruero, 0);
+
+      // Ganancias totales históricas
+      const serviciosTotales = await prisma.servicio.findMany({
+        where: {
+          grueroId: gruero.id,
+          status: 'COMPLETADO',
+        },
+        select: { totalGruero: true },
+      });
+      const gananciasTotales = serviciosTotales.reduce((sum, s) => sum + s.totalGruero, 0);
+
+      // Ganancias por día de la semana actual (para gráfico)
+      const gananciasPorDia = Array(7).fill(0);
+      serviciosSemana.forEach(s => {
+        if (s.completadoAt) {
+          const dia = s.completadoAt.getDay();
+          gananciasPorDia[dia] += s.totalGruero;
+        }
+      });
+
+      // Promedio diario del mes
+      const diasTranscurridos = new Date().getDate();
+      const promedioDiario = Math.round(gananciasMes / diasTranscurridos);
+
+      return res.json({
+        success: true,
+        data: {
+          hoy: {
+            monto: Math.round(gananciasHoy),
+            servicios: serviciosHoy.length,
+          },
+          semana: {
+            monto: Math.round(gananciasSemana),
+            servicios: serviciosSemana.length,
+            porDia: gananciasPorDia.map(g => Math.round(g)),
+          },
+          mes: {
+            monto: Math.round(gananciasMes),
+            servicios: serviciosMes.length,
+            promedioDiario,
+          },
+          ano: {
+            monto: Math.round(gananciasAno),
+            servicios: serviciosAno.length,
+          },
+          totales: {
+            monto: Math.round(gananciasTotales),
+            servicios: serviciosTotales.length,
+          },
+        },
+      });
+    } catch (error: any) {
+      console.error('Error obteniendo ganancias:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error al obtener ganancias',
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * GET /api/gruero/pagos-pendientes
+   * Obtener pagos pendientes y historial
+   */
+  static async getPagosPendientes(req: Request, res: Response) {
+    try {
+      const userId = req.user?.userId;
+
+      const gruero = await prisma.gruero.findUnique({
+        where: { userId },
+      });
+
+      if (!gruero) {
+        return res.status(404).json({
+          success: false,
+          message: 'Gruero no encontrado',
+        });
+      }
+
+      // Servicios completados sin pagar (no asignados a ningún pago)
+      const serviciosSinPagar = await prisma.servicio.findMany({
+        where: {
+          grueroId: gruero.id,
+          status: 'COMPLETADO',
+          pagoId: null,
+        },
+        select: {
+          id: true,
+          totalGruero: true,
+          completadoAt: true,
+          origenDireccion: true,
+          destinoDireccion: true,
+        },
+        orderBy: {
+          completadoAt: 'desc',
+        },
+      });
+
+      const montoPendiente = serviciosSinPagar.reduce((sum, s) => sum + s.totalGruero, 0);
+
+      // Historial de pagos
+      const pagos = await prisma.pago.findMany({
+        where: {
+          grueroId: gruero.id,
+        },
+        include: {
+          servicios: {
+            select: {
+              id: true,
+              totalGruero: true,
+              completadoAt: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: 20,
+      });
+
+      return res.json({
+        success: true,
+        data: {
+          pendiente: {
+            monto: Math.round(montoPendiente),
+            servicios: serviciosSinPagar.length,
+            detalles: serviciosSinPagar,
+          },
+          historial: pagos.map(p => ({
+            id: p.id,
+            periodo: p.periodo,
+            fechaInicio: p.fechaInicio,
+            fechaFin: p.fechaFin,
+            monto: p.montoTotal,
+            servicios: p.totalServicios,
+            estado: p.estado,
+            metodoPago: p.metodoPago,
+            numeroComprobante: p.numeroComprobante,
+            pagadoAt: p.pagadoAt,
+            notasAdmin: p.notasAdmin,
+          })),
+        },
+      });
+    } catch (error: any) {
+      console.error('Error obteniendo pagos pendientes:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error al obtener pagos pendientes',
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * PUT /api/gruero/cuenta-bancaria
+   * Actualizar o crear cuenta bancaria
+   */
+  static async updateCuentaBancaria(req: Request, res: Response) {
+    try {
+      const userId = req.user?.userId;
+      const {
+        banco,
+        tipoCuenta,
+        numeroCuenta,
+        nombreTitular,
+        rutTitular,
+        emailTransferencia,
+      } = req.body;
+
+      const gruero = await prisma.gruero.findUnique({
+        where: { userId },
+        include: {
+          user: {
+            select: { rut: true, nombre: true, apellido: true },
+          },
+        },
+      });
+
+      if (!gruero) {
+        return res.status(404).json({
+          success: false,
+          message: 'Gruero no encontrado',
+        });
+      }
+
+      // Si no proporciona datos, usar RUT como Cuenta RUT del Banco Estado
+      const datosFinales = {
+        banco: banco || 'Banco Estado',
+        tipoCuenta: tipoCuenta || 'CUENTA_RUT',
+        numeroCuenta: numeroCuenta || gruero.user.rut?.replace(/\./g, '').replace('-', ''),
+        nombreTitular: nombreTitular || `${gruero.user.nombre} ${gruero.user.apellido}`,
+        rutTitular: rutTitular || gruero.user.rut,
+        emailTransferencia: emailTransferencia || null,
+      };
+
+      const grueroActualizado = await prisma.gruero.update({
+        where: { id: gruero.id },
+        data: datosFinales,
+      });
+
+      return res.json({
+        success: true,
+        message: 'Cuenta bancaria actualizada exitosamente',
+        data: {
+          banco: grueroActualizado.banco,
+          tipoCuenta: grueroActualizado.tipoCuenta,
+          numeroCuenta: grueroActualizado.numeroCuenta,
+          nombreTitular: grueroActualizado.nombreTitular,
+          rutTitular: grueroActualizado.rutTitular,
+          emailTransferencia: grueroActualizado.emailTransferencia,
+        },
+      });
+    } catch (error: any) {
+      console.error('Error actualizando cuenta bancaria:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error al actualizar cuenta bancaria',
+        error: error.message,
+      });
+    }
   }
 }

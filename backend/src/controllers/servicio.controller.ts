@@ -933,6 +933,7 @@ export class ServicioController {
       if (status === 'EN_SITIO') updateData.enSitioAt = new Date();
       if (status === 'COMPLETADO') {
         updateData.completadoAt = new Date();
+        updateData.pagado = false; // 👈 AGREGAR ESTA LÍNEA
         
         // Liberar gruero
         const servicio = await prisma.servicio.findUnique({ where: { id } });

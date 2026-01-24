@@ -53,9 +53,6 @@ export class ClienteController {
         totalServicios: servicios.length,
         serviciosCompletados: servicios.filter((s) => s.status === 'COMPLETADO').length,
         serviciosCancelados: servicios.filter((s) => s.status === 'CANCELADO').length,
-        totalGastado: servicios
-          .filter((s) => s.status === 'COMPLETADO')
-          .reduce((sum, s) => sum + s.totalCliente, 0),
       };
 
       return res.json({
@@ -344,15 +341,6 @@ export class ClienteController {
         enProceso: servicios.filter((s) => 
           ['SOLICITADO', 'ACEPTADO', 'EN_CAMINO', 'EN_SITIO'].includes(s.status)
         ).length,
-        totalGastado: servicios
-          .filter((s) => s.status === 'COMPLETADO')
-          .reduce((sum, s) => sum + s.totalCliente, 0),
-        promedioGasto: servicios.filter((s) => s.status === 'COMPLETADO').length > 0
-          ? servicios
-              .filter((s) => s.status === 'COMPLETADO')
-              .reduce((sum, s) => sum + s.totalCliente, 0) / 
-            servicios.filter((s) => s.status === 'COMPLETADO').length
-          : 0,
         calificacionesRealizadas: servicios.filter((s) => s.calificacion).length,
       };
 

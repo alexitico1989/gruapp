@@ -229,7 +229,6 @@ export class PagoController {
           data: {
             pagado: true,
             mpPaymentId: String(paymentInfo.id),
-            completadoAt: new Date(),
           },
         });
 

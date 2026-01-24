@@ -175,6 +175,7 @@ app.use('/api/pagos/crear-preferencia', sensitiveLimiter);
 app.use('/api/pagos/webhook', webhookLimiter);
 
 // Rutas generales
+console.log('📌 Registrando rutas API principales...');
 app.use('/api', routes);
 app.use('/api/notificaciones', notificacionRoutes);
 app.use('/api/reclamos', reclamoRoutes);
@@ -230,6 +231,8 @@ app.use(serveStatic(publicPath, {
 app.get('*', (req, res) => {
   // Si la ruta empieza con /api, devolver 404
   if (req.path.startsWith('/api')) {
+    console.log('❌ Ruta API no encontrada:', req.method, req.path);
+    console.log('❌ URL original:', req.originalUrl);
     return res.status(404).json({
       success: false,
       message: 'Endpoint no encontrado',
