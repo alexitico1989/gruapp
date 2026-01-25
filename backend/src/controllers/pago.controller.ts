@@ -31,7 +31,7 @@ export class PagoController {
   static async crearPreferencia(req: Request, res: Response) {
     try {
       const userId = (req.user as any)?.userId;
-      const { servicioId } = req.body;
+      const { servicioId, isMobileApp } = req.body;
 
       if (!servicioId) {
         return res.status(400).json({
@@ -115,11 +115,17 @@ export class PagoController {
         payer: {
           email: servicio.cliente.user.email,
         },
-        back_urls: {
-          success: `${process.env.FRONTEND_URL}/cliente/servicios?payment=success&servicioId=${servicioId}`,
-          failure: `${process.env.FRONTEND_URL}/cliente/servicios?payment=failure&servicioId=${servicioId}`,
-          pending: `${process.env.FRONTEND_URL}/cliente/servicios?payment=pending&servicioId=${servicioId}`,
-        },
+        back_urls: isMobileApp 
+          ? {
+              success: 'gruapp://payment/success',
+              failure: 'gruapp://payment/failure',
+              pending: 'gruapp://payment/pending',
+            }
+          : {
+              success: `${process.env.FRONTEND_URL}/cliente/servicios?payment=success&servicioId=${servicioId}`,
+              failure: `${process.env.FRONTEND_URL}/cliente/servicios?payment=failure&servicioId=${servicioId}`,
+              pending: `${process.env.FRONTEND_URL}/cliente/servicios?payment=pending&servicioId=${servicioId}`,
+            },
         auto_return: 'approved' as any,
         notification_url: `${process.env.BACKEND_URL}/api/pagos/webhook`,
         external_reference: servicioId,
