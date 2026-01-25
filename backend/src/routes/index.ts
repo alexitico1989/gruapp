@@ -6,6 +6,7 @@ import grueroRoutes from './gruero.routes';
 import calificacionRoutes from './calificacion.routes';
 import adminRoutes from './admin.routes';
 import usersRoutes from './users.routes';
+import adminPagosRoutes from './admin-pagos.routes';
 
 import grueroPagosRoutes from './gruero-pagos.routes';
 
@@ -16,6 +17,7 @@ console.log('📌 [INDEX.TS] Configurando rutas...');
 // Montar las rutas
 router.use('/auth', authRoutes);
 router.use('/servicios', servicioRoutes);
+router.use('/admin/pagos', adminPagosRoutes);
 
 // 🔍 Log especial para gruero
 router.use('/gruero', (req, res, next) => {
