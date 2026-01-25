@@ -14,24 +14,20 @@ interface Gruero {
   anio: number;
   tipoGrua: string;
   capacidadToneladas: number;
-  fotoGruero?: string;
-  fotoGrua?: string;
-  licenciaConducir?: string;
-  licenciaVencimiento?: string;
-  seguroVigente?: string;
-  seguroVencimiento?: string;
-  revisionTecnica?: string;
-  revisionVencimiento?: string;
-  permisoCirculacion?: string;
-  permisoVencimiento?: string;
+  tiposVehiculosAtiende: string;
   estadoVerificacion: string;
   verificado: boolean;
   cuentaSuspendida: boolean;
-  motivoRechazo?: string;
   motivoSuspension?: string;
   totalServicios: number;
   calificacionPromedio: number;
   status: string;
+  banco: string | null;
+  tipoCuenta: string | null;
+  numeroCuenta: string | null;
+  nombreTitular: string | null;
+  rutTitular: string | null;
+  emailTransferencia: string | null;
   user: {
     nombre: string;
     apellido: string;
@@ -77,13 +73,7 @@ export default function AdminGrueroDetalle() {
   const [estadisticasServicios, setEstadisticasServicios] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [loadingServicios, setLoadingServicios] = useState(false);
-  const [actionLoading, setActionLoading] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedServicio, setSelectedServicio] = useState<Servicio | null>(null);
-  const [documentosAprobados, setDocumentosAprobados] = useState<string[]>([]);
-  const [showRejectModal, setShowRejectModal] = useState(false);
-  const [documentoRechazar, setDocumentoRechazar] = useState('');
-  const [motivoRechazo, setMotivoRechazo] = useState('');
   const [filtroStatus, setFiltroStatus] = useState('TODOS');
   const [filtroPeriodo, setFiltroPeriodo] = useState('');
 
@@ -142,98 +132,9 @@ export default function AdminGrueroDetalle() {
     }
   };
 
-  const handleToggleDocumento = (documento: string) => {
-    setDocumentosAprobados((prev) =>
-      prev.includes(documento)
-        ? prev.filter((d) => d !== documento)
-        : [...prev, documento]
-    );
-  };
-
-  const handleAprobarDocumentos = async () => {
-    if (documentosAprobados.length === 0) {
-      toast.error('Selecciona al menos un documento para aprobar');
-      return;
-    }
-
-    try {
-      setActionLoading(true);
-      const token = localStorage.getItem('adminToken');
-      const response = await axios.patch(
-        `${API_URL}/admin/grueros/${id}/documentos/aprobar`,
-        { documentos: documentosAprobados },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (response.data.success) {
-        toast.success(response.data.message);
-        fetchGrueroDetalle();
-        setDocumentosAprobados([]);
-      }
-    } catch (error: any) {
-      console.error('Error al aprobar documentos:', error);
-      toast.error(error.response?.data?.message || 'Error al aprobar documentos');
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleRechazarDocumento = async () => {
-    if (!motivoRechazo.trim()) {
-      toast.error('Debes ingresar un motivo de rechazo');
-      return;
-    }
-
-    try {
-      setActionLoading(true);
-      const token = localStorage.getItem('adminToken');
-      const response = await axios.patch(
-        `${API_URL}/admin/grueros/${id}/documentos/rechazar`,
-        { documento: documentoRechazar, motivo: motivoRechazo },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (response.data.success) {
-        toast.success('Documento rechazado');
-        setShowRejectModal(false);
-        setDocumentoRechazar('');
-        setMotivoRechazo('');
-        fetchGrueroDetalle();
-      }
-    } catch (error: any) {
-      console.error('Error al rechazar documento:', error);
-      toast.error(error.response?.data?.message || 'Error al rechazar documento');
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const getImageUrl = (path?: string) => {
-    if (!path) return undefined;
-    if (path.startsWith('http')) return path;
-    const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
-    return `${API_BASE}${path}`;
-  };
-
   const truncateAddress = (address: string, maxLength: number = 50) => {
     if (!address || address.length <= maxLength) return address || 'No especificado';
     return address.substring(0, maxLength) + '...';
-  };
-
-  const calcularDiasHastaVencimiento = (fechaVencimiento?: string) => {
-    if (!fechaVencimiento) return null;
-    const hoy = new Date();
-    const vencimiento = new Date(fechaVencimiento);
-    const diferencia = vencimiento.getTime() - hoy.getTime();
-    return Math.ceil(diferencia / (1000 * 60 * 60 * 24));
-  };
-
-  const getColorVencimiento = (dias: number | null) => {
-    if (dias === null) return 'text-gray-400';
-    if (dias < 0) return 'text-red-600 font-bold';
-    if (dias <= 15) return 'text-orange-600 font-bold';
-    if (dias <= 30) return 'text-yellow-600';
-    return 'text-green-600';
   };
 
   const getStatusColor = (status: string) => {
@@ -276,33 +177,6 @@ export default function AdminGrueroDetalle() {
   }
 
   if (!gruero) return null;
-
-  const documentos = [
-    {
-      nombre: 'Licencia de Conducir',
-      key: 'licenciaConducir',
-      url: getImageUrl(gruero.licenciaConducir),
-      vencimiento: gruero.licenciaVencimiento,
-    },
-    {
-      nombre: 'Seguro Vigente',
-      key: 'seguroVigente',
-      url: getImageUrl(gruero.seguroVigente),
-      vencimiento: gruero.seguroVencimiento,
-    },
-    {
-      nombre: 'Revisión Técnica',
-      key: 'revisionTecnica',
-      url: getImageUrl(gruero.revisionTecnica),
-      vencimiento: gruero.revisionVencimiento,
-    },
-    {
-      nombre: 'Permiso de Circulación',
-      key: 'permisoCirculacion',
-      url: getImageUrl(gruero.permisoCirculacion),
-      vencimiento: gruero.permisoVencimiento,
-    },
-  ];
 
   const tabs = [
     { id: 'informacion', nombre: 'Información General', icon: '📋' },
@@ -435,109 +309,94 @@ export default function AdminGrueroDetalle() {
                   </div>
                 </div>
 
-                {/* Fotos del Gruero y Grúa */}
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {gruero.fotoGruero && (
-                    <div>
-                      <p className="text-xs md:text-sm text-gray-600 mb-2">Foto del Gruero</p>
-                      <img
-                        src={getImageUrl(gruero.fotoGruero)}
-                        alt="Gruero"
-                        className="w-full h-40 md:h-48 object-cover rounded-lg cursor-pointer hover:opacity-80"
-                        onClick={() => setSelectedImage(getImageUrl(gruero.fotoGruero)!)}
-                      />
-                    </div>
-                  )}
-                  {gruero.fotoGrua && (
-                    <div>
-                      <p className="text-xs md:text-sm text-gray-600 mb-2">Foto de la Grúa</p>
-                      <img
-                        src={getImageUrl(gruero.fotoGrua)}
-                        alt="Grúa"
-                        className="w-full h-40 md:h-48 object-cover rounded-lg cursor-pointer hover:opacity-80"
-                        onClick={() => setSelectedImage(getImageUrl(gruero.fotoGrua)!)}
-                      />
-                    </div>
-                  )}
+                {/* ✅ Tipos de Vehículos que Atiende */}
+                <div className="mt-6">
+                  <p className="text-xs md:text-sm text-gray-600 mb-2">Tipos de Vehículos que Atiende</p>
+                  <div className="flex flex-wrap gap-2">
+                    {(() => {
+                      try {
+                        const tipos = JSON.parse(gruero.tiposVehiculosAtiende || '[]');
+                        return tipos.length > 0 ? tipos.map((tipo: string, index: number) => (
+                          <span 
+                            key={index}
+                            className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium"
+                          >
+                            {tipo}
+                          </span>
+                        )) : (
+                          <span className="text-sm text-gray-500">No especificado</span>
+                        );
+                      } catch (error) {
+                        return <span className="text-sm text-gray-500">No especificado</span>;
+                      }
+                    })()}
+                  </div>
                 </div>
               </div>
 
-              {/* Documentos */}
+              {/* ✅ Cuenta Bancaria */}
               <div>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-                  <h2 className="text-base md:text-lg font-semibold text-gray-900">Documentos</h2>
-                  {gruero.estadoVerificacion === 'PENDIENTE' && documentosAprobados.length > 0 && (
-                    <button
-                      onClick={handleAprobarDocumentos}
-                      disabled={actionLoading}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm md:text-base"
-                    >
-                      {actionLoading ? 'Procesando...' : `Aprobar ${documentosAprobados.length} documento(s)`}
-                    </button>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                  {documentos.map((doc) => {
-                    const dias = calcularDiasHastaVencimiento(doc.vencimiento);
-                    return (
-                      <div key={doc.key} className="border border-gray-200 rounded-lg p-3 md:p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center space-x-2 md:space-x-3 flex-1">
-                            {gruero.estadoVerificacion === 'PENDIENTE' && (
-                              <input
-                                type="checkbox"
-                                checked={documentosAprobados.includes(doc.key)}
-                                onChange={() => handleToggleDocumento(doc.key)}
-                                className="w-5 h-5 text-blue-600 flex-shrink-0"
-                              />
-                            )}
-                            <h3 className="font-medium text-gray-900 text-sm md:text-base">{doc.nombre}</h3>
-                          </div>
-                          {doc.vencimiento && (
-                            <span className={`text-xs ${getColorVencimiento(dias)} text-right flex-shrink-0`}>
-                              {dias !== null && dias < 0
-                                ? `Vencido hace ${Math.abs(dias)}d`
-                                : dias !== null && dias <= 15
-                                ? `Vence en ${dias}d`
-                                : `${dias}d`}
-                            </span>
-                          )}
-                        </div>
-
-                        {doc.url ? (
-                          <>
-                            <img
-                              src={doc.url}
-                              alt={doc.nombre}
-                              className="w-full h-32 md:h-48 object-cover rounded-lg cursor-pointer hover:opacity-80 mb-3"
-                              onClick={() => setSelectedImage(doc.url!)}
-                            />
-                            {doc.vencimiento && (
-                              <p className="text-xs md:text-sm text-gray-600">
-                                Vencimiento: {new Date(doc.vencimiento).toLocaleDateString('es-CL')}
-                              </p>
-                            )}
-                            {gruero.estadoVerificacion === 'PENDIENTE' && (
-                              <button
-                                onClick={() => {
-                                  setDocumentoRechazar(doc.nombre);
-                                  setShowRejectModal(true);
-                                }}
-                                className="mt-2 text-xs md:text-sm text-red-600 hover:text-red-800"
-                              >
-                                Rechazar documento
-                              </button>
-                            )}
-                          </>
-                        ) : (
-                          <div className="w-full h-32 md:h-48 bg-gray-100 rounded-lg flex items-center justify-center">
-                            <p className="text-gray-400 text-sm">No cargado</p>
-                          </div>
-                        )}
+                <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Cuenta Bancaria</h2>
+                {gruero.banco ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 bg-green-50 p-4 rounded-lg border border-green-200">
+                    <div>
+                      <p className="text-xs md:text-sm text-gray-600">Banco</p>
+                      <p className="font-medium text-sm md:text-base">{gruero.banco}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs md:text-sm text-gray-600">Tipo de Cuenta</p>
+                      <p className="font-medium text-sm md:text-base">
+                        {gruero.tipoCuenta === 'CUENTA_RUT' ? 'Cuenta RUT' :
+                         gruero.tipoCuenta === 'VISTA' ? 'Cuenta Vista' :
+                         gruero.tipoCuenta === 'CORRIENTE' ? 'Cuenta Corriente' :
+                         gruero.tipoCuenta}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs md:text-sm text-gray-600">Número de Cuenta</p>
+                      <p className="font-medium text-sm md:text-base">{gruero.numeroCuenta}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs md:text-sm text-gray-600">Titular</p>
+                      <p className="font-medium text-sm md:text-base">{gruero.nombreTitular}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs md:text-sm text-gray-600">RUT Titular</p>
+                      <p className="font-medium text-sm md:text-base">{gruero.rutTitular}</p>
+                    </div>
+                    {gruero.emailTransferencia && (
+                      <div>
+                        <p className="text-xs md:text-sm text-gray-600">Email Transferencias</p>
+                        <p className="font-medium text-sm md:text-base">{gruero.emailTransferencia}</p>
                       </div>
-                    );
-                  })}
+                    )}
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-center">
+                    <p className="text-sm text-gray-500">No ha configurado su cuenta bancaria</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Estadísticas */}
+              <div>
+                <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Estadísticas</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
+                    <div className="text-3xl mb-2">✅</div>
+                    <div className="text-2xl font-bold text-gray-900">{gruero.totalServicios}</div>
+                    <div className="text-sm text-gray-600">Servicios Completados</div>
+                  </div>
+                  <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
+                    <div className="text-3xl mb-2">⭐</div>
+                    <div className="text-2xl font-bold text-yellow-500">{gruero.calificacionPromedio.toFixed(1)}</div>
+                    <div className="text-sm text-gray-600">Calificación Promedio</div>
+                  </div>
+                  <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
+                    <div className="text-3xl mb-2">{gruero.verificado ? '🛡️' : '⏳'}</div>
+                    <div className="text-2xl font-bold text-gray-900">{gruero.verificado ? 'Verificado' : 'Pendiente'}</div>
+                    <div className="text-sm text-gray-600">Estado de Verificación</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -866,52 +725,6 @@ export default function AdminGrueroDetalle() {
                 className="px-4 md:px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm md:text-base"
               >
                 Cerrar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal de Imagen */}
-      {selectedImage && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
-          onClick={() => setSelectedImage(null)}
-        >
-          <img src={selectedImage} alt="Documento" className="max-w-full max-h-full rounded-lg" />
-        </div>
-      )}
-
-      {/* Modal de Rechazo */}
-      {showRejectModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-4 md:p-6">
-            <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-3 md:mb-4">Rechazar Documento</h3>
-            <p className="text-sm text-gray-600 mb-4">{documentoRechazar}</p>
-            <textarea
-              value={motivoRechazo}
-              onChange={(e) => setMotivoRechazo(e.target.value)}
-              placeholder="Ingresa el motivo del rechazo..."
-              className="w-full border border-gray-300 rounded-lg p-3 mb-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
-              rows={4}
-            />
-            <div className="flex flex-col sm:flex-row gap-3">
-              <button
-                onClick={() => {
-                  setShowRejectModal(false);
-                  setDocumentoRechazar('');
-                  setMotivoRechazo('');
-                }}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleRechazarDocumento}
-                disabled={actionLoading}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
-              >
-                {actionLoading ? 'Procesando...' : 'Rechazar'}
               </button>
             </div>
           </div>
