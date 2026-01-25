@@ -22,6 +22,13 @@ export interface RegisterGrueroDTO {
   tipoGrua?: string;
   capacidadToneladas: number;
   tiposVehiculosAtiende?: string | string[];
+  // ✅ NUEVO: Datos bancarios
+  banco?: string;
+  tipoCuenta?: string;
+  numeroCuenta?: string;
+  nombreTitular?: string;
+  rutTitular?: string;
+  emailTransferencia?: string;
 }
 
 export interface LoginDTO {

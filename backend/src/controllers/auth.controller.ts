@@ -124,7 +124,7 @@ export class AuthController {
     }
   }
   
-  /**
+    /**
    * Registro de un nuevo gruero
    */
   static async registerGruero(req: Request, res: Response) {
@@ -199,6 +199,13 @@ export class AuthController {
               tipoGrua: data.tipoGrua || 'CAMA_BAJA',
               capacidadToneladas: data.capacidadToneladas,
               tiposVehiculosAtiende: tiposVehiculosAtiende,
+              // ✅ NUEVO: Datos bancarios
+              banco: data.banco || null,
+              tipoCuenta: data.tipoCuenta || null,
+              numeroCuenta: data.numeroCuenta || null,
+              nombreTitular: data.nombreTitular || null,
+              rutTitular: data.rutTitular ? RutValidator.formatear(data.rutTitular) : null,
+              emailTransferencia: data.emailTransferencia || null,
               status: 'OFFLINE',
               verificado: false,
               estadoVerificacion: 'PENDIENTE',
