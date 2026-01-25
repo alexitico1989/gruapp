@@ -107,6 +107,7 @@ export class PagoController {
           {
             id: servicioId,
             title: 'Servicio de Grúa',
+            description: 'Servicio de grúa',
             quantity: 1,
             unit_price: montoEntero,
             currency_id: 'CLP',
@@ -115,19 +116,11 @@ export class PagoController {
         payer: {
           email: servicio.cliente.user.email,
         },
-        back_urls: isMobileApp 
-          ? {
-              success: 'gruapp://payment/success',
-              failure: 'gruapp://payment/failure',
-              pending: 'gruapp://payment/pending',
-            }
-          : {
-              success: `${process.env.FRONTEND_URL}/cliente/servicios?payment=success&servicioId=${servicioId}`,
-              failure: `${process.env.FRONTEND_URL}/cliente/servicios?payment=failure&servicioId=${servicioId}`,
-              pending: `${process.env.FRONTEND_URL}/cliente/servicios?payment=pending&servicioId=${servicioId}`,
-            },
-        auto_return: 'approved' as any,
-        notification_url: `${process.env.BACKEND_URL}/api/pagos/webhook`,
+        payment_methods: {
+          excluded_payment_types: [],
+          installments: 1,
+        },
+        statement_descriptor: 'GRUAPP',
         external_reference: servicioId,
       };
 
