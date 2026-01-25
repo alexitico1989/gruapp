@@ -114,6 +114,7 @@ export default function ServicioCompletadoModal({
       
       const response = await api.post(`/pagos/crear-preferencia`, {
         servicioId: servicio.id,
+        isMobileApp: true,
       });
 
       console.log('📦 Respuesta del backend:', response.data);

@@ -15,6 +15,7 @@ import api from '../../services/api';
 import { colors, spacing } from '../../theme/colors';
 import Toast from 'react-native-toast-message';
 import CrearReclamoModal from '../../components/CrearReclamoModal';
+import * as WebBrowser from 'expo-web-browser';
 
 interface Servicio {
   id: string;
@@ -53,6 +54,37 @@ export default function ClienteHistorial() {
 
   useEffect(() => {
     cargarHistorial();
+  }, []);
+
+  useEffect(() => {
+    const subscription = Linking.addEventListener('url', (event) => {
+      const { url } = event;
+      console.log('🔗 Deep link recibido:', url);
+      
+      if (url.includes('gruapp://payment')) {
+        cargarHistorial();
+        
+        if (url.includes('success')) {
+          Toast.show({
+            type: 'success',
+            text1: '✅ Pago exitoso',
+            text2: 'Tu pago ha sido procesado correctamente',
+            position: 'top',
+            visibilityTime: 4000,
+          });
+        } else if (url.includes('failure')) {
+          Toast.show({
+            type: 'error',
+            text1: '❌ Pago fallido',
+            text2: 'Hubo un problema con tu pago',
+            position: 'top',
+            visibilityTime: 4000,
+          });
+        }
+      }
+    });
+
+    return () => subscription.remove();
   }, []);
 
   const cargarHistorial = async () => {
@@ -103,73 +135,35 @@ export default function ClienteHistorial() {
   };
 
   const handlePagar = async (servicio: Servicio) => {
-    console.log('💳 Iniciando pago para servicio:', servicio.id);
+  try {
+    setPagandoId(servicio.id);
     
-    try {
-      setPagandoId(servicio.id);
-      console.log('📤 Llamando a /pagos/crear-preferencia...');
+    const response = await api.post(`/pagos/crear-preferencia`, {
+      servicioId: servicio.id,
+      isMobileApp: false, // usar URLs web
+    });
+
+    const initPoint = response.data.data.initPoint || response.data.data.init_point;
+
+    if (response.data.success && initPoint) {
+      // ✅ ABRIR EN NAVEGADOR DENTRO DE LA APP
+      await WebBrowser.openBrowserAsync(initPoint);
       
-      const response = await api.post(`/pagos/crear-preferencia`, {
-        servicioId: servicio.id,
-      });
-
-      console.log('📦 Respuesta del backend:', response.data);
-
-      const initPoint = response.data.data.initPoint || response.data.data.init_point;
-
-      if (response.data.success && initPoint) {
-        const url = initPoint;
-        
-        console.log('🔗 URL de Mercado Pago:', url);
-        
-        const supported = await Linking.canOpenURL(url);
-        console.log('🌐 ¿Puede abrir URL?:', supported);
-        
-        if (supported) {
-          await Linking.openURL(url);
-          Toast.show({
-            type: 'info',
-            text1: 'Redirigiendo a Mercado Pago',
-            text2: 'Completa el pago y vuelve a la app. Luego actualiza el historial.',
-            position: 'top',
-            visibilityTime: 5000,
-          });
-          
-          // Recargar historial después de 2 segundos
-          setTimeout(() => cargarHistorial(), 2000);
-        } else {
-          Toast.show({
-            type: 'error',
-            text1: 'Error',
-            text2: 'No se pudo abrir Mercado Pago',
-            position: 'top',
-            visibilityTime: 3000,
-          });
-        }
-      } else {
-        console.log('⚠️ Respuesta sin init_point:', response.data);
-        Toast.show({
-          type: 'error',
-          text1: 'Error',
-          text2: 'No se recibió el enlace de pago',
-          position: 'top',
-          visibilityTime: 3000,
-        });
-      }
-    } catch (error: any) {
-      console.error('❌ Error creando pago:', error);
-      console.error('📄 Respuesta del error:', error.response?.data);
-      Toast.show({
-        type: 'error',
-        text1: 'Error al procesar pago',
-        text2: error.response?.data?.message || 'No se pudo procesar el pago',
-        position: 'top',
-        visibilityTime: 4000,
-      });
-    } finally {
-      setPagandoId(null);
+      // Recargar después de cerrar el navegador
+      cargarHistorial();
     }
-  };
+  } catch (error: any) {
+    console.error('❌ Error:', error);
+    Toast.show({
+      type: 'error',
+      text1: 'Error',
+      text2: 'No se pudo procesar el pago',
+      position: 'top',
+    });
+  } finally {
+    setPagandoId(null);
+  }
+};
 
   const renderServicio = ({ item }: { item: Servicio }) => {
     const esCompletado = item.status === 'COMPLETADO';

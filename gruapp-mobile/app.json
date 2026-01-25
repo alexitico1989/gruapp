@@ -29,7 +29,8 @@
     },
     "plugins": [
       "expo-location",
-      "expo-notifications"
+      "expo-notifications",
+      "expo-web-browser"
     ],
     "scheme": "gruapp",
     "extra": {
