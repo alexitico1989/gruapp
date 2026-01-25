@@ -116,11 +116,8 @@ export class PagoController {
         payer: {
           email: servicio.cliente.user.email,
         },
-        payment_methods: {
-          excluded_payment_types: [],
-          installments: 1,
-        },
         statement_descriptor: 'GRUAPP',
+        notification_url: `${process.env.BACKEND_URL}/api/pagos/webhook`,
         external_reference: servicioId,
       };
 
