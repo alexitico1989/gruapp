@@ -24,14 +24,14 @@ export default defineConfig({
       },
     },
   },
-  // ✅ NUEVO: Configuración para producción
+  // ✅ Configuración para producción
   build: {
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: true,        // Elimina todos los console.log
-        drop_debugger: true,       // Elimina debugger statements
-        pure_funcs: [              // Elimina funciones específicas
+        drop_console: true,
+        drop_debugger: true,
+        pure_funcs: [
           'console.log',
           'console.info',
           'console.debug',
@@ -39,5 +39,12 @@ export default defineConfig({
         ],
       },
     },
+    rollupOptions: {
+      output: {
+        entryFileNames: `assets/[name]-[hash].js`,
+        chunkFileNames: `assets/[name]-[hash].js`,
+        assetFileNames: `assets/[name]-[hash].[ext]`
+      }
+    }
   },
 });
