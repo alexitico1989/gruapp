@@ -173,55 +173,79 @@ export class PagoController {
    */
   static async webhook(req: Request, res: Response) {
     try {
-      const { type, data } = req.body;
+      const { topic, resource } = req.body;
 
-      console.log('📨 Webhook recibido:', { type, data });
+
+      console.log('📨 Webhook recibido:', { topic, resource });
+
       console.log('📨 Headers:', req.headers);
       console.log('📨 Body completo:', JSON.stringify(req.body, null, 2));
 
-      // Responder inmediatamente a MP (importante para evitar reintentos)
-      res.sendStatus(200);
-
       // Solo procesamos notificaciones de pago
-      if (type !== 'payment') {
-        console.log('ℹ️ Tipo de notificación ignorado:', type);
-        return;
-      }
+     if (topic !== 'merchant_order' || !resource) {
+      console.log('ℹ️ Webhook ignorado, topic:', topic);
+      return res.sendStatus(200);
+    }
 
-      // Validación adicional: verificar que tenemos el ID del pago
-      if (!data || !data.id) {
-        console.error('❌ Webhook sin ID de pago');
-        return;
-      }
+
+
 
       // Crear instancia de Payment
       const paymentClient = new Payment(client);
 
-      // Obtener información del pago
-      const paymentId = data.id;
-      console.log('🔍 Consultando pago:', paymentId);
+      // 1. Consultar la merchant_order
+const merchantOrderResponse = await fetch(resource, {
+  headers: {
+    Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`,
+  },
+});
 
-      const paymentInfo = await paymentClient.get({ id: paymentId });
+const merchantOrder = await merchantOrderResponse.json();
 
-      console.log('💳 Información del pago:', {
-        id: paymentInfo.id,
-        status: paymentInfo.status,
-        status_detail: paymentInfo.status_detail,
-        amount: paymentInfo.transaction_amount,
-        external_reference: paymentInfo.external_reference,
-      });
+console.log('📦 Merchant Order:', {
+  id: merchantOrder.id,
+  status: merchantOrder.status,
+  payments: merchantOrder.payments?.length || 0,
+});
+
+// 2. Verificar si existen pagos
+if (!merchantOrder.payments || merchantOrder.payments.length === 0) {
+  console.log('ℹ️ Aún no hay pagos asociados a la orden');
+  return res.sendStatus(200);
+}
+
+// 3. Obtener el último pago
+const lastPayment = merchantOrder.payments[merchantOrder.payments.length - 1];
+const paymentId = lastPayment.id;
+
+console.log('🔍 Payment ID obtenido desde merchant_order:', paymentId);
+
+// 4. Obtener información REAL del pago
+const paymentInfo = await paymentClient.get({ id: paymentId });
+
 
       // Extraer servicioId del external_reference
       const servicioId = paymentInfo.external_reference;
 
       if (!servicioId) {
         console.error('❌ No se encontró servicioId en external_reference');
-        return;
+        return res.sendStatus(200);
       }
+
 
       // Actualizar servicio según el estado del pago
       if (paymentInfo.status === 'approved') {
         console.log('✅ Pago APROBADO para servicio:', servicioId);
+
+        // 🔒 Evitar procesar el mismo pago más de una vez
+        const servicioExistente = await prisma.servicio.findUnique({
+          where: { id: servicioId },
+        });
+
+        if (servicioExistente?.pagado) {
+          console.log('ℹ️ Servicio ya estaba pagado, webhook ignorado');
+          return res.sendStatus(200);
+        }
 
         await prisma.servicio.update({
           where: { id: servicioId },
