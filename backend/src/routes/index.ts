@@ -7,6 +7,8 @@ import calificacionRoutes from './calificacion.routes';
 import adminRoutes from './admin.routes';
 import usersRoutes from './users.routes';
 
+import grueroPagosRoutes from './gruero-pagos.routes';
+
 const router = Router();
 
 console.log('📌 [INDEX.TS] Configurando rutas...');
@@ -25,6 +27,7 @@ router.use('/gruero', (req, res, next) => {
 router.use('/calificaciones', calificacionRoutes);
 router.use('/admin', adminRoutes);
 router.use('/users', usersRoutes);
+router.use('/gruero/pagos', grueroPagosRoutes);
 
 console.log('✅ [INDEX.TS] Rutas configuradas');
 
