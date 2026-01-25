@@ -200,7 +200,8 @@ const merchantOrderResponse = await fetch(resource, {
   },
 });
 
-const merchantOrder = await merchantOrderResponse.json();
+const merchantOrder: any = await merchantOrderResponse.json();
+
 
 console.log('📦 Merchant Order:', {
   id: merchantOrder.id,
@@ -435,8 +436,9 @@ const paymentInfo = await paymentClient.get({ id: paymentId });
     } catch (error: any) {
       console.error('❌ Error en webhook:', error);
       console.error('❌ Stack:', error.stack);
-      // NO retornar error a MP, ya respondimos con 200
+      return res.sendStatus(200); // MP SIEMPRE debe recibir 200
     }
+    return res.sendStatus(200);
   }
 
   /**
