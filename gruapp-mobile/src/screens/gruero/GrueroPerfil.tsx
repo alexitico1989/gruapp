@@ -6,6 +6,8 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,6 +15,19 @@ import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import { colors, spacing } from '../../theme/colors';
 import Toast from 'react-native-toast-message';
+import { Picker } from '@react-native-picker/picker';
+
+const TIPOS_VEHICULOS = [
+  { label: 'Automóvil', value: 'AUTOMOVIL' },
+  { label: 'SUV/Camioneta', value: 'SUV_CAMIONETA' },
+  { label: 'Moto', value: 'MOTO' },
+  { label: 'Furgón', value: 'FURGON' },
+  { label: 'Camión Liviano', value: 'CAMION_LIVIANO' },
+  { label: 'Camión Mediano', value: 'CAMION_MEDIANO' },
+  { label: 'Camión Pesado', value: 'CAMION_PESADO' },
+  { label: 'Bus', value: 'BUS' },
+  { label: 'Maquinaria', value: 'MAQUINARIA' },
+];
 
 interface GrueroData {
   patente: string;
@@ -26,7 +41,6 @@ interface GrueroData {
   calificacionPromedio: number;
   verificado: boolean;
   estadoVerificacion: string;
-  // ✅ NUEVOS CAMPOS
   banco: string | null;
   tipoCuenta: string | null;
   numeroCuenta: string | null;
@@ -38,7 +52,7 @@ interface GrueroData {
     apellido: string;
     email: string;
     telefono: string;
-    rut: string | null; // ✅ NUEVO
+    rut: string | null;
   };
 }
 
@@ -51,11 +65,35 @@ export default function GrueroPerfil({ navigation }: Props) {
   const [grueroData, setGrueroData] = useState<GrueroData | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Estados para modales
+  const [modalVehiculo, setModalVehiculo] = useState(false);
+  const [modalBanco, setModalBanco] = useState(false);
+  const [guardando, setGuardando] = useState(false);
+
+  // Estados para editar vehículo
+  const [formVehiculo, setFormVehiculo] = useState({
+    marca: '',
+    modelo: '',
+    anio: '',
+    tipoGrua: 'CAMA_BAJA',
+    capacidadToneladas: '',
+    tiposVehiculosAtiende: [] as string[],
+  });
+
+  // Estados para editar banco
+  const [formBanco, setFormBanco] = useState({
+    banco: '',
+    tipoCuenta: 'CUENTA_RUT',
+    numeroCuenta: '',
+    nombreTitular: '',
+    rutTitular: '',
+    emailTransferencia: '',
+  });
+
   useEffect(() => {
     cargarPerfil();
   }, []);
 
-  // ✅ Recargar perfil cuando la pantalla recibe foco
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       cargarPerfil();
@@ -104,38 +142,165 @@ export default function GrueroPerfil({ navigation }: Props) {
     return tipos[tipo] || tipo;
   };
 
-  // ✅ NUEVA: Navegar a pantalla de ganancias
   const abrirGanancias = () => {
     navigation.navigate('GrueroGanancias');
   };
 
-  // ✅ NUEVA: Navegar a pantalla de pagos
   const abrirPagos = () => {
     navigation.navigate('GrueroPagosPendientes');
   };
 
-  // ✅ NUEVA: Editar datos del vehículo
+  // ✅ Abrir modal de editar vehículo
   const editarVehiculo = () => {
-    Toast.show({
-      type: 'info',
-      text1: 'Editar Vehículo',
-      text2: 'Función disponible próximamente',
-      position: 'top',
-      visibilityTime: 2000,
+    if (!grueroData) return;
+    
+    let tipos: string[] = [];
+    try {
+      tipos = JSON.parse(grueroData.tiposVehiculosAtiende);
+    } catch (error) {
+      tipos = [];
+    }
+
+    setFormVehiculo({
+      marca: grueroData.marca,
+      modelo: grueroData.modelo,
+      anio: grueroData.anio.toString(),
+      tipoGrua: grueroData.tipoGrua,
+      capacidadToneladas: grueroData.capacidadToneladas.toString(),
+      tiposVehiculosAtiende: tipos,
     });
-    // TODO: Abrir modal de edición
+    setModalVehiculo(true);
   };
 
-  // ✅ NUEVA: Editar cuenta bancaria
+  // ✅ Abrir modal de editar cuenta bancaria
   const editarCuentaBancaria = () => {
-    Toast.show({
-      type: 'info',
-      text1: 'Editar Cuenta Bancaria',
-      text2: 'Función disponible próximamente',
-      position: 'top',
-      visibilityTime: 2000,
+    if (!grueroData) return;
+
+    setFormBanco({
+      banco: grueroData.banco || '',
+      tipoCuenta: grueroData.tipoCuenta || 'CUENTA_RUT',
+      numeroCuenta: grueroData.numeroCuenta || '',
+      nombreTitular: grueroData.nombreTitular || '',
+      rutTitular: grueroData.rutTitular || '',
+      emailTransferencia: grueroData.emailTransferencia || '',
     });
-    // TODO: Abrir modal de edición
+    setModalBanco(true);
+  };
+
+  // ✅ Toggle tipo de vehículo
+  const toggleTipoVehiculo = (tipo: string) => {
+    const current = formVehiculo.tiposVehiculosAtiende;
+    if (current.includes(tipo)) {
+      setFormVehiculo({
+        ...formVehiculo,
+        tiposVehiculosAtiende: current.filter((t) => t !== tipo),
+      });
+    } else {
+      setFormVehiculo({
+        ...formVehiculo,
+        tiposVehiculosAtiende: [...current, tipo],
+      });
+    }
+  };
+
+  // ✅ Guardar cambios de vehículo
+  const guardarVehiculo = async () => {
+    if (!formVehiculo.marca.trim() || !formVehiculo.modelo.trim()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Marca y modelo son requeridos',
+        position: 'top',
+      });
+      return;
+    }
+
+    if (formVehiculo.tiposVehiculosAtiende.length === 0) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Selecciona al menos un tipo de vehículo',
+        position: 'top',
+      });
+      return;
+    }
+
+    try {
+      setGuardando(true);
+      const response = await api.put('/gruero/perfil/vehiculo', {
+        marca: formVehiculo.marca.trim(),
+        modelo: formVehiculo.modelo.trim(),
+        anio: parseInt(formVehiculo.anio),
+        tipoGrua: formVehiculo.tipoGrua,
+        capacidadToneladas: parseFloat(formVehiculo.capacidadToneladas),
+        tiposVehiculosAtiende: formVehiculo.tiposVehiculosAtiende,
+      });
+
+      if (response.data.success) {
+        Toast.show({
+          type: 'success',
+          text1: 'Éxito',
+          text2: 'Datos del vehículo actualizados',
+          position: 'top',
+        });
+        setModalVehiculo(false);
+        cargarPerfil();
+      }
+    } catch (error: any) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.response?.data?.message || 'No se pudo actualizar',
+        position: 'top',
+      });
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  // ✅ Guardar cambios de cuenta bancaria
+  const guardarCuentaBancaria = async () => {
+    if (!formBanco.banco.trim() || !formBanco.numeroCuenta.trim()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Banco y número de cuenta son requeridos',
+        position: 'top',
+      });
+      return;
+    }
+
+    try {
+      setGuardando(true);
+      const response = await api.put('/gruero/perfil/banco', {
+        banco: formBanco.banco.trim(),
+        tipoCuenta: formBanco.tipoCuenta,
+        numeroCuenta: formBanco.numeroCuenta.trim(),
+        nombreTitular: formBanco.nombreTitular.trim(),
+        rutTitular: formBanco.rutTitular.trim(),
+        emailTransferencia: formBanco.emailTransferencia.trim() || null,
+      });
+
+      if (response.data.success) {
+        Toast.show({
+          type: 'success',
+          text1: 'Éxito',
+          text2: 'Datos bancarios actualizados',
+          position: 'top',
+        });
+        setModalBanco(false);
+        cargarPerfil();
+      }
+    } catch (error: any) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.response?.data?.message || 'No se pudo actualizar',
+        position: 'top',
+      });
+    } finally {
+      setGuardando(false);
+    }
   };
 
   if (loading) {
@@ -167,7 +332,7 @@ export default function GrueroPerfil({ navigation }: Props) {
       </View>
 
       <ScrollView style={styles.scrollView}>
-        {/* ✅ NUEVO: Accesos Rápidos */}
+        {/* Accesos Rápidos */}
         <View style={styles.section}>
           <View style={styles.quickAccessContainer}>
             <TouchableOpacity style={styles.quickAccessCard} onPress={abrirGanancias}>
@@ -217,7 +382,6 @@ export default function GrueroPerfil({ navigation }: Props) {
               </View>
             </View>
 
-            {/* ✅ NUEVO: RUT */}
             {grueroData.user.rut && (
               <View style={styles.infoRow}>
                 <Ionicons name="card-outline" size={20} color={colors.primary} />
@@ -230,7 +394,7 @@ export default function GrueroPerfil({ navigation }: Props) {
           </View>
         </View>
 
-        {/* ✅ NUEVO: Cuenta Bancaria */}
+        {/* Cuenta Bancaria */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Cuenta Bancaria</Text>
@@ -458,6 +622,239 @@ export default function GrueroPerfil({ navigation }: Props) {
 
         <View style={{ height: spacing.xl }} />
       </ScrollView>
+
+      {/* ✅ MODAL: Editar Vehículo */}
+      <Modal
+        visible={modalVehiculo}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setModalVehiculo(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Editar Vehículo</Text>
+              <TouchableOpacity onPress={() => setModalVehiculo(false)}>
+                <Ionicons name="close" size={24} color={colors.secondary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalScroll}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Marca</Text>
+                <TextInput
+                  style={styles.input}
+                  value={formVehiculo.marca}
+                  onChangeText={(value) => setFormVehiculo({ ...formVehiculo, marca: value })}
+                  placeholder="Chevrolet"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Modelo</Text>
+                <TextInput
+                  style={styles.input}
+                  value={formVehiculo.modelo}
+                  onChangeText={(value) => setFormVehiculo({ ...formVehiculo, modelo: value })}
+                  placeholder="NPR"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Año</Text>
+                <TextInput
+                  style={styles.input}
+                  value={formVehiculo.anio}
+                  onChangeText={(value) => setFormVehiculo({ ...formVehiculo, anio: value })}
+                  placeholder="2020"
+                  keyboardType="number-pad"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Capacidad (Toneladas)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={formVehiculo.capacidadToneladas}
+                  onChangeText={(value) => setFormVehiculo({ ...formVehiculo, capacidadToneladas: value })}
+                  placeholder="3.5"
+                  keyboardType="decimal-pad"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Tipo de Grúa</Text>
+                <View style={styles.pickerContainer}>
+                  <Picker
+                    selectedValue={formVehiculo.tipoGrua}
+                    onValueChange={(value) => setFormVehiculo({ ...formVehiculo, tipoGrua: value })}
+                  >
+                    <Picker.Item label="Cama Baja" value="CAMA_BAJA" />
+                    <Picker.Item label="Horquilla" value="HORQUILLA" />
+                    <Picker.Item label="Pluma" value="PLUMA" />
+                  </Picker>
+                </View>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Tipos de Vehículos que Atiende</Text>
+                <View style={styles.checkboxContainer}>
+                  {TIPOS_VEHICULOS.map((tipo) => (
+                    <TouchableOpacity
+                      key={tipo.value}
+                      style={styles.checkboxItem}
+                      onPress={() => toggleTipoVehiculo(tipo.value)}
+                    >
+                      <Ionicons
+                        name={
+                          formVehiculo.tiposVehiculosAtiende.includes(tipo.value)
+                            ? 'checkbox'
+                            : 'square-outline'
+                        }
+                        size={24}
+                        color={
+                          formVehiculo.tiposVehiculosAtiende.includes(tipo.value)
+                            ? colors.primary
+                            : colors.text.secondary
+                        }
+                      />
+                      <Text style={styles.checkboxLabel}>{tipo.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={() => setModalVehiculo(false)}
+              >
+                <Text style={styles.modalButtonTextCancel}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSave]}
+                onPress={guardarVehiculo}
+                disabled={guardando}
+              >
+                {guardando ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.modalButtonTextSave}>Guardar</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ✅ MODAL: Editar Cuenta Bancaria */}
+      <Modal
+        visible={modalBanco}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setModalBanco(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Editar Cuenta Bancaria</Text>
+              <TouchableOpacity onPress={() => setModalBanco(false)}>
+                <Ionicons name="close" size={24} color={colors.secondary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalScroll}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Banco</Text>
+                <TextInput
+                  style={styles.input}
+                  value={formBanco.banco}
+                  onChangeText={(value) => setFormBanco({ ...formBanco, banco: value })}
+                  placeholder="Banco Estado"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Tipo de Cuenta</Text>
+                <View style={styles.pickerContainer}>
+                  <Picker
+                    selectedValue={formBanco.tipoCuenta}
+                    onValueChange={(value) => setFormBanco({ ...formBanco, tipoCuenta: value })}
+                  >
+                    <Picker.Item label="Cuenta RUT" value="CUENTA_RUT" />
+                    <Picker.Item label="Cuenta Vista" value="VISTA" />
+                    <Picker.Item label="Cuenta Corriente" value="CORRIENTE" />
+                  </Picker>
+                </View>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Número de Cuenta</Text>
+                <TextInput
+                  style={styles.input}
+                  value={formBanco.numeroCuenta}
+                  onChangeText={(value) => setFormBanco({ ...formBanco, numeroCuenta: value })}
+                  placeholder="123456789"
+                  keyboardType="number-pad"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Nombre del Titular</Text>
+                <TextInput
+                  style={styles.input}
+                  value={formBanco.nombreTitular}
+                  onChangeText={(value) => setFormBanco({ ...formBanco, nombreTitular: value })}
+                  placeholder="Juan Pérez"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>RUT del Titular</Text>
+                <TextInput
+                  style={styles.input}
+                  value={formBanco.rutTitular}
+                  onChangeText={(value) => setFormBanco({ ...formBanco, rutTitular: value })}
+                  placeholder="12345678-9"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Email para Transferencias (opcional)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={formBanco.emailTransferencia}
+                  onChangeText={(value) => setFormBanco({ ...formBanco, emailTransferencia: value })}
+                  placeholder="tu@email.com"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={() => setModalBanco(false)}
+              >
+                <Text style={styles.modalButtonTextCancel}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSave]}
+                onPress={guardarCuentaBancaria}
+                disabled={guardando}
+              >
+                {guardando ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.modalButtonTextSave}>Guardar</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -510,14 +907,12 @@ const styles = StyleSheet.create({
     color: colors.secondary,
     marginBottom: spacing.sm,
   },
-  // ✅ NUEVO: Header de sección con botón de editar
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.sm,
   },
-  // ✅ NUEVO: Accesos rápidos
   quickAccessContainer: {
     flexDirection: 'row',
     gap: spacing.sm,
@@ -573,7 +968,6 @@ const styles = StyleSheet.create({
     color: colors.secondary,
     fontWeight: '500',
   },
-  // ✅ NUEVO: Estado vacío
   emptyState: {
     alignItems: 'center',
     padding: spacing.xl,
@@ -670,5 +1064,101 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  // ✅ ESTILOS DE MODALES
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '90%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: colors.secondary,
+  },
+  modalScroll: {
+    padding: spacing.lg,
+  },
+  inputGroup: {
+    marginBottom: spacing.md,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.secondary,
+    marginBottom: spacing.xs,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    padding: spacing.sm,
+    fontSize: 16,
+    color: colors.secondary,
+    backgroundColor: '#fff',
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    backgroundColor: '#fff',
+  },
+  checkboxContainer: {
+    gap: spacing.sm,
+  },
+  checkboxItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  checkboxLabel: {
+    fontSize: 16,
+    color: colors.secondary,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    padding: spacing.lg,
+    gap: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  modalButton: {
+    flex: 1,
+    padding: spacing.md,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalButtonCancel: {
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  modalButtonSave: {
+    backgroundColor: colors.primary,
+  },
+  modalButtonTextCancel: {
+    color: colors.secondary,
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  modalButtonTextSave: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
   },
 });

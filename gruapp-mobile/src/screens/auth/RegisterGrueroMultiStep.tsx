@@ -19,6 +19,18 @@ import { colors, spacing, fontSize } from '../../theme/colors';
 import { Picker } from '@react-native-picker/picker';
 import Toast from 'react-native-toast-message';
 
+const TIPOS_VEHICULOS = [
+  { label: 'Automóvil', value: 'AUTOMOVIL' },
+  { label: 'SUV/Camioneta', value: 'SUV_CAMIONETA' },
+  { label: 'Moto', value: 'MOTO' },
+  { label: 'Furgón', value: 'FURGON' },
+  { label: 'Camión Liviano', value: 'CAMION_LIVIANO' },
+  { label: 'Camión Mediano', value: 'CAMION_MEDIANO' },
+  { label: 'Camión Pesado', value: 'CAMION_PESADO' },
+  { label: 'Bus', value: 'BUS' },
+  { label: 'Maquinaria', value: 'MAQUINARIA' },
+];
+
 export default function RegisterGrueroScreen() {
   const navigation = useNavigation();
   const { setAuth } = useAuthStore();
@@ -31,12 +43,21 @@ export default function RegisterGrueroScreen() {
     rut: '',
     password: '',
     confirmPassword: '',
+    // Datos del vehículo
     patente: '',
     marca: '',
     modelo: '',
     anio: '',
     capacidadToneladas: '',
     tipoGrua: 'CAMA_BAJA',
+    tiposVehiculosAtiende: [] as string[],
+    // ✅ NUEVO: Datos bancarios
+    banco: '',
+    tipoCuenta: 'CUENTA_RUT',
+    numeroCuenta: '',
+    nombreTitular: '',
+    rutTitular: '',
+    emailTransferencia: '',
   });
 
   const [loading, setLoading] = useState(false);
@@ -47,20 +68,38 @@ export default function RegisterGrueroScreen() {
     setErrors({ ...errors, [field]: '' });
   };
 
+  const toggleTipoVehiculo = (tipo: string) => {
+    const current = formData.tiposVehiculosAtiende;
+    if (current.includes(tipo)) {
+      setFormData({
+        ...formData,
+        tiposVehiculosAtiende: current.filter((t) => t !== tipo),
+      });
+    } else {
+      setFormData({
+        ...formData,
+        tiposVehiculosAtiende: [...current, tipo],
+      });
+    }
+  };
+
   const validateForm = () => {
     let valid = true;
     const newErrors: any = {};
 
+    // Validar nombre
     if (!formData.nombre.trim()) {
       newErrors.nombre = 'El nombre es requerido';
       valid = false;
     }
 
+    // Validar apellido
     if (!formData.apellido.trim()) {
       newErrors.apellido = 'El apellido es requerido';
       valid = false;
     }
 
+    // Validar email
     if (!formData.email) {
       newErrors.email = 'El email es requerido';
       valid = false;
@@ -69,11 +108,13 @@ export default function RegisterGrueroScreen() {
       valid = false;
     }
 
+    // Validar teléfono
     if (!formData.telefono) {
       newErrors.telefono = 'El teléfono es requerido';
       valid = false;
     }
 
+    // Validar RUT
     if (!formData.rut) {
       newErrors.rut = 'El RUT es requerido';
       valid = false;
@@ -82,6 +123,7 @@ export default function RegisterGrueroScreen() {
       valid = false;
     }
 
+    // Validar patente
     if (!formData.patente) {
       newErrors.patente = 'La patente es requerida';
       valid = false;
@@ -90,16 +132,19 @@ export default function RegisterGrueroScreen() {
       valid = false;
     }
 
+    // Validar marca
     if (!formData.marca.trim()) {
       newErrors.marca = 'La marca es requerida';
       valid = false;
     }
 
+    // Validar modelo
     if (!formData.modelo.trim()) {
       newErrors.modelo = 'El modelo es requerido';
       valid = false;
     }
 
+    // Validar año
     if (!formData.anio) {
       newErrors.anio = 'El año es requerido';
       valid = false;
@@ -112,6 +157,7 @@ export default function RegisterGrueroScreen() {
       }
     }
 
+    // Validar capacidad
     if (!formData.capacidadToneladas) {
       newErrors.capacidadToneladas = 'La capacidad es requerida';
       valid = false;
@@ -123,6 +169,34 @@ export default function RegisterGrueroScreen() {
       }
     }
 
+    // ✅ Validar tipos de vehículos
+    if (formData.tiposVehiculosAtiende.length === 0) {
+      newErrors.tiposVehiculosAtiende = 'Selecciona al menos un tipo';
+      valid = false;
+    }
+
+    // ✅ Validar datos bancarios
+    if (!formData.banco.trim()) {
+      newErrors.banco = 'El banco es requerido';
+      valid = false;
+    }
+
+    if (!formData.numeroCuenta.trim()) {
+      newErrors.numeroCuenta = 'El número de cuenta es requerido';
+      valid = false;
+    }
+
+    if (!formData.nombreTitular.trim()) {
+      newErrors.nombreTitular = 'El nombre del titular es requerido';
+      valid = false;
+    }
+
+    if (!formData.rutTitular.trim()) {
+      newErrors.rutTitular = 'El RUT del titular es requerido';
+      valid = false;
+    }
+
+    // Validar password
     if (!formData.password) {
       newErrors.password = 'La contraseña es requerida';
       valid = false;
@@ -131,6 +205,7 @@ export default function RegisterGrueroScreen() {
       valid = false;
     }
 
+    // Validar confirmación
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Las contraseñas no coinciden';
       valid = false;
@@ -159,6 +234,14 @@ export default function RegisterGrueroScreen() {
         anio: parseInt(formData.anio),
         capacidadToneladas: parseFloat(formData.capacidadToneladas),
         tipoGrua: formData.tipoGrua,
+        tiposVehiculosAtiende: formData.tiposVehiculosAtiende,
+        // ✅ NUEVO: Datos bancarios
+        banco: formData.banco.trim(),
+        tipoCuenta: formData.tipoCuenta,
+        numeroCuenta: formData.numeroCuenta.trim(),
+        nombreTitular: formData.nombreTitular.trim(),
+        rutTitular: formData.rutTitular.replace(/\./g, '').trim(),
+        emailTransferencia: formData.emailTransferencia.trim() || null,
       });
 
       if (response.data.success) {
@@ -193,6 +276,7 @@ export default function RegisterGrueroScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
+        {/* Header */}
         <View style={styles.headerBar}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
@@ -216,7 +300,7 @@ export default function RegisterGrueroScreen() {
             </Text>
           </View>
 
-          {/* Datos Personales */}
+          {/* Sección: Datos Personales */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Datos Personales</Text>
 
@@ -269,7 +353,7 @@ export default function RegisterGrueroScreen() {
             />
           </View>
 
-          {/* Datos del Vehículo */}
+          {/* Sección: Datos del Vehículo */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Datos del Vehículo</Text>
 
@@ -323,6 +407,7 @@ export default function RegisterGrueroScreen() {
               error={errors.capacidadToneladas}
             />
 
+            {/* Tipo de Grúa */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Tipo de Grúa</Text>
               <View style={styles.pickerContainer}>
@@ -337,9 +422,111 @@ export default function RegisterGrueroScreen() {
                 </Picker>
               </View>
             </View>
+
+            {/* ✅ NUEVO: Tipos de Vehículos que Atiende */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Tipos de Vehículos que Atiende *</Text>
+              <View style={styles.checkboxContainer}>
+                {TIPOS_VEHICULOS.map((tipo) => (
+                  <TouchableOpacity
+                    key={tipo.value}
+                    style={styles.checkboxItem}
+                    onPress={() => toggleTipoVehiculo(tipo.value)}
+                  >
+                    <Ionicons
+                      name={
+                        formData.tiposVehiculosAtiende.includes(tipo.value)
+                          ? 'checkbox'
+                          : 'square-outline'
+                      }
+                      size={24}
+                      color={
+                        formData.tiposVehiculosAtiende.includes(tipo.value)
+                          ? colors.primary
+                          : colors.text.secondary
+                      }
+                    />
+                    <Text style={styles.checkboxLabel}>{tipo.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              {errors.tiposVehiculosAtiende && (
+                <Text style={styles.errorText}>{errors.tiposVehiculosAtiende}</Text>
+              )}
+            </View>
           </View>
 
-          {/* Contraseña */}
+          {/* ✅ NUEVO: Sección Datos Bancarios */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Datos Bancarios</Text>
+            <Text style={styles.sectionSubtitle}>
+              Para transferir tus pagos semanales
+            </Text>
+
+            <Input
+              label="Banco"
+              placeholder="Ej: Banco Estado"
+              value={formData.banco}
+              onChangeText={(value) => updateField('banco', value)}
+              icon="business"
+              error={errors.banco}
+            />
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Tipo de Cuenta</Text>
+              <View style={styles.pickerContainer}>
+                <Picker
+                  selectedValue={formData.tipoCuenta}
+                  onValueChange={(value) => updateField('tipoCuenta', value)}
+                  style={styles.picker}
+                >
+                  <Picker.Item label="Cuenta RUT" value="CUENTA_RUT" />
+                  <Picker.Item label="Cuenta Vista" value="VISTA" />
+                  <Picker.Item label="Cuenta Corriente" value="CORRIENTE" />
+                </Picker>
+              </View>
+            </View>
+
+            <Input
+              label="Número de Cuenta"
+              placeholder="123456789"
+              value={formData.numeroCuenta}
+              onChangeText={(value) => updateField('numeroCuenta', value)}
+              keyboardType="number-pad"
+              icon="card"
+              error={errors.numeroCuenta}
+            />
+
+            <Input
+              label="Nombre del Titular"
+              placeholder="Juan Pérez González"
+              value={formData.nombreTitular}
+              onChangeText={(value) => updateField('nombreTitular', value)}
+              icon="person"
+              error={errors.nombreTitular}
+            />
+
+            <Input
+              label="RUT del Titular"
+              placeholder="12345678-9"
+              value={formData.rutTitular}
+              onChangeText={(value) => updateField('rutTitular', value)}
+              icon="card"
+              error={errors.rutTitular}
+            />
+
+            <Input
+              label="Email para Transferencias (opcional)"
+              placeholder="tu@email.com"
+              value={formData.emailTransferencia}
+              onChangeText={(value) => updateField('emailTransferencia', value)}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              icon="mail"
+            />
+          </View>
+
+          {/* Sección: Contraseña */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Contraseña</Text>
 
@@ -367,7 +554,7 @@ export default function RegisterGrueroScreen() {
               <Text style={styles.requirementsTitle}>Requisitos:</Text>
               <Text style={styles.requirementItem}>• Mínimo 8 caracteres</Text>
               <Text style={styles.requirementItem}>• Una mayúscula y minúscula</Text>
-              <Text style={styles.requirementItem}>• Un número y carácter especial (@$!%*?&)</Text>
+              <Text style={styles.requirementItem}>• Un número y carácter especial</Text>
             </View>
           </View>
 
@@ -441,6 +628,11 @@ const styles = StyleSheet.create({
     fontSize: fontSize.lg,
     fontWeight: '600',
     color: colors.secondary,
+    marginBottom: spacing.sm,
+  },
+  sectionSubtitle: {
+    fontSize: fontSize.sm,
+    color: colors.text.secondary,
     marginBottom: spacing.md,
   },
   inputContainer: {
@@ -460,6 +652,24 @@ const styles = StyleSheet.create({
   },
   picker: {
     height: 50,
+  },
+  checkboxContainer: {
+    gap: spacing.sm,
+  },
+  checkboxItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  checkboxLabel: {
+    fontSize: fontSize.md,
+    color: colors.text.primary,
+  },
+  errorText: {
+    fontSize: fontSize.sm,
+    color: colors.error,
+    marginTop: spacing.xs,
   },
   requirements: {
     backgroundColor: '#f0f9ff',

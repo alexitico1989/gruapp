@@ -10,6 +10,8 @@ import adminPagosRoutes from './admin-pagos.routes';
 
 import grueroPagosRoutes from './gruero-pagos.routes';
 
+import grueroPerfilRoutes from './gruero-perfil.routes';
+
 const router = Router();
 
 console.log('📌 [INDEX.TS] Configurando rutas...');
@@ -18,6 +20,7 @@ console.log('📌 [INDEX.TS] Configurando rutas...');
 router.use('/auth', authRoutes);
 router.use('/servicios', servicioRoutes);
 router.use('/admin/pagos', adminPagosRoutes);
+router.use('/gruero/perfil', grueroPerfilRoutes);
 
 // 🔍 Log especial para gruero
 router.use('/gruero', (req, res, next) => {
