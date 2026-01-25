@@ -10,7 +10,7 @@ import VerifyCode from './pages/VerifyCode';
 import ResetPassword from './pages/ResetPassword';
 import AdminPagos from './pages/admin/AdminPagos';
 
-// Pages - Auth
+// Pages - Auth.
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import RegisterCliente from './pages/RegisterCliente';
