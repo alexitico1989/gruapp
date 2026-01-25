@@ -16,7 +16,8 @@ import api from '../../services/api';
 import Button from '../../components/Button';
 import Input from '../../components/Input';
 import { colors, spacing, fontSize } from '../../theme/colors';
-import Toast from 'react-native-toast-message'; // ✅ IMPORTAR TOAST
+import Toast from 'react-native-toast-message';
+import { rutValidator } from '../../utils/rutValidator';
 
 export default function RegisterClienteScreen() {
   const navigation = useNavigation();
@@ -25,16 +26,19 @@ export default function RegisterClienteScreen() {
   const [formData, setFormData] = useState({
     nombre: '',
     apellido: '',
+    rut: '', // limpio, sin puntos ni guión
     email: '',
     telefono: '',
     password: '',
     confirmPassword: '',
   });
 
+  const [rutValue, setRutValue] = useState(''); // formateado para mostrar
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({
     nombre: '',
     apellido: '',
+    rut: '',
     email: '',
     telefono: '',
     password: '',
@@ -43,8 +47,20 @@ export default function RegisterClienteScreen() {
 
   const updateField = (field: string, value: string) => {
     setFormData({ ...formData, [field]: value });
-    // Limpiar error del campo al escribir
     setErrors({ ...errors, [field]: '' });
+  };
+
+  // 🚨 Manejo del RUT
+  const handleRutChange = (value: string) => {
+    // Limpiar: quitar puntos y guión
+    const cleanRut = value.replace(/\./g, '').replace(/-/g, '');
+    setFormData({ ...formData, rut: cleanRut });
+
+    // Formatear para mostrar bonito
+    const formatted = rutValidator.formatearInput(cleanRut);
+    setRutValue(formatted);
+
+    setErrors({ ...errors, rut: '' });
   };
 
   const validateForm = () => {
@@ -52,13 +68,14 @@ export default function RegisterClienteScreen() {
     const newErrors = {
       nombre: '',
       apellido: '',
+      rut: '',
       email: '',
       telefono: '',
       password: '',
       confirmPassword: '',
     };
 
-    // Validar nombre
+    // Nombre
     if (!formData.nombre.trim()) {
       newErrors.nombre = 'El nombre es requerido';
       valid = false;
@@ -67,7 +84,7 @@ export default function RegisterClienteScreen() {
       valid = false;
     }
 
-    // Validar apellido
+    // Apellido
     if (!formData.apellido.trim()) {
       newErrors.apellido = 'El apellido es requerido';
       valid = false;
@@ -76,7 +93,20 @@ export default function RegisterClienteScreen() {
       valid = false;
     }
 
-    // Validar email
+    // RUT
+    if (!formData.rut.trim()) {
+      newErrors.rut = 'El RUT es requerido';
+      valid = false;
+    } else {
+      // Limpiar el RUT antes de validar
+      const rutLimpio = rutValidator.limpiar(formData.rut);
+      if (!rutValidator.validar(rutLimpio)) {
+        newErrors.rut = rutValidator.mensajeError(formData.rut);
+        valid = false;
+      }
+    }
+
+    // Email
     if (!formData.email) {
       newErrors.email = 'El email es requerido';
       valid = false;
@@ -85,7 +115,7 @@ export default function RegisterClienteScreen() {
       valid = false;
     }
 
-    // Validar teléfono
+    // Teléfono
     if (!formData.telefono) {
       newErrors.telefono = 'El teléfono es requerido';
       valid = false;
@@ -94,7 +124,7 @@ export default function RegisterClienteScreen() {
       valid = false;
     }
 
-    // Validar password
+    // Password
     if (!formData.password) {
       newErrors.password = 'La contraseña es requerida';
       valid = false;
@@ -115,7 +145,7 @@ export default function RegisterClienteScreen() {
       valid = false;
     }
 
-    // Validar confirmación
+    // Confirmar contraseña
     if (!formData.confirmPassword) {
       newErrors.confirmPassword = 'Confirma tu contraseña';
       valid = false;
@@ -137,16 +167,15 @@ export default function RegisterClienteScreen() {
       const response = await api.post('/auth/register/cliente', {
         nombre: formData.nombre.trim(),
         apellido: formData.apellido.trim(),
+        rut: formData.rut, // limpio
         email: formData.email.toLowerCase().trim(),
         telefono: formData.telefono.replace(/\s/g, ''),
         password: formData.password,
       });
 
       if (response.data.success) {
-        // Guardar auth
         await setAuth(response.data.data.user, response.data.data.token);
 
-        // ✅ TOAST PROFESIONAL - SIN EMOJIS
         Toast.show({
           type: 'success',
           text1: 'Registro Exitoso',
@@ -154,11 +183,12 @@ export default function RegisterClienteScreen() {
           position: 'top',
           visibilityTime: 3000,
         });
+
+        navigation.goBack();
       }
     } catch (error: any) {
       console.error('Error registro:', error.response?.data);
-      
-      // ✅ TOAST PROFESIONAL - SIN EMOJIS
+
       Toast.show({
         type: 'error',
         text1: 'Error al Registrar',
@@ -177,7 +207,7 @@ export default function RegisterClienteScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        {/* Header con botón volver */}
+        {/* Header */}
         <View style={styles.headerBar}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
@@ -194,7 +224,7 @@ export default function RegisterClienteScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Título */}
+          {/* Header Título */}
           <View style={styles.header}>
             <Text style={styles.title}>Crear Cuenta</Text>
             <Text style={styles.subtitle}>
@@ -220,6 +250,16 @@ export default function RegisterClienteScreen() {
               onChangeText={(value) => updateField('apellido', value)}
               icon="person-outline"
               error={errors.apellido}
+            />
+
+            <Input
+              label="RUT"
+              placeholder="12.345.678-9"
+              value={rutValue}
+              onChangeText={handleRutChange}
+              keyboardType="numeric"
+              icon="card"
+              error={errors.rut}
             />
 
             <Input
@@ -263,7 +303,6 @@ export default function RegisterClienteScreen() {
               error={errors.confirmPassword}
             />
 
-            {/* Info de requisitos */}
             <View style={styles.requirements}>
               <Text style={styles.requirementsTitle}>
                 La contraseña debe contener:
@@ -299,13 +338,8 @@ export default function RegisterClienteScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  keyboardView: {
-    flex: 1,
-  },
+  container: { flex: 1, backgroundColor: colors.background },
+  keyboardView: { flex: 1 },
   headerBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -316,69 +350,18 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
     backgroundColor: '#fff',
   },
-  backButton: {
-    padding: spacing.xs,
-  },
-  headerTitle: {
-    fontSize: fontSize.lg,
-    fontWeight: '600',
-    color: colors.secondary,
-  },
-  scrollContent: {
-    padding: spacing.lg,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: spacing.xl,
-  },
-  title: {
-    fontSize: fontSize.xxxl,
-    fontWeight: 'bold',
-    color: colors.secondary,
-    marginBottom: spacing.xs,
-  },
-  subtitle: {
-    fontSize: fontSize.md,
-    color: colors.text.secondary,
-    textAlign: 'center',
-  },
-  form: {
-    marginBottom: spacing.lg,
-  },
-  requirements: {
-    backgroundColor: '#f0f9ff',
-    padding: spacing.md,
-    borderRadius: 8,
-    marginTop: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  requirementsTitle: {
-    fontSize: fontSize.sm,
-    fontWeight: '600',
-    color: colors.secondary,
-    marginBottom: spacing.xs,
-  },
-  requirementItem: {
-    fontSize: fontSize.sm,
-    color: colors.text.secondary,
-    marginLeft: spacing.xs,
-  },
-  registerButton: {
-    marginTop: spacing.md,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: spacing.lg,
-  },
-  footerText: {
-    fontSize: fontSize.sm,
-    color: colors.text.secondary,
-  },
-  footerLink: {
-    fontSize: fontSize.sm,
-    color: colors.primary,
-    fontWeight: '600',
-  },
+  backButton: { padding: spacing.xs },
+  headerTitle: { fontSize: fontSize.lg, fontWeight: '600', color: colors.secondary },
+  scrollContent: { padding: spacing.lg },
+  header: { alignItems: 'center', marginBottom: spacing.xl },
+  title: { fontSize: fontSize.xxxl, fontWeight: 'bold', color: colors.secondary, marginBottom: spacing.xs },
+  subtitle: { fontSize: fontSize.md, color: colors.text.secondary, textAlign: 'center' },
+  form: { marginBottom: spacing.lg },
+  requirements: { backgroundColor: '#f0f9ff', padding: spacing.md, borderRadius: 8, marginTop: spacing.sm, marginBottom: spacing.md },
+  requirementsTitle: { fontSize: fontSize.sm, fontWeight: '600', color: colors.secondary, marginBottom: spacing.xs },
+  requirementItem: { fontSize: fontSize.sm, color: colors.text.secondary, marginLeft: spacing.xs },
+  registerButton: { marginTop: spacing.md },
+  footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: spacing.lg },
+  footerText: { fontSize: fontSize.sm, color: colors.text.secondary },
+  footerLink: { fontSize: fontSize.sm, color: colors.primary, fontWeight: '600' },
 });

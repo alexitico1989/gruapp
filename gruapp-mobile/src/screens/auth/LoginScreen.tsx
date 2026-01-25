@@ -18,6 +18,8 @@ import Button from '../../components/Button';
 import Input from '../../components/Input';
 import { colors, spacing, fontSize } from '../../theme/colors';
 import Toast from 'react-native-toast-message'; // ✅ IMPORTAR TOAST
+import { Linking } from 'react-native';
+
 
 export default function LoginScreen() {
   const navigation = useNavigation();
@@ -170,7 +172,12 @@ export default function LoginScreen() {
           {/* Footer */}
           <Text style={styles.footer}>
             ¿Problemas para ingresar?{' '}
-            <Text style={styles.footerLink}>Contáctanos</Text>
+            <Text
+              style={styles.footerLink}
+              onPress={() => Linking.openURL('mailto:contacto@gruappchile.cl')}
+            >
+              Contáctanos
+            </Text>
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>

@@ -7,6 +7,7 @@ import ClienteNavigator from './ClienteNavigator';
 import GrueroNavigator from './GrueroNavigator';
 import SplashScreen from '../screens/SplashScreen';
 
+
 export default function AppNavigator() {
   const { isAuthenticated, isLoading, loadAuth, user } = useAuthStore();
   const [showSplash, setShowSplash] = useState(true);

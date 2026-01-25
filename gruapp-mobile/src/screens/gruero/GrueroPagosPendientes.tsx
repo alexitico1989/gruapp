@@ -16,50 +16,72 @@ import Toast from 'react-native-toast-message';
 
 interface ServicioPendiente {
   id: string;
-  totalGruero: number;
-  completadoAt: string;
-  origenDireccion: string;
-  destinoDireccion: string;
+  fecha: string;
+  cliente: string;
+  origen: string;
+  destino: string;
+  distancia: number;
+  monto: number;
 }
 
-interface Pago {
+interface PagoHistorial {
   id: string;
   periodo: string;
   fechaInicio: string;
   fechaFin: string;
-  monto: number;
-  servicios: number;
-  estado: string;
+  totalServicios: number;
+  montoTotal: number;
   metodoPago: string | null;
   numeroComprobante: string | null;
   pagadoAt: string | null;
-  notasAdmin: string | null;
+  servicios: {
+    id: string;
+    fecha: string;
+    cliente: string;
+    origen: string;
+    destino: string;
+    monto: number;
+  }[];
 }
 
-interface PagosData {
-  pendiente: {
-    monto: number;
-    servicios: number;
-    detalles: ServicioPendiente[];
-  };
-  historial: Pago[];
+interface DatosPendientes {
+  periodo: string;
+  inicioSemana: string;
+  finSemana: string;
+  totalServicios: number;
+  totalPendiente: number;
+  servicios: ServicioPendiente[];
+}
+
+interface DatosHistorial {
+  pagos: PagoHistorial[];
+  totalRecibido: number;
 }
 
 export default function GrueroPagosPendientes() {
-  const [pagosData, setPagosData] = useState<PagosData | null>(null);
+  const [datosPendientes, setDatosPendientes] = useState<DatosPendientes | null>(null);
+  const [datosHistorial, setDatosHistorial] = useState<DatosHistorial | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [mostrarDetalles, setMostrarDetalles] = useState(false);
+  const [pagoExpandido, setPagoExpandido] = useState<string | null>(null);
 
   useEffect(() => {
-    cargarPagos();
+    cargarDatos();
   }, []);
 
-  const cargarPagos = async () => {
+  const cargarDatos = async () => {
     try {
-      const response = await api.get('/gruero/pagos-pendientes');
-      if (response.data.success) {
-        setPagosData(response.data.data);
+      // Cargar pendientes
+      const resPendientes = await api.get('/gruero/pagos/pendientes');
+      if (resPendientes.data.success) {
+        setDatosPendientes(resPendientes.data.data);
+      }
+
+      // Cargar historial
+      const resHistorial = await api.get('/gruero/pagos/historial');
+      if (resHistorial.data.success) {
+        setDatosHistorial(resHistorial.data.data);
       }
     } catch (error: any) {
       console.error('Error cargando pagos:', error);
@@ -78,7 +100,7 @@ export default function GrueroPagosPendientes() {
 
   const onRefresh = () => {
     setRefreshing(true);
-    cargarPagos();
+    cargarDatos();
   };
 
   const formatearFecha = (fecha: string) => {
@@ -90,30 +112,8 @@ export default function GrueroPagosPendientes() {
     });
   };
 
-  const getEstadoColor = (estado: string) => {
-    switch (estado) {
-      case 'PAGADO':
-        return '#10b981';
-      case 'PENDIENTE':
-        return '#f59e0b';
-      case 'RECHAZADO':
-        return '#ef4444';
-      default:
-        return colors.text.secondary;
-    }
-  };
-
-  const getEstadoTexto = (estado: string) => {
-    switch (estado) {
-      case 'PAGADO':
-        return 'Pagado';
-      case 'PENDIENTE':
-        return 'Pendiente';
-      case 'RECHAZADO':
-        return 'Rechazado';
-      default:
-        return estado;
-    }
+  const togglePagoExpandido = (pagoId: string) => {
+    setPagoExpandido(pagoExpandido === pagoId ? null : pagoId);
   };
 
   if (loading) {
@@ -122,17 +122,6 @@ export default function GrueroPagosPendientes() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>Cargando pagos...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (!pagosData) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={64} color={colors.error} />
-          <Text style={styles.errorText}>Error al cargar pagos</Text>
         </View>
       </SafeAreaView>
     );
@@ -150,51 +139,63 @@ export default function GrueroPagosPendientes() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {/* Pendiente de Pago */}
+        {/* Pendiente de Pago - Semana Actual */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Pendiente de Pago</Text>
           <View style={styles.pendienteCard}>
             <View style={styles.pendienteHeader}>
               <Ionicons name="wallet" size={32} color={colors.primary} />
               <View style={styles.pendienteInfo}>
-                <Text style={styles.pendienteLabel}>Por Cobrar</Text>
+                <Text style={styles.pendienteLabel}>Por Cobrar esta Semana</Text>
                 <Text style={styles.pendienteMonto}>
-                  ${pagosData.pendiente.monto.toLocaleString('es-CL')}
+                  ${datosPendientes?.totalPendiente.toLocaleString('es-CL') || '0'}
                 </Text>
               </View>
             </View>
-            <View style={styles.pendienteFooter}>
-              <Text style={styles.pendienteServicios}>
-                {pagosData.pendiente.servicios} servicio{pagosData.pendiente.servicios !== 1 ? 's' : ''} completado{pagosData.pendiente.servicios !== 1 ? 's' : ''}
-              </Text>
-              {pagosData.pendiente.servicios > 0 && (
-                <TouchableOpacity onPress={() => setMostrarDetalles(!mostrarDetalles)}>
-                  <Text style={styles.verDetallesText}>
-                    {mostrarDetalles ? 'Ocultar' : 'Ver'} detalles
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
 
-            {/* Detalles de Servicios Pendientes */}
-            {mostrarDetalles && pagosData.pendiente.detalles.length > 0 && (
-              <View style={styles.detallesContainer}>
-                {pagosData.pendiente.detalles.map((servicio) => (
-                  <View key={servicio.id} style={styles.detalleItem}>
-                    <View style={styles.detalleHeader}>
-                      <Text style={styles.detalleFecha}>
-                        {formatearFecha(servicio.completadoAt)}
+            {datosPendientes && (
+              <>
+                <View style={styles.periodoContainer}>
+                  <Text style={styles.periodoText}>
+                    📅 {datosPendientes.periodo}
+                  </Text>
+                </View>
+
+                <View style={styles.pendienteFooter}>
+                  <Text style={styles.pendienteServicios}>
+                    {datosPendientes.totalServicios} servicio{datosPendientes.totalServicios !== 1 ? 's' : ''} completado{datosPendientes.totalServicios !== 1 ? 's' : ''}
+                  </Text>
+                  {datosPendientes.totalServicios > 0 && (
+                    <TouchableOpacity onPress={() => setMostrarDetalles(!mostrarDetalles)}>
+                      <Text style={styles.verDetallesText}>
+                        {mostrarDetalles ? 'Ocultar' : 'Ver'} detalles
                       </Text>
-                      <Text style={styles.detalleMonto}>
-                        ${servicio.totalGruero.toLocaleString('es-CL')}
-                      </Text>
-                    </View>
-                    <Text style={styles.detalleRuta} numberOfLines={1}>
-                      {servicio.origenDireccion.substring(0, 30)}...
-                    </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {/* Detalles de Servicios Pendientes */}
+                {mostrarDetalles && datosPendientes.servicios.length > 0 && (
+                  <View style={styles.detallesContainer}>
+                    {datosPendientes.servicios.map((servicio) => (
+                      <View key={servicio.id} style={styles.detalleItem}>
+                        <View style={styles.detalleHeader}>
+                          <Text style={styles.detalleFecha}>
+                            {formatearFecha(servicio.fecha)}
+                          </Text>
+                          <Text style={styles.detalleMonto}>
+                            ${servicio.monto.toLocaleString('es-CL')}
+                          </Text>
+                        </View>
+                        <Text style={styles.detalleCliente}>{servicio.cliente}</Text>
+                        <Text style={styles.detalleRuta} numberOfLines={1}>
+                          {servicio.origen.substring(0, 40)}...
+                        </Text>
+                      </View>
+                    ))}
                   </View>
-                ))}
-              </View>
+                )}
+              </>
             )}
           </View>
 
@@ -208,76 +209,104 @@ export default function GrueroPagosPendientes() {
 
         {/* Historial de Pagos */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Historial de Pagos</Text>
-          {pagosData.historial.length > 0 ? (
-            pagosData.historial.map((pago) => (
+          <View style={styles.historialHeader}>
+            <Text style={styles.sectionTitle}>Historial de Pagos</Text>
+            {datosHistorial && datosHistorial.totalRecibido > 0 && (
+              <Text style={styles.totalRecibido}>
+                Total: ${datosHistorial.totalRecibido.toLocaleString('es-CL')}
+              </Text>
+            )}
+          </View>
+
+          {datosHistorial && datosHistorial.pagos.length > 0 ? (
+            datosHistorial.pagos.map((pago) => (
               <View key={pago.id} style={styles.pagoCard}>
-                <View style={styles.pagoHeader}>
-                  <View style={styles.pagoInfo}>
-                    <Text style={styles.pagoPeriodo}>Semana {pago.periodo}</Text>
-                    <Text style={styles.pagoFechas}>
-                      {formatearFecha(pago.fechaInicio)} - {formatearFecha(pago.fechaFin)}
-                    </Text>
-                  </View>
-                  <View
-                    style={[
-                      styles.estadoBadge,
-                      { backgroundColor: getEstadoColor(pago.estado) + '20' },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.estadoText,
-                        { color: getEstadoColor(pago.estado) },
-                      ]}
-                    >
-                      {getEstadoTexto(pago.estado)}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.pagoDivider} />
-
-                <View style={styles.pagoDetails}>
-                  <View style={styles.pagoDetailRow}>
-                    <Text style={styles.pagoDetailLabel}>Monto:</Text>
-                    <Text style={styles.pagoDetailValue}>
-                      ${pago.monto.toLocaleString('es-CL')}
-                    </Text>
-                  </View>
-                  <View style={styles.pagoDetailRow}>
-                    <Text style={styles.pagoDetailLabel}>Servicios:</Text>
-                    <Text style={styles.pagoDetailValue}>{pago.servicios}</Text>
-                  </View>
-                  {pago.metodoPago && (
-                    <View style={styles.pagoDetailRow}>
-                      <Text style={styles.pagoDetailLabel}>Método:</Text>
-                      <Text style={styles.pagoDetailValue}>{pago.metodoPago}</Text>
-                    </View>
-                  )}
-                  {pago.numeroComprobante && (
-                    <View style={styles.pagoDetailRow}>
-                      <Text style={styles.pagoDetailLabel}>Comprobante:</Text>
-                      <Text style={styles.pagoDetailValue}>
-                        {pago.numeroComprobante}
+                <TouchableOpacity
+                  onPress={() => togglePagoExpandido(pago.id)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.pagoHeader}>
+                    <View style={styles.pagoInfo}>
+                      <Text style={styles.pagoPeriodo}>{pago.periodo}</Text>
+                      <Text style={styles.pagoFechas}>
+                        {formatearFecha(pago.fechaInicio)} - {formatearFecha(pago.fechaFin)}
                       </Text>
                     </View>
-                  )}
+                    <View style={styles.estadoBadge}>
+                      <Text style={styles.estadoText}>✅ Pagado</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.pagoDivider} />
+
+                  <View style={styles.pagoSummary}>
+                    <View style={styles.pagoSummaryItem}>
+                      <Text style={styles.pagoSummaryLabel}>Monto:</Text>
+                      <Text style={styles.pagoSummaryValue}>
+                        ${pago.montoTotal.toLocaleString('es-CL')}
+                      </Text>
+                    </View>
+                    <View style={styles.pagoSummaryItem}>
+                      <Text style={styles.pagoSummaryLabel}>Servicios:</Text>
+                      <Text style={styles.pagoSummaryValue}>{pago.totalServicios}</Text>
+                    </View>
+                  </View>
+
                   {pago.pagadoAt && (
-                    <View style={styles.pagoDetailRow}>
-                      <Text style={styles.pagoDetailLabel}>Pagado:</Text>
-                      <Text style={styles.pagoDetailValue}>
-                        {formatearFecha(pago.pagadoAt)}
-                      </Text>
-                    </View>
+                    <Text style={styles.pagadoAtText}>
+                      💰 Transferido el {formatearFecha(pago.pagadoAt)}
+                    </Text>
                   )}
-                  {pago.notasAdmin && (
-                    <View style={styles.notasContainer}>
-                      <Text style={styles.notasLabel}>Notas:</Text>
-                      <Text style={styles.notasText}>{pago.notasAdmin}</Text>
-                    </View>
-                  )}
-                </View>
+
+                  <View style={styles.expandButton}>
+                    <Text style={styles.expandButtonText}>
+                      {pagoExpandido === pago.id ? 'Ocultar detalles' : 'Ver detalles'}
+                    </Text>
+                    <Ionicons
+                      name={pagoExpandido === pago.id ? 'chevron-up' : 'chevron-down'}
+                      size={16}
+                      color={colors.primary}
+                    />
+                  </View>
+                </TouchableOpacity>
+
+                {/* Detalles Expandibles */}
+                {pagoExpandido === pago.id && (
+                  <View style={styles.pagoDetallesExpandidos}>
+                    {pago.metodoPago && (
+                      <View style={styles.pagoDetailRow}>
+                        <Text style={styles.pagoDetailLabel}>Método:</Text>
+                        <Text style={styles.pagoDetailValue}>{pago.metodoPago}</Text>
+                      </View>
+                    )}
+                    {pago.numeroComprobante && (
+                      <View style={styles.pagoDetailRow}>
+                        <Text style={styles.pagoDetailLabel}>Comprobante:</Text>
+                        <Text style={styles.pagoDetailValue}>{pago.numeroComprobante}</Text>
+                      </View>
+                    )}
+
+                    <Text style={styles.serviciosTitle}>
+                      Servicios incluidos ({pago.servicios.length}):
+                    </Text>
+                    {pago.servicios.map((servicio) => (
+                      <View key={servicio.id} style={styles.servicioItem}>
+                        <View style={styles.servicioItemHeader}>
+                          <Text style={styles.servicioItemFecha}>
+                            {formatearFecha(servicio.fecha)}
+                          </Text>
+                          <Text style={styles.servicioItemMonto}>
+                            ${servicio.monto.toLocaleString('es-CL')}
+                          </Text>
+                        </View>
+                        <Text style={styles.servicioItemCliente}>{servicio.cliente}</Text>
+                        <Text style={styles.servicioItemRuta} numberOfLines={1}>
+                          {servicio.origen.substring(0, 35)}...
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
               </View>
             ))
           ) : (
@@ -298,18 +327,20 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { marginTop: spacing.md, color: colors.text.secondary },
-  errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xl },
-  errorText: { fontSize: 16, color: colors.error, marginTop: spacing.md },
   header: { backgroundColor: '#fff', padding: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.border },
   title: { fontSize: 24, fontWeight: 'bold', color: colors.secondary },
   scrollView: { flex: 1 },
   section: { padding: spacing.md },
   sectionTitle: { fontSize: 18, fontWeight: 'bold', color: colors.secondary, marginBottom: spacing.sm },
+  historialHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
+  totalRecibido: { fontSize: 14, fontWeight: 'bold', color: colors.primary },
   pendienteCard: { backgroundColor: '#fff', borderRadius: 12, padding: spacing.lg, borderWidth: 2, borderColor: colors.primary, marginBottom: spacing.md },
   pendienteHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   pendienteInfo: { flex: 1 },
   pendienteLabel: { fontSize: 14, color: colors.text.secondary, fontWeight: '600' },
   pendienteMonto: { fontSize: 32, fontWeight: 'bold', color: colors.primary, marginTop: spacing.xs },
+  periodoContainer: { marginTop: spacing.sm, padding: spacing.sm, backgroundColor: '#f0f9ff', borderRadius: 6 },
+  periodoText: { fontSize: 13, color: colors.text.primary, textAlign: 'center' },
   pendienteFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.md },
   pendienteServicios: { fontSize: 13, color: colors.text.secondary },
   verDetallesText: { fontSize: 13, color: colors.primary, fontWeight: '600' },
@@ -318,6 +349,7 @@ const styles = StyleSheet.create({
   detalleHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
   detalleFecha: { fontSize: 12, color: colors.text.secondary },
   detalleMonto: { fontSize: 14, fontWeight: 'bold', color: colors.primary },
+  detalleCliente: { fontSize: 12, fontWeight: '600', color: colors.secondary, marginBottom: 2 },
   detalleRuta: { fontSize: 12, color: colors.text.secondary },
   infoBox: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: '#f0f9ff', padding: spacing.md, borderRadius: 8 },
   infoBoxText: { flex: 1, fontSize: 13, color: colors.text.primary },
@@ -326,16 +358,27 @@ const styles = StyleSheet.create({
   pagoInfo: { flex: 1 },
   pagoPeriodo: { fontSize: 16, fontWeight: 'bold', color: colors.secondary },
   pagoFechas: { fontSize: 12, color: colors.text.secondary, marginTop: 2 },
-  estadoBadge: { paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: 6 },
-  estadoText: { fontSize: 12, fontWeight: '600' },
+  estadoBadge: { paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: 6, backgroundColor: '#dcfce7' },
+  estadoText: { fontSize: 12, fontWeight: '600', color: '#16a34a' },
   pagoDivider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.sm },
-  pagoDetails: { gap: spacing.xs },
-  pagoDetailRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  pagoSummary: { flexDirection: 'row', gap: spacing.lg },
+  pagoSummaryItem: { flex: 1 },
+  pagoSummaryLabel: { fontSize: 12, color: colors.text.secondary, marginBottom: 2 },
+  pagoSummaryValue: { fontSize: 16, fontWeight: 'bold', color: colors.secondary },
+  pagadoAtText: { fontSize: 12, color: '#16a34a', marginTop: spacing.sm, fontWeight: '600' },
+  expandButton: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 4, marginTop: spacing.sm },
+  expandButtonText: { fontSize: 13, color: colors.primary, fontWeight: '600' },
+  pagoDetallesExpandidos: { marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
+  pagoDetailRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.xs },
   pagoDetailLabel: { fontSize: 13, color: colors.text.secondary },
   pagoDetailValue: { fontSize: 13, fontWeight: '600', color: colors.secondary },
-  notasContainer: { marginTop: spacing.sm, padding: spacing.sm, backgroundColor: '#f9fafb', borderRadius: 6 },
-  notasLabel: { fontSize: 12, fontWeight: '600', color: colors.text.secondary, marginBottom: 4 },
-  notasText: { fontSize: 12, color: colors.text.primary },
+  serviciosTitle: { fontSize: 14, fontWeight: 'bold', color: colors.secondary, marginTop: spacing.md, marginBottom: spacing.sm },
+  servicioItem: { padding: spacing.sm, backgroundColor: '#f9fafb', borderRadius: 6, marginBottom: spacing.xs },
+  servicioItemHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
+  servicioItemFecha: { fontSize: 11, color: colors.text.secondary },
+  servicioItemMonto: { fontSize: 13, fontWeight: 'bold', color: colors.primary },
+  servicioItemCliente: { fontSize: 12, fontWeight: '600', color: colors.secondary, marginBottom: 2 },
+  servicioItemRuta: { fontSize: 11, color: colors.text.secondary },
   emptyState: { alignItems: 'center', padding: spacing.xl, backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: colors.border },
   emptyText: { fontSize: 14, color: colors.text.secondary, marginTop: spacing.sm },
 });
