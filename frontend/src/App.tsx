@@ -8,6 +8,7 @@ import { initOneSignal } from './lib/onesignal';
 import ForgotPassword from './pages/ForgotPassword';
 import VerifyCode from './pages/VerifyCode';
 import ResetPassword from './pages/ResetPassword';
+import AdminPagos from './pages/admin/AdminPagos';
 
 // Pages - Auth
 import Landing from './pages/Landing';
@@ -225,6 +226,7 @@ function App() {
           <Route path="clientes" element={<AdminClientes />} />
           <Route path="clientes/:id" element={<AdminClienteDetalle />} />
           <Route path="finanzas" element={<AdminFinanzas />} />
+          <Route path="pagos" element={<AdminPagos />} />
           <Route path="reclamos" element={<AdminReclamos />} />
           <Route path="servicios" element={<AdminServicios />} />
         </Route>

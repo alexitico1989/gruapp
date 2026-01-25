@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import AdminLayout from '../../components/AdminLayout';
-import api from '../../services/api';
+import AdminLayout from './AdminLayout';
+import api from '../../lib/api';
 import toast from 'react-hot-toast';
 
 interface Servicio {
@@ -116,17 +116,15 @@ export default function AdminPagos() {
   };
 
   if (loading) {
-    return (
-      <AdminLayout title="Gestión de Pagos">
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      </AdminLayout>
-    );
-  }
+  return (
+    <div className="flex justify-center items-center h-64">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    </div>
+  );
+}
 
   return (
-    <AdminLayout title="Gestión de Pagos Semanales">
+    <div>
       {/* Header */}
       <div className="mb-6 bg-white rounded-lg shadow p-6">
         <div className="flex justify-between items-start">
@@ -336,6 +334,6 @@ export default function AdminPagos() {
           </div>
         </div>
       )}
-    </AdminLayout>
+    </div>
   );
 }
