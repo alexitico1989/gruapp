@@ -115,6 +115,12 @@ export class PagoController {
         payer: {
           email: servicio.cliente.user.email,
         },
+        back_urls: {
+          success: `${process.env.FRONTEND_URL}/cliente/servicios?payment=success&servicioId=${servicioId}`,
+          failure: `${process.env.FRONTEND_URL}/cliente/servicios?payment=failure&servicioId=${servicioId}`,
+          pending: `${process.env.FRONTEND_URL}/cliente/servicios?payment=pending&servicioId=${servicioId}`,
+        },
+        auto_return: 'approved' as any,
         notification_url: `${process.env.BACKEND_URL}/api/pagos/webhook`,
         external_reference: servicioId,
       };
