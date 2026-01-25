@@ -40,7 +40,6 @@ export class PagoController {
         });
       }
 
-      // Buscar el servicio
       const servicio = await prisma.servicio.findUnique({
         where: { id: servicioId },
         include: {
@@ -50,16 +49,6 @@ export class PagoController {
                 select: {
                   id: true,
                   email: true,
-                  nombre: true,
-                  apellido: true,
-                },
-              },
-            },
-          },
-          gruero: {
-            include: {
-              user: {
-                select: {
                   nombre: true,
                   apellido: true,
                 },
@@ -76,7 +65,6 @@ export class PagoController {
         });
       }
 
-      // Verificar que el servicio pertenece al cliente autenticado
       if (servicio.cliente.userId !== userId) {
         return res.status(403).json({
           success: false,
@@ -84,7 +72,6 @@ export class PagoController {
         });
       }
 
-      // Verificar que el servicio esté completado
       if (servicio.status !== 'COMPLETADO') {
         return res.status(400).json({
           success: false,
@@ -92,7 +79,6 @@ export class PagoController {
         });
       }
 
-      // Verificar que no esté ya pagado
       if (servicio.pagado) {
         return res.status(400).json({
           success: false,
@@ -100,48 +86,44 @@ export class PagoController {
         });
       }
 
-      // Crear instancia de Preference
+      // ✅ FORZAR A ENTERO SIN DECIMALES
+      const montoEntero = Math.round(servicio.totalCliente);
+
+      console.log('📝 [DEBUG] Valor BD:', servicio.totalCliente);
+      console.log('📝 [DEBUG] Tipo:', typeof servicio.totalCliente);
+      console.log('📝 [DEBUG] Monto parseado:', montoEntero);
+
+      if (montoEntero < 100) {
+        return res.status(400).json({
+          success: false,
+          message: `Monto muy bajo: ${montoEntero}. Mínimo 100 CLP`,
+        });
+      }
+
       const preference = new Preference(client);
 
-      // Crear preferencia de pago
-      const body: any = {
+      const body = {
         items: [
           {
-            title: `Servicio de Grúa - GruApp`,
-            description: `Servicio de grúa desde ${servicio.origenDireccion} hasta ${servicio.destinoDireccion}`,
+            title: 'Servicio de Grúa',
             quantity: 1,
-            unit_price: Number(servicio.totalCliente),
+            unit_price: montoEntero,
             currency_id: 'CLP',
           },
         ],
         payer: {
-          name: servicio.cliente.user.nombre,
-          surname: servicio.cliente.user.apellido,
           email: servicio.cliente.user.email,
         },
-        back_urls: {
-          success: `${process.env.FRONTEND_URL}/cliente/servicios?payment=success&servicioId=${servicioId}`,
-          failure: `${process.env.FRONTEND_URL}/cliente/servicios?payment=failure&servicioId=${servicioId}`,
-          pending: `${process.env.FRONTEND_URL}/cliente/servicios?payment=pending&servicioId=${servicioId}`,
-        },
-        auto_return: 'approved' as any,
         notification_url: `${process.env.BACKEND_URL}/api/pagos/webhook`,
         external_reference: servicioId,
-        expires: true,
-        expiration_date_from: new Date().toISOString(),
-        expiration_date_to: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 horas
       };
 
-      console.log('📝 Creando preferencia MP para servicio:', servicioId);
-      console.log('💰 Monto:', servicio.totalCliente.toLocaleString('es-CL'));
-      console.log('🔗 Webhook URL:', body.notification_url);
+      console.log('📦 Body MP:', JSON.stringify(body, null, 2));
 
       const result = await preference.create({ body });
 
       console.log('✅ Preferencia creada:', result.id);
-      console.log('🔗 Init Point:', result.init_point);
 
-      // Guardar el ID de preferencia en el servicio
       await prisma.servicio.update({
         where: { id: servicioId },
         data: {
@@ -153,15 +135,14 @@ export class PagoController {
         success: true,
         data: {
           preferenceId: result.id,
-          initPoint: result.init_point, // URL de PRODUCCIÓN
+          initPoint: result.init_point,
         },
       });
     } catch (error: any) {
-      console.error('❌ Error al crear preferencia:', error);
-      console.error('❌ Detalles:', error.message);
+      console.error('❌ Error:', error);
       return res.status(500).json({
         success: false,
-        message: 'Error al crear preferencia de pago',
+        message: 'Error al crear preferencia',
         error: error.message,
       });
     }
@@ -175,57 +156,43 @@ export class PagoController {
     try {
       const { topic, resource } = req.body;
 
-
       console.log('📨 Webhook recibido:', { topic, resource });
-
       console.log('📨 Headers:', req.headers);
       console.log('📨 Body completo:', JSON.stringify(req.body, null, 2));
 
-      // Solo procesamos notificaciones de pago
-     if (topic !== 'merchant_order' || !resource) {
-      console.log('ℹ️ Webhook ignorado, topic:', topic);
-      return res.sendStatus(200);
-    }
+      if (topic !== 'merchant_order' || !resource) {
+        console.log('ℹ️ Webhook ignorado, topic:', topic);
+        return res.sendStatus(200);
+      }
 
-
-
-
-      // Crear instancia de Payment
       const paymentClient = new Payment(client);
 
-      // 1. Consultar la merchant_order
-const merchantOrderResponse = await fetch(resource, {
-  headers: {
-    Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`,
-  },
-});
+      const merchantOrderResponse = await fetch(resource, {
+        headers: {
+          Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`,
+        },
+      });
 
-const merchantOrder: any = await merchantOrderResponse.json();
+      const merchantOrder: any = await merchantOrderResponse.json();
 
+      console.log('📦 Merchant Order:', {
+        id: merchantOrder.id,
+        status: merchantOrder.status,
+        payments: merchantOrder.payments?.length || 0,
+      });
 
-console.log('📦 Merchant Order:', {
-  id: merchantOrder.id,
-  status: merchantOrder.status,
-  payments: merchantOrder.payments?.length || 0,
-});
+      if (!merchantOrder.payments || merchantOrder.payments.length === 0) {
+        console.log('ℹ️ Aún no hay pagos asociados a la orden');
+        return res.sendStatus(200);
+      }
 
-// 2. Verificar si existen pagos
-if (!merchantOrder.payments || merchantOrder.payments.length === 0) {
-  console.log('ℹ️ Aún no hay pagos asociados a la orden');
-  return res.sendStatus(200);
-}
+      const lastPayment = merchantOrder.payments[merchantOrder.payments.length - 1];
+      const paymentId = lastPayment.id;
 
-// 3. Obtener el último pago
-const lastPayment = merchantOrder.payments[merchantOrder.payments.length - 1];
-const paymentId = lastPayment.id;
+      console.log('🔍 Payment ID obtenido desde merchant_order:', paymentId);
 
-console.log('🔍 Payment ID obtenido desde merchant_order:', paymentId);
+      const paymentInfo = await paymentClient.get({ id: paymentId });
 
-// 4. Obtener información REAL del pago
-const paymentInfo = await paymentClient.get({ id: paymentId });
-
-
-      // Extraer servicioId del external_reference
       const servicioId = paymentInfo.external_reference;
 
       if (!servicioId) {
@@ -233,12 +200,9 @@ const paymentInfo = await paymentClient.get({ id: paymentId });
         return res.sendStatus(200);
       }
 
-
-      // Actualizar servicio según el estado del pago
       if (paymentInfo.status === 'approved') {
         console.log('✅ Pago APROBADO para servicio:', servicioId);
 
-        // 🔒 Evitar procesar el mismo pago más de una vez
         const servicioExistente = await prisma.servicio.findUnique({
           where: { id: servicioId },
         });
@@ -256,7 +220,6 @@ const paymentInfo = await paymentClient.get({ id: paymentId });
           },
         });
 
-        // Obtener servicio completo con todas las relaciones
         const servicio = await prisma.servicio.findUnique({
           where: { id: servicioId },
           include: { 
@@ -275,7 +238,6 @@ const paymentInfo = await paymentClient.get({ id: paymentId });
         });
 
         if (servicio) {
-          // Notificación para el CLIENTE
           await prisma.notificacion.create({
             data: {
               userId: servicio.cliente.userId,
@@ -288,7 +250,6 @@ const paymentInfo = await paymentClient.get({ id: paymentId });
 
           console.log('✅ Notificación de pago enviada al cliente');
 
-          // Notificación para el GRUERO
           if (servicio.gruero) {
             await prisma.notificacion.create({
               data: {
@@ -302,11 +263,9 @@ const paymentInfo = await paymentClient.get({ id: paymentId });
             console.log('✅ Notificación de pago enviada al gruero');
           }
 
-          // 📧 GENERAR PDF Y ENVIAR EMAILS
           try {
             console.log('📄 Generando comprobante PDF...');
 
-            // Generar comprobante PDF
             const pdfBuffer = await PDFGenerator.generarComprobantePago({
               servicioId: servicio.id,
               fecha: servicio.completadoAt || new Date(),
@@ -342,7 +301,6 @@ const paymentInfo = await paymentClient.get({ id: paymentId });
 
             console.log('✅ PDF generado exitosamente');
 
-            // Email al CLIENTE con PDF adjunto
             await EmailService.enviarPagoConfirmado({
               email: servicio.cliente.user.email,
               nombre: servicio.cliente.user.nombre,
@@ -359,7 +317,6 @@ const paymentInfo = await paymentClient.get({ id: paymentId });
 
             console.log('✅ Email con comprobante enviado al cliente');
 
-            // Email al GRUERO notificando el pago
             if (servicio.gruero) {
               await EmailService.enviarPagoRecibido({
                 email: servicio.gruero.user.email,
@@ -374,7 +331,6 @@ const paymentInfo = await paymentClient.get({ id: paymentId });
             }
           } catch (emailError) {
             console.error('❌ Error al enviar emails:', emailError);
-            // No fallar el webhook si los emails fallan
           }
 
           console.log('✅ Pago procesado completamente para servicio:', servicioId);
@@ -382,7 +338,6 @@ const paymentInfo = await paymentClient.get({ id: paymentId });
       } else if (paymentInfo.status === 'rejected') {
         console.log('❌ Pago RECHAZADO para servicio:', servicioId);
 
-        // Crear notificación de pago rechazado
         const servicio = await prisma.servicio.findUnique({
           where: { id: servicioId },
           include: { 
@@ -436,7 +391,7 @@ const paymentInfo = await paymentClient.get({ id: paymentId });
     } catch (error: any) {
       console.error('❌ Error en webhook:', error);
       console.error('❌ Stack:', error.stack);
-      return res.sendStatus(200); // MP SIEMPRE debe recibir 200
+      return res.sendStatus(200);
     }
     return res.sendStatus(200);
   }
@@ -464,7 +419,6 @@ const paymentInfo = await paymentClient.get({ id: paymentId });
         });
       }
 
-      // Verificar permiso
       if (servicio.cliente.userId !== userId) {
         return res.status(403).json({
           success: false,
@@ -499,7 +453,6 @@ const paymentInfo = await paymentClient.get({ id: paymentId });
       const userId = (req.user as any)?.userId;
       const { desde, hasta } = req.query;
 
-      // Buscar cliente
       const cliente = await prisma.cliente.findUnique({
         where: { userId },
       });
@@ -511,13 +464,11 @@ const paymentInfo = await paymentClient.get({ id: paymentId });
         });
       }
 
-      // Construir filtros
       const where: any = {
         clienteId: cliente.id,
-        pagado: true, // Solo servicios pagados
+        pagado: true,
       };
 
-      // Filtro por fecha
       if (desde || hasta) {
         where.completadoAt = {};
         if (desde) {
@@ -528,7 +479,6 @@ const paymentInfo = await paymentClient.get({ id: paymentId });
         }
       }
 
-      // Obtener servicios pagados
       const serviciosPagados = await prisma.servicio.findMany({
         where,
         include: {
@@ -548,7 +498,6 @@ const paymentInfo = await paymentClient.get({ id: paymentId });
         },
       });
 
-      // Formatear respuesta
       const pagos = serviciosPagados.map((servicio) => ({
         id: servicio.id,
         fecha: servicio.completadoAt,
@@ -626,7 +575,6 @@ const paymentInfo = await paymentClient.get({ id: paymentId });
         });
       }
 
-      // Verificar permiso
       if (servicio.cliente.userId !== userId) {
         return res.status(403).json({
           success: false,
@@ -634,7 +582,6 @@ const paymentInfo = await paymentClient.get({ id: paymentId });
         });
       }
 
-      // Verificar que esté pagado
       if (!servicio.pagado) {
         return res.status(400).json({
           success: false,
