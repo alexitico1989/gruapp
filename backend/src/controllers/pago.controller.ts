@@ -105,6 +105,7 @@ export class PagoController {
       const body = {
         items: [
           {
+            id: servicioId,
             title: 'Servicio de Grúa',
             quantity: 1,
             unit_price: montoEntero,
