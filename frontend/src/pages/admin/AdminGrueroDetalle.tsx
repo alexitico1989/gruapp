@@ -251,7 +251,7 @@ export default function AdminGrueroDetalle() {
             <div className="space-y-6">
               {/* Información Personal */}
               <div>
-                <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Información Personal</h2>
+                <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">🔵 Información Personal TEST</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                   <div>
                     <p className="text-xs md:text-sm text-gray-600">Email</p>
