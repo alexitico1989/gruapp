@@ -189,29 +189,9 @@ export class AdminController {
             },
           },
           servicios: {
-            take: 10,
-            orderBy: {
-              solicitadoAt: 'desc',
-            },
-            include: {
-              cliente: {
-                include: {
-                  user: {
-                    select: {
-                      nombre: true,
-                      apellido: true,
-                    },
-                  },
-                },
-              },
-            },
+            orderBy: { solicitadoAt: 'desc' },
           },
-          calificacionesRecibidas: {
-            take: 10,
-            orderBy: {
-              createdAt: 'desc',
-            },
-          },
+          calificacionesRecibidas: true,
         },
       });
 
@@ -223,9 +203,28 @@ export class AdminController {
         return;
       }
 
+      // 🧮 Estadísticas
+      const totalServicios = gruero.servicios.length;
+
+      const serviciosCompletados = gruero.servicios.filter(
+        (s) => s.status === 'COMPLETADO'
+      );
+
+      const calificacionPromedio =
+        gruero.calificacionesRecibidas.length > 0
+          ? gruero.calificacionesRecibidas.reduce(
+              (sum, c) => sum + c.puntuacionGruero,
+              0
+            ) / gruero.calificacionesRecibidas.length
+          : 0;
+
       res.json({
         success: true,
-        data: gruero,
+        data: {
+          ...gruero,
+          totalServicios,
+          calificacionPromedio: Number(calificacionPromedio.toFixed(2)),
+        },
       });
     } catch (error) {
       console.error('❌ Error al obtener detalle de gruero:', error);
@@ -235,6 +234,7 @@ export class AdminController {
       });
     }
   }
+
 
   /**
    * PATCH /api/admin/grueros/:id/aprobar
