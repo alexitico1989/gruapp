@@ -334,7 +334,7 @@ export default function AdminGrueroDetalle() {
                 </div>
               </div>
 
-              {/* ✅ Cuenta Bancaria */}
+              {/* ✅ Cuenta Bancari */}
               <div>
                 <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Cuenta Bancaria</h2>
                 {gruero.banco ? (

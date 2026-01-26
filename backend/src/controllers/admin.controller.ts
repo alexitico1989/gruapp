@@ -167,9 +167,9 @@ export class AdminController {
   }
 
   /**
-   * GET /api/admin/grueros/:id
-   * Obtener detalle de un gruero
-   */
+ * GET /api/admin/grueros/:id
+ * Obtener detalle de un gruero
+ */
   static async getGrueroDetalle(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
