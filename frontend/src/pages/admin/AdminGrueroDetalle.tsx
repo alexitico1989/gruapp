@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
-// Updated: 2026-01-26
-import { useEffect, useState } from 'react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -253,7 +251,7 @@ export default function AdminGrueroDetalle() {
             <div className="space-y-6">
               {/* Información Personal */}
               <div>
-                <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">🔵 Información Personal TEST</h2>
+                <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Información Personal</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                   <div>
                     <p className="text-xs md:text-sm text-gray-600">Email</p>
@@ -311,7 +309,7 @@ export default function AdminGrueroDetalle() {
                   </div>
                 </div>
 
-                {/* ✅ Tipos de Vehículos que Atiende */}
+                {/* Tipos de Vehículos que Atiende */}
                 <div className="mt-6">
                   <p className="text-xs md:text-sm text-gray-600 mb-2">Tipos de Vehículos que Atiende</p>
                   <div className="flex flex-wrap gap-2">
@@ -336,7 +334,7 @@ export default function AdminGrueroDetalle() {
                 </div>
               </div>
 
-              {/* ✅ Cuenta Bancari */}
+              {/* Cuenta Bancaria */}
               <div>
                 <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Cuenta Bancaria</h2>
                 {gruero.banco ? (
@@ -585,7 +583,6 @@ export default function AdminGrueroDetalle() {
       {selectedServicio && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="bg-white rounded-lg max-w-full md:max-w-3xl w-full p-4 md:p-6 my-8 max-h-screen overflow-y-auto">
-            {/* Header del Modal */}
             <div className="flex items-center justify-between mb-4 md:mb-6 sticky top-0 bg-white pb-3 border-b border-gray-100">
               <h2 className="text-xl md:text-2xl font-bold text-gray-900">Detalles del Servicio</h2>
               <button
@@ -596,7 +593,6 @@ export default function AdminGrueroDetalle() {
               </button>
             </div>
 
-            {/* Estado del Servicio */}
             <div className="mb-4 md:mb-6">
               <span className={`px-3 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-semibold ${getStatusColor(selectedServicio.status)}`}>
                 {selectedServicio.status}
@@ -604,9 +600,7 @@ export default function AdminGrueroDetalle() {
               <span className="ml-3 text-sm md:text-base text-gray-600">{selectedServicio.tipoVehiculo}</span>
             </div>
 
-            {/* Grid de Información */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
-              {/* Cliente */}
               <div className="bg-gray-50 rounded-lg p-3 md:p-4">
                 <h3 className="text-xs md:text-sm font-semibold text-gray-700 mb-2">👤 Cliente</h3>
                 <p className="font-medium text-sm md:text-base text-gray-900">
@@ -615,14 +609,12 @@ export default function AdminGrueroDetalle() {
                 <p className="text-xs md:text-sm text-gray-600">{selectedServicio.cliente.user.telefono}</p>
               </div>
 
-              {/* Distancia */}
               <div className="bg-gray-50 rounded-lg p-3 md:p-4">
                 <h3 className="text-xs md:text-sm font-semibold text-gray-700 mb-2">📏 Distancia</h3>
                 <p className="text-xl md:text-2xl font-bold text-blue-600">{selectedServicio.distanciaKm.toFixed(1)} km</p>
               </div>
             </div>
 
-            {/* Ruta Completa */}
             <div className="bg-blue-50 rounded-lg p-3 md:p-4 mb-4 md:mb-6">
               <h3 className="text-xs md:text-sm font-semibold text-blue-900 mb-3">🗺️ Ruta del Servicio</h3>
               <div className="space-y-2">
@@ -640,7 +632,6 @@ export default function AdminGrueroDetalle() {
               </div>
             </div>
 
-            {/* Fechas y Horas */}
             <div className="bg-gray-50 rounded-lg p-3 md:p-4 mb-4 md:mb-6">
               <h3 className="text-xs md:text-sm font-semibold text-gray-700 mb-3">🕐 Línea de Tiempo</h3>
               <div className="space-y-2">
@@ -667,7 +658,6 @@ export default function AdminGrueroDetalle() {
               </div>
             </div>
 
-            {/* Información Financiera */}
             <div className="bg-green-50 rounded-lg p-3 md:p-4 mb-4 md:mb-6">
               <h3 className="text-xs md:text-sm font-semibold text-green-900 mb-3">💰 Información Financiera</h3>
               <div className="grid grid-cols-2 gap-3 md:gap-4">
@@ -692,7 +682,6 @@ export default function AdminGrueroDetalle() {
               </div>
             </div>
 
-            {/* Calificación */}
             {selectedServicio.calificacion && (
               <div className="bg-yellow-50 rounded-lg p-3 md:p-4">
                 <h3 className="text-xs md:text-sm font-semibold text-yellow-900 mb-3">⭐ Calificación del Cliente</h3>
@@ -720,7 +709,6 @@ export default function AdminGrueroDetalle() {
               </div>
             )}
 
-            {/* Botón Cerrar */}
             <div className="mt-4 md:mt-6 flex justify-end sticky bottom-0 bg-white pt-3 border-t border-gray-100">
               <button
                 onClick={() => setSelectedServicio(null)}
