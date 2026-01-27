@@ -29,7 +29,6 @@ export class AdminPagosController {
           servicios: {
             some: {
               status: 'COMPLETADO',
-              pagado: true,
               pagoId: null,
               completadoAt: {
                 gte: inicioSemana,
@@ -51,7 +50,6 @@ export class AdminPagosController {
           servicios: {
             where: {
               status: 'COMPLETADO',
-              pagado: true,
               pagoId: null,
               completadoAt: {
                 gte: inicioSemana,
@@ -73,6 +71,8 @@ export class AdminPagosController {
           },
         },
       });
+
+
 
       const gruerosPendientes = grueros.map((gruero) => ({
         grueroId: gruero.id,
@@ -152,7 +152,6 @@ export class AdminPagosController {
         where: {
           grueroId,
           status: 'COMPLETADO',
-          pagado: true,
           pagoId: null,
           completadoAt: {
             gte: inicioSemana,
