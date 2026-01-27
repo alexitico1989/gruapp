@@ -177,6 +177,11 @@ export default function AdminGrueroDetalle() {
 
   if (!gruero) return null;
 
+  const calificaciones = Array.isArray(gruero.calificacionesRecibidas)
+  ? gruero.calificacionesRecibidas
+  : [];
+
+
   const tabs = [
     { id: 'informacion', nombre: 'Información General', icon: '📋' },
     { id: 'servicios', nombre: 'Historial de Servicios', icon: '🚀' },
@@ -540,18 +545,19 @@ export default function AdminGrueroDetalle() {
                   <span className="text-2xl md:text-3xl">⭐</span>
                   <div>
                     <p className="text-xl md:text-2xl font-bold text-gray-900">{gruero.calificacionPromedio.toFixed(1)}</p>
-                    <p className="text-xs md:text-sm text-gray-600">{gruero.calificacionesRecibidas.length} calificaciones</p>
+                    <p className="text-xs md:text-sm text-gray-600">{calificaciones.length} calificaciones
+</p>
                   </div>
                 </div>
               </div>
 
-              {gruero.calificacionesRecibidas.length === 0 ? (
+              {calificaciones.length === 0 ? (
                 <div className="text-center py-12">
                   <p className="text-gray-500">No hay calificaciones aún</p>
                 </div>
               ) : (
                 <div className="space-y-3 md:space-y-4">
-                  {gruero.calificacionesRecibidas.map((cal: any) => (
+                  {calificaciones.map((cal: any) => (
                     <div key={cal.id} className="border border-gray-200 rounded-lg p-3 md:p-4">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center space-x-1">
