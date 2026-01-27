@@ -211,37 +211,6 @@ app.get('/OneSignalSDK.page.es6.js', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/OneSignalSDK.page.es6.js'));
 });
 
-// ============================================
-// SERVIR FRONTEND ESTÁTICO
-// ============================================
-const publicPath = path.join(__dirname, '../public');
-app.use(serveStatic(publicPath, {
-  maxAge: '1d', // Cache de 1 día para archivos estáticos
-  setHeaders: (res, path) => {
-    // No cachear index.html
-    if (path.endsWith('index.html')) {
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    }
-  },
-}));
-
-// ============================================
-// RUTA CATCH-ALL PARA SPA
-// ============================================
-app.get('*', (req, res) => {
-  // Si la ruta empieza con /api, devolver 404
-  if (req.path.startsWith('/api')) {
-    console.log('❌ Ruta API no encontrada:', req.method, req.path);
-    console.log('❌ URL original:', req.originalUrl);
-    return res.status(404).json({
-      success: false,
-      message: 'Endpoint no encontrado',
-    });
-  }
-  
-  // Para cualquier otra ruta, servir index.html (SPA)
-  return res.sendFile(path.join(publicPath, 'index.html'));
-});
 
 // ============================================
 // MANEJO DE ERRORES (DEBE IR AL FINAL)
