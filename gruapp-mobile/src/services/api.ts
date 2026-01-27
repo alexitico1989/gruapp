@@ -1,32 +1,42 @@
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuthStore } from '../store/authStore';
 
-const api = axios.create({
-  baseURL: 'https://gruapp-production.up.railway.app/api',
-  timeout: 10000,
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+export const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
-// Interceptor para agregar token
+// 🔹 Interceptor para agregar token
 api.interceptors.request.use(
-  async (config) => {
-    const token = await AsyncStorage.getItem('token');
+  (config) => {
+    let token = useAuthStore.getState().token;
+    if (!token) {
+      token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+    }
+
+    console.log('Enviando token:', token); // debug temporal
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Interceptor para manejar errores
+// 🔹 Interceptor para manejar errores de autenticación
 api.interceptors.response.use(
   (response) => response,
-  async (error) => {
+  (error) => {
     if (error.response?.status === 401) {
-      await AsyncStorage.removeItem('token');
-      await AsyncStorage.removeItem('user');
+      // Token expirado o inválido
+      useAuthStore.getState().logout();
+      window.location.href = '/login';
     }
     return Promise.reject(error);
   }
