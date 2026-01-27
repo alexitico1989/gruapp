@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
+import { useAuthStore } from '../../store/authStore';
+
+
 
 interface Servicio {
   id: string;
@@ -59,6 +62,7 @@ export default function AdminPagos() {
  const cargarPendientes = async () => {
     try {
       setLoading(true);
+      console.log("Token antes de cargar pendientes:", useAuthStore.getState().token);
       const response = await api.get('/admin/pagos/pendientes');
       if (response.data.success) {
         setDatos(response.data.data);
