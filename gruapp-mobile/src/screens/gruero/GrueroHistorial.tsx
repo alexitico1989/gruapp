@@ -116,6 +116,10 @@ export default function GrueroHistorial() {
               {esCompletado ? '✅ Completado' : '❌ Cancelado'}
             </Text>
           </View>
+          {/* NUEVO: Mostrar ID del servicio */}
+          <Text style={{ fontSize: 10, color: colors.text.secondary }}>
+            ID: {item.id}
+          </Text>
           <Text style={styles.fecha}>
             {formatearFecha(
               item.completadoAt || item.canceladoAt || item.solicitadoAt
