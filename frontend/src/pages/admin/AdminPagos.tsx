@@ -59,31 +59,28 @@ export default function AdminPagos() {
     cargarPendientes();
   }, []);
 
- const cargarPendientes = async () => {
+  const cargarPendientes = async () => {
     try {
       setLoading(true);
-      console.log("Token antes de cargar pendientes:", useAuthStore.getState().token);
+
+      // Debug: mostrar token antes de hacer la petición
+      const token = useAuthStore.getState().token;
+      console.log('Token usado para pagos pendientes:', token);
+
       const response = await api.get('/admin/pagos/pendientes');
+      console.log('Respuesta de pagos pendientes:', response);
+
       if (response.data.success) {
         setDatos(response.data.data);
       }
     } catch (error: any) {
-      console.error('Error cargando pendientes:', error);
-
-      if (error.response) {
-        // Error que viene del servidor
-        console.error('Status:', error.response.status);
-        console.error('Data:', error.response.data);
-      } else {
-        // Error de otro tipo (red, timeout, etc)
-        console.error('Error sin respuesta:', error.message);
-      }
-
+      console.error('Error cargando pendientes:', error.response || error);
       toast.error('Error al cargar pagos pendientes');
     } finally {
       setLoading(false);
     }
   };
+
 
 
 
