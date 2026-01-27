@@ -57,33 +57,30 @@ export default function AdminPagos() {
   }, []);
 
  const cargarPendientes = async () => {
-  try {
-    setLoading(true);
-
-    // Revisar el token antes de la petición
-    const token = useAuthStore.getState().token;
-    console.log('Token actual:', token);
-
-    if (!token) {
-      console.warn('No hay token disponible. No se puede cargar pagos pendientes.');
-      toast.warning('No hay sesión activa. Por favor, inicia sesión.');
-      setLoading(false);
-      return;
-    }
-
-    const response = await api.get('/admin/pagos/pendientes');
-
+    try {
+      setLoading(true);
+      const response = await api.get('/admin/pagos/pendientes');
       if (response.data.success) {
         setDatos(response.data.data);
       }
     } catch (error: any) {
-      // Mostrar el error completo en consola para depuración
-      console.error('Error cargando pagos pendientes:', error.response || error);
-      toast.error('Error al cargar pagos pendientes. Revisa la consola para más detalles.');
+      console.error('Error cargando pendientes:', error);
+
+      if (error.response) {
+        // Error que viene del servidor
+        console.error('Status:', error.response.status);
+        console.error('Data:', error.response.data);
+      } else {
+        // Error de otro tipo (red, timeout, etc)
+        console.error('Error sin respuesta:', error.message);
+      }
+
+      toast.error('Error al cargar pagos pendientes');
     } finally {
       setLoading(false);
     }
   };
+
 
 
   const abrirModalPago = (gruero: GrueroPendiente) => {
