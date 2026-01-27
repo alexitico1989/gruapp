@@ -300,6 +300,7 @@ export default function GrueroPagosPendientes() {
                           </Text>
                         </View>
                         <Text style={styles.servicioItemCliente}>{servicio.cliente}</Text>
+                        <Text style={styles.servicioItemId}>ID: {servicio.id}</Text>
                         <Text style={styles.servicioItemRuta} numberOfLines={1}>
                           {servicio.origen.substring(0, 35)}...
                         </Text>
@@ -324,7 +325,7 @@ export default function GrueroPagosPendientes() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: colors.background }, servicioItemId: { fontSize: 11, color: colors.text.secondary, marginBottom: 2 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { marginTop: spacing.md, color: colors.text.secondary },
   header: { backgroundColor: '#fff', padding: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.border },

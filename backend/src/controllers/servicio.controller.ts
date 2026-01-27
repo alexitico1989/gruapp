@@ -23,19 +23,22 @@ export class ServicioController {
     try {
       const data: CreateServicioDTO = req.body;
       const userId = req.user?.userId;
-      
+
       // Verificar que el usuario tenga perfil de cliente
       const cliente = await prisma.cliente.findUnique({
         where: { userId },
+        include: {
+          user: { select: { nombre: true, apellido: true, telefono: true, email: true } },
+        },
       });
-      
+
       if (!cliente) {
         return res.status(403).json({
           success: false,
           message: 'Solo los clientes pueden solicitar servicios',
         });
       }
-      
+
       // Calcular la ruta real usando OSRM
       const route = await RoutingService.calculateRoute(
         data.origenLat,
@@ -43,22 +46,22 @@ export class ServicioController {
         data.destinoLat,
         data.destinoLng
       );
-      
+
       // Convertir distancia a km
       const distanciaKm = RoutingService.metersToKm(route.distance);
-      
+
       // Determinar si el vehículo es pesado
       const tipoVehiculo = data.tipoVehiculo || 'AUTOMOVIL';
       const esPesado = VEHICULOS_PESADOS.includes(tipoVehiculo);
-      
+
       // Calcular pricing con tarifas diferenciadas
       const pricing = esPesado 
-        ? PricingService.calculatePricingPesado(distanciaKm)  // Tarifas pesados
-        : PricingService.calculatePricing(distanciaKm);       // Tarifas livianos
-      
+        ? PricingService.calculatePricingPesado(distanciaKm)
+        : PricingService.calculatePricing(distanciaKm);
+
       console.log(`🚗 Tipo de vehículo: ${tipoVehiculo} | Pesado: ${esPesado}`);
       console.log(`💰 Pricing calculado:`, pricing);
-      
+
       // Crear el servicio
       const servicio = await prisma.servicio.create({
         data: {
@@ -69,7 +72,7 @@ export class ServicioController {
           destinoLat: data.destinoLat,
           destinoLng: data.destinoLng,
           destinoDireccion: data.destinoDireccion,
-          tipoVehiculo: tipoVehiculo, // ← Guardar tipo de vehículo
+          tipoVehiculo: tipoVehiculo,
           distanciaKm: pricing.distanciaKm,
           tarifaBase: pricing.tarifaBase,
           tarifaDistancia: pricing.tarifaDistancia,
@@ -84,39 +87,33 @@ export class ServicioController {
         include: {
           cliente: {
             include: {
-              user: {
-                select: {
-                  nombre: true,
-                  apellido: true,
-                  telefono: true,
-                },
-              },
+              user: { select: { nombre: true, apellido: true, telefono: true, email: true } },
             },
           },
+          pago: true, // ← Incluimos pago si existe
         },
       });
-      
-      // Buscar grueros disponibles FILTRADOS por distancia Y tipo de vehículo
+
+      // Buscar grueros disponibles filtrados por distancia y tipo de vehículo
       const gruerosCercanos = await ServicioController.getGruerosCercanos(
         data.origenLat,
         data.origenLng,
         RADIO_MAXIMO_KM,
-        tipoVehiculo // ← Pasar tipo de vehículo para filtrar
+        tipoVehiculo
       );
-      
+
       console.log(`📍 Grueros cercanos que atienden ${tipoVehiculo} (< ${RADIO_MAXIMO_KM}km):`, gruerosCercanos.length);
-      
-      // Emitir notificación SOLO a grueros cercanos que atienden este tipo de vehículo
+
+      // Emitir notificación SOLO a grueros cercanos
       const io = (req as any).app.get('io');
       if (io && gruerosCercanos.length > 0) {
         gruerosCercanos.forEach(async (gruero) => {
           io.to(`gruero-${gruero.userId}`).emit('nuevo-servicio', {
-            servicio,
+            servicioId: servicio.id,
             distancia: gruero.distancia,
+            tipoVehiculo,
           });
-          console.log(`🔔 Notificación enviada a gruero ${gruero.user.nombre} (${gruero.distancia}km) - Atiende ${tipoVehiculo}`);
-          
-          // Guardar notificación en la base de datos
+
           const notificacion = await NotificacionController.crearNotificacion(
             gruero.userId,
             'NUEVO_SERVICIO',
@@ -125,35 +122,22 @@ export class ServicioController {
             { servicioId: servicio.id, distancia: gruero.distancia, tipoVehiculo }
           );
 
-          // Emitir notificación en tiempo real
           if (notificacion && io) {
-            const salaGruero = `gruero-${gruero.userId}`;
-            console.log('📤 [Backend] Emitiendo a sala:', salaGruero);
-            io.to(salaGruero).emit('nueva-notificacion', notificacion);
-            console.log('✅ [Backend] Notificación emitida');
+            io.to(`gruero-${gruero.userId}`).emit('nueva-notificacion', notificacion);
           }
         });
       }
 
-      
-      
-      // 🔔 Enviar notificaciones PUSH (OneSignal web + Expo móvil)
+      // 🔔 Enviar notificaciones PUSH
       if (gruerosCercanos.length > 0) {
-        console.log(`🔔 Enviando notificaciones push a ${gruerosCercanos.length} grueros...`);
-        
-        // Importar servicio de Expo
         const ExpoPushService = (await import('../services/expoPush.service')).default;
-        
         for (const gruero of gruerosCercanos) {
-          // 1. OneSignal para web
           await OneSignalService.notifyNuevoServicio(
             gruero.userId,
             servicio.id,
             tipoVehiculo,
             gruero.distancia
           );
-          
-          // 2. Expo para app móvil
           if (gruero.expoPushToken) {
             await ExpoPushService.notifyNuevoServicio(
               gruero.expoPushToken,
@@ -164,7 +148,7 @@ export class ServicioController {
           }
         }
       }
-      
+
       return res.status(201).json({
         success: true,
         message: 'Servicio creado exitosamente',
@@ -309,63 +293,55 @@ export class ServicioController {
   }
 
   /**
-   * Obtener historial de servicios
-   */
+ * Obtener historial de servicios
+ */
   static async getHistorialServicios(req: Request, res: Response) {
     try {
       const userId = req.user?.userId;
       const role = req.user?.role;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
-      
+
       let servicios;
-      
+
       if (role === 'CLIENTE') {
         const cliente = await prisma.cliente.findUnique({
           where: { userId },
         });
-        
+
         if (!cliente) {
           return res.status(404).json({
             success: false,
             message: 'Cliente no encontrado',
           });
         }
-        
+
         servicios = await prisma.servicio.findMany({
-          where: {
-            clienteId: cliente.id,
-            status: {
-              in: ['COMPLETADO', 'CANCELADO'],
-            },
-          },
+          where: { clienteId: cliente.id },
           include: {
             gruero: {
               include: {
-                user: {
-                  select: {
-                    nombre: true,
-                    apellido: true,
-                  },
-                },
+                user: { select: { nombre: true, apellido: true, telefono: true } },
               },
             },
             calificacion: true,
+            pago: true, // 👈 Info de pago incluida
           },
           orderBy: { solicitadoAt: 'desc' },
           take: limit,
         });
+
       } else if (role === 'GRUERO') {
         const gruero = await prisma.gruero.findUnique({
           where: { userId },
         });
-        
+
         if (!gruero) {
           return res.status(404).json({
             success: false,
             message: 'Gruero no encontrado',
           });
         }
-        
+
         servicios = await prisma.servicio.findMany({
           where: {
             grueroId: gruero.id,
@@ -377,24 +353,23 @@ export class ServicioController {
             cliente: {
               include: {
                 user: {
-                  select: {
-                    nombre: true,
-                    apellido: true,
-                  },
+                  select: { nombre: true, apellido: true, telefono: true },
                 },
               },
             },
             calificacion: true,
+            pago: true, // 👈 Info de pago incluida para el gruero también
           },
           orderBy: { solicitadoAt: 'desc' },
           take: limit,
         });
       }
-      
+
       return res.status(200).json({
         success: true,
         data: servicios,
       });
+
     } catch (error: any) {
       return res.status(500).json({
         success: false,
@@ -404,24 +379,26 @@ export class ServicioController {
     }
   }
 
-  /**
-   * Obtener servicios pendientes (para grueros) - FILTRADOS POR DISTANCIA Y TIPO DE VEHÍCULO
-   */
+ /**
+ * Obtener servicios pendientes (para grueros) - FILTRADOS POR DISTANCIA Y TIPO DE VEHÍCULO
+ */
   static async getServiciosPendientes(req: Request, res: Response) {
     try {
       const userId = req.user?.userId;
-      
+
+      // Obtener gruero
       const gruero = await prisma.gruero.findUnique({
         where: { userId },
+        include: { user: true },
       });
-      
+
       if (!gruero) {
         return res.status(404).json({
           success: false,
           message: 'Gruero no encontrado',
         });
       }
-      
+
       // Verificar que el gruero tenga ubicación
       if (!gruero.latitud || !gruero.longitud) {
         return res.status(400).json({
@@ -430,35 +407,25 @@ export class ServicioController {
           data: [],
         });
       }
-      
+
       // Obtener TODOS los servicios solicitados
       const todosLosServicios = await prisma.servicio.findMany({
-        where: {
-          status: 'SOLICITADO',
-          grueroId: null,
-        },
+        where: { status: 'SOLICITADO' },
         include: {
           cliente: {
             include: {
-              user: {
-                select: {
-                  nombre: true,
-                  apellido: true,
-                  telefono: true,
-                },
-              },
+              user: { select: { nombre: true, apellido: true, telefono: true } },
             },
           },
+          calificacion: true,
+          pago: true,
         },
-        orderBy: {
-          solicitadoAt: 'desc',
-        },
+        orderBy: { solicitadoAt: 'desc' },
       });
-      
-      // Filtrar por distancia Y por tipo de vehículo que atiende el gruero
+
+      // Filtrar por tipo de vehículo y distancia
       const serviciosCercanos = todosLosServicios
         .filter(servicio => {
-          // Verificar si el gruero atiende este tipo de vehículo (parsear JSON)
           try {
             const tipos = JSON.parse(gruero.tiposVehiculosAtiende);
             return Array.isArray(tipos) && tipos.includes(servicio.tipoVehiculo);
@@ -478,9 +445,9 @@ export class ServicioController {
         }))
         .filter(servicio => servicio.distancia <= RADIO_MAXIMO_KM)
         .sort((a, b) => a.distancia - b.distancia);
-      
-      console.log(`📍 Servicios cercanos para gruero que puede atender (< ${RADIO_MAXIMO_KM}km):`, serviciosCercanos.length);
-      
+
+      console.log(`📍 Servicios cercanos para gruero (< ${RADIO_MAXIMO_KM}km):`, serviciosCercanos.length);
+
       return res.status(200).json({
         success: true,
         data: serviciosCercanos,
@@ -644,23 +611,19 @@ export class ServicioController {
         });
         
         servicios = await prisma.servicio.findMany({
-          where: { clienteId: cliente?.id },
-          include: {
-            gruero: {
-              include: {
-                user: {
-                  select: {
-                    nombre: true,
-                    apellido: true,
-                    telefono: true,
-                  },
-                },
-              },
+        where: { clienteId: cliente?.id },
+        include: {
+          gruero: {
+            include: {
+              user: { select: { nombre: true, apellido: true, telefono: true } },
             },
-            calificacion: true,
           },
-          orderBy: { solicitadoAt: 'desc' },
-        });
+          calificacion: true,
+          pago: true, // 👈 Agregado para tener info de pago
+        },
+        orderBy: { solicitadoAt: 'desc' },
+      });
+
       } else if (role === 'GRUERO') {
         const gruero = await prisma.gruero.findUnique({
           where: { userId },
@@ -705,7 +668,7 @@ export class ServicioController {
   static async getServicioById(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      
+
       const servicio = await prisma.servicio.findUnique({
         where: { id },
         include: {
@@ -734,16 +697,17 @@ export class ServicioController {
             },
           },
           calificacion: true,
+          pago: true, // 👈 Info de pago incluida
         },
       });
-      
+
       if (!servicio) {
         return res.status(404).json({
           success: false,
           message: 'Servicio no encontrado',
         });
       }
-      
+
       return res.status(200).json({
         success: true,
         data: servicio,
@@ -758,183 +722,191 @@ export class ServicioController {
   }
   
   /**
-   * Gruero acepta un servicio
-   */
-  static async acceptServicio(req: Request, res: Response) {
-    try {
-      const { id } = req.params;
-      const userId = req.user?.userId;
-      
-      // Verificar que sea gruero
-      const gruero = await prisma.gruero.findUnique({
-        where: { userId },
-        include: {
-          user: {
-            select: {
-              nombre: true,
-              apellido: true,
-              telefono: true,
-            },
+ * Gruero acepta un servicio
+ */
+static async acceptServicio(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.userId;
+
+    // Verificar que sea gruero
+    const gruero = await prisma.gruero.findUnique({
+      where: { userId },
+      include: {
+        user: {
+          select: {
+            nombre: true,
+            apellido: true,
+            telefono: true,
           },
         },
-      });
-      
-      if (!gruero) {
-        return res.status(403).json({
-          success: false,
-          message: 'Solo los grueros pueden aceptar servicios',
-        });
-      }
-      
-      if (!gruero.verificado) {
-        return res.status(403).json({
-          success: false,
-          message: 'Tu cuenta debe estar verificada para aceptar servicios',
-        });
-      }
-      
-      // Verificar que el servicio esté disponible
-      const servicio = await prisma.servicio.findUnique({
-        where: { id },
-      });
-      
-      if (!servicio) {
-        return res.status(404).json({
-          success: false,
-          message: 'Servicio no encontrado',
-        });
-      }
-      
-      if (servicio.status !== 'SOLICITADO') {
-        return res.status(400).json({
-          success: false,
-          message: 'Este servicio ya no está disponible',
-        });
-      }
-      
-      // Verificar que el gruero atiende este tipo de vehículo (parsear JSON)
-      let atiendeVehiculo = false;
-      try {
-        const tipos = JSON.parse(gruero.tiposVehiculosAtiende);
-        atiendeVehiculo = Array.isArray(tipos) && tipos.includes(servicio.tipoVehiculo);
-      } catch (error) {
-        console.error('Error parseando tiposVehiculosAtiende:', error);
-      }
-      
-      if (!atiendeVehiculo) {
-        return res.status(400).json({
-          success: false,
-          message: `No puedes aceptar este servicio. Tu grúa no está configurada para atender vehículos tipo ${servicio.tipoVehiculo}`,
-        });
-      }
-      
-      // Verificar que el servicio esté dentro del radio máximo
-      if (gruero.latitud && gruero.longitud) {
-        const distancia = calcularDistancia(
-          gruero.latitud,
-          gruero.longitud,
-          servicio.origenLat,
-          servicio.origenLng
-        );
-        
-        if (distancia > RADIO_MAXIMO_KM) {
-          return res.status(400).json({
-            success: false,
-            message: `Este servicio está muy lejos (${distancia.toFixed(1)}km). Radio máximo: ${RADIO_MAXIMO_KM}km`,
-          });
-        }
-      }
-      
-      // Aceptar el servicio
-      const servicioActualizado = await prisma.servicio.update({
-        where: { id },
-        data: {
-          grueroId: gruero.id,
-          status: 'ACEPTADO',
-          aceptadoAt: new Date(),
-        },
-        include: {
-          cliente: {
-            include: {
-              user: true,
-            },
-          },
-        },
-      });
-      
-      // Actualizar estado del gruero
-      await prisma.gruero.update({
-        where: { id: gruero.id },
-        data: { status: 'OCUPADO' },
-      });
-      
-      // Notificar al cliente via Socket.io
-      const io = (req as any).app.get('io');
-      if (io) {
-        io.to(`cliente-${servicioActualizado.cliente.userId}`).emit('servicio-aceptado', {
-          servicio: servicioActualizado,
-          gruero: {
-            nombre: gruero.user.nombre,
-            apellido: gruero.user.apellido,
-            telefono: gruero.user.telefono,
-          },
-        });
-        
-        // Guardar notificación en la base de datos
-        const notificacion = await NotificacionController.crearNotificacion(
-          servicioActualizado.cliente.userId,
-          'SERVICIO_ACEPTADO',
-          'Gruero aceptó tu solicitud',
-          `${gruero.user.nombre} ${gruero.user.apellido} aceptó tu servicio`,
-          { servicioId: servicioActualizado.id, grueroId: gruero.id }
-        );
-        
-        // Emitir notificación en tiempo real
-        if (notificacion) {
-          io.to(`cliente-${servicioActualizado.cliente.userId}`).emit('nueva-notificacion', notificacion);
-        }
-      }
-      
-      return res.status(200).json({
-        success: true,
-        message: 'Servicio aceptado exitosamente',
-        data: servicioActualizado,
-      });
-    } catch (error: any) {
-      return res.status(500).json({
+      },
+    });
+
+    if (!gruero) {
+      return res.status(403).json({
         success: false,
-        message: 'Error al aceptar servicio',
-        error: error.message,
+        message: 'Solo los grueros pueden aceptar servicios',
       });
     }
+
+    if (!gruero.verificado) {
+      return res.status(403).json({
+        success: false,
+        message: 'Tu cuenta debe estar verificada para aceptar servicios',
+      });
+    }
+
+    // Verificar que el servicio esté disponible
+    const servicio = await prisma.servicio.findUnique({
+      where: { id },
+    });
+
+    if (!servicio) {
+      return res.status(404).json({
+        success: false,
+        message: 'Servicio no encontrado',
+      });
+    }
+
+    if (servicio.status !== 'SOLICITADO') {
+      return res.status(400).json({
+        success: false,
+        message: 'Este servicio ya no está disponible',
+      });
+    }
+
+    // Verificar que el gruero atiende este tipo de vehículo (parsear JSON)
+    let atiendeVehiculo = false;
+    try {
+      const tipos = JSON.parse(gruero.tiposVehiculosAtiende);
+      atiendeVehiculo = Array.isArray(tipos) && tipos.includes(servicio.tipoVehiculo);
+    } catch (error) {
+      console.error('Error parseando tiposVehiculosAtiende:', error);
+    }
+
+    if (!atiendeVehiculo) {
+      return res.status(400).json({
+        success: false,
+        message: `No puedes aceptar este servicio. Tu grúa no está configurada para atender vehículos tipo ${servicio.tipoVehiculo}`,
+      });
+    }
+
+    // Verificar que el servicio esté dentro del radio máximo
+    if (gruero.latitud && gruero.longitud) {
+      const distancia = calcularDistancia(
+        gruero.latitud,
+        gruero.longitud,
+        servicio.origenLat,
+        servicio.origenLng
+      );
+
+      if (distancia > RADIO_MAXIMO_KM) {
+        return res.status(400).json({
+          success: false,
+          message: `Este servicio está muy lejos (${distancia.toFixed(1)}km). Radio máximo: ${RADIO_MAXIMO_KM}km`,
+        });
+      }
+    }
+
+    // Aceptar el servicio
+    const servicioActualizado = await prisma.servicio.update({
+      where: { id },
+      data: {
+        grueroId: gruero.id,
+        status: 'ACEPTADO',
+        aceptadoAt: new Date(),
+      },
+      include: {
+        cliente: {
+          include: {
+            user: true,
+          },
+        },
+        gruero: {
+          include: {
+            user: true,
+          },
+        },
+        calificacion: true,
+        pago: true, // 👈 Agregado para info de pago
+      },
+    });
+
+    // Actualizar estado del gruero
+    await prisma.gruero.update({
+      where: { id: gruero.id },
+      data: { status: 'OCUPADO' },
+    });
+
+    // Notificar al cliente via Socket.io
+    const io = (req as any).app.get('io');
+    if (io) {
+      // Emitir al cliente
+      io.to(`cliente-${servicioActualizado.cliente.userId}`).emit('servicio-aceptado', {
+        servicio: servicioActualizado,
+        gruero: {
+          nombre: gruero.user.nombre,
+          apellido: gruero.user.apellido,
+          telefono: gruero.user.telefono,
+        },
+      });
+
+      // Guardar notificación en la base de datos
+      const notificacion = await NotificacionController.crearNotificacion(
+        servicioActualizado.cliente.userId,
+        'SERVICIO_ACEPTADO',
+        'Gruero aceptó tu solicitud',
+        `${gruero.user.nombre} ${gruero.user.apellido} aceptó tu servicio`,
+        { servicioId: servicioActualizado.id, grueroId: gruero.id }
+      );
+
+      // Emitir notificación en tiempo real
+      if (notificacion) {
+        io.to(`cliente-${servicioActualizado.cliente.userId}`).emit('nueva-notificacion', notificacion);
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Servicio aceptado exitosamente',
+      data: servicioActualizado,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: 'Error al aceptar servicio',
+      error: error.message,
+    });
   }
-  
-  /**
-   * Actualizar estado del servicio
-   */
+}
+
+ /**
+ * Actualizar estado del servicio
+ */
   static async updateEstado(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const { status } = req.body;
-      
+
       const validStatuses = ['EN_CAMINO', 'EN_SITIO', 'COMPLETADO', 'CANCELADO'];
-      
+
       if (!validStatuses.includes(status)) {
         return res.status(400).json({
           success: false,
           message: 'Estado inválido',
         });
       }
-      
+
       const updateData: any = { status };
-      
+
       // Agregar timestamps según el estado
       if (status === 'EN_CAMINO') updateData.enCaminoAt = new Date();
       if (status === 'EN_SITIO') updateData.enSitioAt = new Date();
       if (status === 'COMPLETADO') {
         updateData.completadoAt = new Date();
-        updateData.pagado = false; // 👈 AGREGAR ESTA LÍNEA
-        
+        updateData.pagado = false;
+
         // Liberar gruero
         const servicio = await prisma.servicio.findUnique({ where: { id } });
         if (servicio?.grueroId) {
@@ -948,7 +920,7 @@ export class ServicioController {
         }
       }
       if (status === 'CANCELADO') updateData.canceladoAt = new Date();
-      
+
       const servicioActualizado = await prisma.servicio.update({
         where: { id },
         data: updateData,
@@ -963,55 +935,60 @@ export class ServicioController {
               user: true,
             },
           },
+          calificacion: true,
+          pago: true,
         },
       });
-      
+
       // Notificar cambio de estado via Socket.io
       const io = (req as any).app.get('io');
       if (io) {
-        // ✅ CORREGIDO: Emitir al cliente
+        // Emitir al cliente
         io.to(`cliente-${servicioActualizado.cliente.userId}`).emit('servicio-actualizado', {
           servicio: servicioActualizado,
           nuevoEstado: status,
         });
-        
-        // ✅ NUEVO: Si hay gruero asignado, también notificarle
+
+        // Emitir al gruero si está asignado
         if (servicioActualizado.gruero) {
-          console.log(`📤 Emitiendo cliente:estadoActualizado al gruero ${servicioActualizado.gruero.user.id}`);
           io.to(`gruero-${servicioActualizado.gruero.user.id}`).emit('cliente:estadoActualizado', {
             servicioId: servicioActualizado.id,
-            status: status,
+            status,
+            clienteId: servicioActualizado.cliente.id,
           });
-          
-          // ✅ También emitir evento alternativo por compatibilidad
+
           io.to(`gruero-${servicioActualizado.gruero.user.id}`).emit('servicio-actualizado', {
             servicio: servicioActualizado,
             nuevoEstado: status,
           });
         }
-        
-        // Guardar notificación en la base de datos
+
+        // Guardar notificación en DB
         const mensajes: Record<string, string> = {
           'EN_CAMINO': 'El gruero está en camino',
           'EN_SITIO': 'El gruero llegó al sitio',
           'COMPLETADO': 'Servicio completado',
           'CANCELADO': 'Servicio cancelado',
         };
-        
+
         const notificacion = await NotificacionController.crearNotificacion(
           servicioActualizado.cliente.userId,
           status,
           'Estado del servicio actualizado',
           mensajes[status] || 'El estado de tu servicio cambió',
-          { servicioId: servicioActualizado.id, nuevoEstado: status }
+          { 
+            servicioId: servicioActualizado.id, 
+            nuevoEstado: status,
+            clienteId: servicioActualizado.cliente.id,
+            grueroId: servicioActualizado.gruero?.id || null,
+          }
         );
-        
-        // Emitir notificación en tiempo real
+
         if (notificacion) {
           io.to(`cliente-${servicioActualizado.cliente.userId}`).emit('nueva-notificacion', notificacion);
         }
       }
-      
+
       return res.status(200).json({
         success: true,
         message: 'Estado actualizado',
@@ -1033,7 +1010,7 @@ export class ServicioController {
     try {
       const { id } = req.params;
       const { motivo } = req.body;
-      
+
       const servicio = await prisma.servicio.findUnique({
         where: { id },
         include: {
@@ -1042,23 +1019,30 @@ export class ServicioController {
               user: true,
             },
           },
+          gruero: {
+            include: {
+              user: true,
+            },
+          },
+          calificacion: true, // 👈 Agregado
+          pago: true,          // 👈 Agregado
         },
       });
-      
+
       if (!servicio) {
         return res.status(404).json({
           success: false,
           message: 'Servicio no encontrado',
         });
       }
-      
+
       if (servicio.status === 'COMPLETADO' || servicio.status === 'CANCELADO') {
         return res.status(400).json({
           success: false,
           message: 'No se puede cancelar este servicio',
         });
       }
-      
+
       const servicioActualizado = await prisma.servicio.update({
         where: { id },
         data: {
@@ -1067,7 +1051,7 @@ export class ServicioController {
           motivoCancelacion: motivo,
         },
       });
-      
+
       // Liberar gruero si estaba asignado
       if (servicio.grueroId) {
         await prisma.gruero.update({
@@ -1075,7 +1059,7 @@ export class ServicioController {
           data: { status: 'DISPONIBLE' },
         });
       }
-      
+
       // Notificar cancelación via Socket.io
       const io = (req as any).app.get('io');
       if (io) {
@@ -1084,50 +1068,41 @@ export class ServicioController {
           servicio: servicioActualizado,
           motivo,
         });
-        
+
         // Guardar notificación para el cliente
         const notificacionCliente = await NotificacionController.crearNotificacion(
           servicio.cliente.userId,
           'CANCELADO',
           'Servicio cancelado',
           motivo || 'El servicio ha sido cancelado',
-          { servicioId: servicioActualizado.id, motivo }
+          { servicioId: servicioActualizado.id, grueroId: servicio.grueroId, motivo }
         );
-        
-        // Emitir notificación en tiempo real al cliente
+
         if (notificacionCliente) {
           io.to(`cliente-${servicio.cliente.userId}`).emit('nueva-notificacion', notificacionCliente);
         }
-        
+
         // Si había gruero asignado, notificarle también
-        if (servicio.grueroId) {
-          const gruero = await prisma.gruero.findUnique({
-            where: { id: servicio.grueroId },
-            include: { user: true },
+        if (servicio.grueroId && servicio.gruero?.user) {
+          io.to(`gruero-${servicio.gruero.user.id}`).emit('servicio-cancelado', {
+            servicio: servicioActualizado,
+            motivo,
           });
-          if (gruero) {
-            io.to(`gruero-${gruero.user.id}`).emit('servicio-cancelado', {
-              servicio: servicioActualizado,
-              motivo,
-            });
-            
-            // Guardar notificación para el gruero
-            const notificacionGruero = await NotificacionController.crearNotificacion(
-              gruero.user.id,
-              'CANCELADO',
-              'Servicio cancelado',
-              motivo || 'El servicio ha sido cancelado',
-              { servicioId: servicioActualizado.id, motivo }
-            );
-            
-            // Emitir notificación en tiempo real al gruero
-            if (notificacionGruero) {
-              io.to(`gruero-${gruero.user.id}`).emit('nueva-notificacion', notificacionGruero);
-            }
+
+          const notificacionGruero = await NotificacionController.crearNotificacion(
+            servicio.gruero.user.id,
+            'CANCELADO',
+            'Servicio cancelado',
+            motivo || 'El servicio ha sido cancelado',
+            { servicioId: servicioActualizado.id, grueroId: servicio.grueroId, motivo }
+          );
+
+          if (notificacionGruero) {
+            io.to(`gruero-${servicio.gruero.user.id}`).emit('nueva-notificacion', notificacionGruero);
           }
         }
       }
-      
+
       return res.status(200).json({
         success: true,
         message: 'Servicio cancelado',
