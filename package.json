@@ -1,7 +1,8 @@
 {
-  "dependencies": {
-    "@react-native-picker/picker": "^2.11.4",
-    "react-native-chart-kit": "^6.12.0",
-    "react-native-svg": "^15.15.1"
+  "name": "gruapp-monorepo",
+  "private": true,
+  "scripts": {
+    "build": "npm run build --prefix backend && npm run build --prefix frontend",
+    "start": "npm run start --prefix backend"
   }
 }
