@@ -211,6 +211,19 @@ app.get('/OneSignalSDK.page.es6.js', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/OneSignalSDK.page.es6.js'));
 });
 
+// ============================================
+// SERVIR FRONTEND (REACT ADMIN / WEB)
+// ============================================
+const frontendPath = path.join(__dirname, '../../frontend/dist');
+
+// Servir archivos estáticos del frontend
+app.use(express.static(frontendPath));
+
+// Fallback para React Router (ej: /admin, /login, etc)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(frontendPath, 'index.html'));
+});
+
 
 // ============================================
 // MANEJO DE ERRORES (DEBE IR AL FINAL)
