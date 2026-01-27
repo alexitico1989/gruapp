@@ -28,13 +28,28 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Token expirado o inválido
-      useAuthStore.getState().logout();
-      window.location.href = '/login';
+    const status = error.response?.status;
+    const url = error.config?.url;
+
+    console.error('❌ API ERROR', {
+      url,
+      status,
+      data: error.response?.data,
+    });
+
+    // 🚫 NO hacer logout automático en admin
+    if (status === 401) {
+      const isAdmin = window.location.pathname.startsWith('/admin');
+
+      if (!isAdmin) {
+        useAuthStore.getState().logout();
+        window.location.href = '/login';
+      }
     }
+
     return Promise.reject(error);
   }
 );
+
 
 export default api;
