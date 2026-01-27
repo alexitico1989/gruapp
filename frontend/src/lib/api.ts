@@ -10,47 +10,40 @@ export const api = axios.create({
   },
 });
 
-// Interceptor para agregar el token a todas las peticiones
+// 🔹 Interceptor para agregar token en cada request
 api.interceptors.request.use(
   (config) => {
-    const token = useAuthStore.getState().token;
-    console.log('Interceptor token:', token);
+    let token = useAuthStore.getState().token;
+
+    // Si no hay token en Zustand, revisa el localStorage
+    if (!token) {
+      token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+    }
+
+    console.log('%c[API] Enviando token:', 'color: blue;', token); // debug temporal
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Interceptor para manejar errores de autenticación
+// 🔹 Interceptor para manejar errores de autenticación
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    const status = error.response?.status;
-    const url = error.config?.url;
+    if (error.response?.status === 401) {
+      console.warn('%c[API] 401 Unauthorized - Token inválido o no proporcionado', 'color: red;', error.response?.data);
 
-    console.error('❌ API ERROR', {
-      url,
-      status,
-      data: error.response?.data,
-    });
-
-    // 🚫 NO hacer logout automático en admin
-    if (status === 401) {
-      const isAdmin = window.location.pathname.startsWith('/admin');
-
-      if (!isAdmin) {
-        useAuthStore.getState().logout();
-        window.location.href = '/login';
-      }
+      // 🚨 Mientras depuras, comentamos el logout automático
+      // useAuthStore.getState().logout();
+      // window.location.href = '/login';
     }
-
     return Promise.reject(error);
   }
 );
-
 
 export default api;
