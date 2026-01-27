@@ -3,6 +3,7 @@ import { AdminController } from '../controllers/admin.controller';
 import { ReclamoController } from '../controllers/reclamo.controller';
 import { AuthMiddleware } from '../middlewares/auth.middleware';
 import securityLogRoutes from './securityLog.routes';
+import { GrueroController } from '../controllers/gruero.controller';
 
 const router = Router();
 
@@ -21,6 +22,13 @@ router.get(
   AuthMiddleware.authenticate,
   AuthMiddleware.authorize('ADMIN'),
   AdminController.getGruerosPendientes
+);
+
+router.get(
+  '/grueros/:id',
+  AuthMiddleware.authenticate, // o el middleware admin que uses
+  AuthMiddleware.authorize('ADMIN'),
+  GrueroController.adminGetGrueroById
 );
 
 /**

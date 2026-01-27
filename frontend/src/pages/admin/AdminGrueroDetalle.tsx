@@ -15,7 +15,6 @@ interface Gruero {
   tipoGrua: string;
   capacidadToneladas: number;
   tiposVehiculosAtiende: string;
-  estadoVerificacion: string;
   verificado: boolean;
   cuentaSuspendida: boolean;
   motivoSuspension?: string;
@@ -205,15 +204,14 @@ export default function AdminGrueroDetalle() {
         <div className="flex items-center flex-wrap gap-2">
           <span
             className={`px-3 py-1 rounded-full text-xs md:text-sm font-semibold ${
-              gruero.estadoVerificacion === 'APROBADO'
+              gruero.verificado
                 ? 'bg-green-100 text-green-800'
-                : gruero.estadoVerificacion === 'RECHAZADO'
-                ? 'bg-red-100 text-red-800'
                 : 'bg-yellow-100 text-yellow-800'
             }`}
           >
-            {gruero.estadoVerificacion}
+            {gruero.verificado ? 'VERIFICADO' : 'PENDIENTE'}
           </span>
+
           {gruero.cuentaSuspendida && (
             <span className="px-3 py-1 rounded-full text-xs md:text-sm font-semibold bg-red-100 text-red-800">
               SUSPENDIDO

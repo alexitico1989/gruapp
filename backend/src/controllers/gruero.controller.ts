@@ -79,6 +79,77 @@ export class GrueroController {
   }
 
   /**
+ * ADMIN - Obtener detalle completo de un gruero por ID
+ * GET /api/admin/grueros/:id
+ */
+static async adminGetGrueroById(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+
+    const gruero = await prisma.gruero.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            nombre: true,
+            apellido: true,
+            email: true,
+            telefono: true,
+            rut: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+
+    if (!gruero) {
+      return res.status(404).json({
+        success: false,
+        message: 'Gruero no encontrado',
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        id: gruero.id,
+        patente: gruero.patente,
+        marca: gruero.marca,
+        modelo: gruero.modelo,
+        anio: gruero.anio,
+        tipoGrua: gruero.tipoGrua,
+        capacidadToneladas: gruero.capacidadToneladas,
+        tiposVehiculosAtiende: gruero.tiposVehiculosAtiende,
+        status: gruero.status,
+        verificado: gruero.verificado,
+        totalServicios: gruero.totalServicios,
+        calificacionPromedio: gruero.calificacionPromedio,
+        cuentaSuspendida: gruero.cuentaSuspendida,
+        motivoSuspension: gruero.motivoSuspension,
+
+        // 🔥 CAMPOS QUE NO VEÍAS EN EL ADMIN
+        banco: gruero.banco,
+        tipoCuenta: gruero.tipoCuenta,
+        numeroCuenta: gruero.numeroCuenta,
+        nombreTitular: gruero.nombreTitular,
+        rutTitular: gruero.rutTitular,
+        emailTransferencia: gruero.emailTransferencia,
+
+        user: gruero.user,
+      },
+    });
+  } catch (error: any) {
+    console.error('❌ Error adminGetGrueroById:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error al obtener detalle del gruero',
+    });
+  }
+}
+
+
+  /**
    * Obtener ubicación actual de un gruero específico
    * GET /api/grueros/:id/ubicacion
    */
