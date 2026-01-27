@@ -14,16 +14,6 @@ export default function AdminLayout() {
 
   const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
 
-  useEffect(() => {
-    fetchAlertCount();
-    fetchReclamosCount();
-    // Actualizar cada 5 minutos
-    const interval = setInterval(() => {
-      fetchAlertCount();
-      fetchReclamosCount();
-    }, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Cerrar sidebar en móvil al cambiar de ruta
   useEffect(() => {
@@ -32,21 +22,6 @@ export default function AdminLayout() {
     }
   }, [location.pathname]);
 
-  const fetchAlertCount = async () => {
-    try {
-      const token = localStorage.getItem('adminToken');
-      const response = await axios.get(`${API_URL}/admin/grueros/documentos-por-vencer`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.data.success) {
-        const total = (response.data.resumen?.vencidos || 0) + (response.data.resumen?.criticos || 0);
-        setAlertCount(total);
-      }
-    } catch (error) {
-      console.error('Error al cargar alertas:', error);
-    }
-  };
 
   const fetchReclamosCount = async () => {
     try {
