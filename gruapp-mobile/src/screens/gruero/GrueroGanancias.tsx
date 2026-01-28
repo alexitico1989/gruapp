@@ -14,12 +14,13 @@ import api from '../../services/api';
 import { colors, spacing } from '../../theme/colors';
 import Toast from 'react-native-toast-message';
 
-interface ServicioPendiente {
-  id: string;
-  totalGruero: number;
-  completadoAt: string;
-  origenDireccion: string;
-  destinoDireccion: string;
+interface ServicioDetalle {
+  servicioId: string;
+  fecha: string;
+  cliente: string;
+  origen: string;
+  destino: string;
+  monto: number;
 }
 
 interface Pago {
@@ -27,23 +28,20 @@ interface Pago {
   periodo: string;
   fechaInicio: string;
   fechaFin: string;
-  monto: number;
-  servicios: number;
-  estado: string;
+  montoTotal: number;
+  totalServicios: number;
   metodoPago: string | null;
   numeroComprobante: string | null;
   pagadoAt: string | null;
-  notasAdmin: string | null;
+  servicios: number;
+  serviciosDetalle: ServicioDetalle[];
 }
 
 interface PagosData {
-  pendiente: {
-    monto: number;
-    servicios: number;
-    detalles: ServicioPendiente[];
-  };
-  historial: Pago[];
+  pagos: Pago[];
+  totalRecibido: number;
 }
+
 
 export default function GrueroPagosPendientes() {
   const [pagosData, setPagosData] = useState<PagosData | null>(null);
@@ -57,7 +55,8 @@ export default function GrueroPagosPendientes() {
 
   const cargarPagos = async () => {
     try {
-      const response = await api.get('/gruero/pagos-pendientes');
+      const response = await api.get('/gruero/pagos/historial');
+       console.log('📦 DATA BACKEND:', response.data.data);
       if (response.data.success) {
         setPagosData(response.data.data);
       }
@@ -189,6 +188,9 @@ export default function GrueroPagosPendientes() {
                         ${servicio.totalGruero.toLocaleString('es-CL')}
                       </Text>
                     </View>
+                    <Text style={styles.detalleId}>
+                      ID: {servicio.id}
+                    </Text>
                     <Text style={styles.detalleRuta} numberOfLines={1}>
                       {servicio.origenDireccion.substring(0, 30)}...
                     </Text>
@@ -249,20 +251,36 @@ export default function GrueroPagosPendientes() {
                     <Text style={styles.pagoDetailLabel}>Servicios:</Text>
                     <Text style={styles.pagoDetailValue}>{pago.servicios}</Text>
                   </View>
+                  
                   {pago.metodoPago && (
-                    <View style={styles.pagoDetailRow}>
-                      <Text style={styles.pagoDetailLabel}>Método:</Text>
-                      <Text style={styles.pagoDetailValue}>{pago.metodoPago}</Text>
-                    </View>
-                  )}
-                  {pago.numeroComprobante && (
-                    <View style={styles.pagoDetailRow}>
-                      <Text style={styles.pagoDetailLabel}>Comprobante:</Text>
-                      <Text style={styles.pagoDetailValue}>
-                        {pago.numeroComprobante}
-                      </Text>
-                    </View>
-                  )}
+                  <View style={styles.pagoDetailRow}>
+                    <Text style={styles.pagoDetailLabel}>Método:</Text>
+                    <Text style={styles.pagoDetailValue}>{pago.metodoPago}</Text>
+                  </View>
+                )}
+
+                {pago.numeroComprobante && (
+                  <View style={styles.pagoDetailRow}>
+                    <Text style={styles.pagoDetailLabel}>Comprobante:</Text>
+                    <Text style={styles.pagoDetailValue}>
+                      {pago.numeroComprobante}
+                    </Text>
+                  </View>
+                )}
+
+                {/* 👇 ID DEL PAGO (NO CONDICIONAL) */}
+                <View style={styles.pagoDetailRow}>
+                <Text style={styles.pagoDetailLabel}>ID Pago:</Text>
+
+                <Text
+                  style={styles.pagoDetailValue}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {pago.id}
+                </Text>
+              </View>
+
                   {pago.pagadoAt && (
                     <View style={styles.pagoDetailRow}>
                       <Text style={styles.pagoDetailLabel}>Pagado:</Text>
@@ -470,18 +488,24 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   pagoDetailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: 8,
+},
+
   pagoDetailLabel: {
     fontSize: 13,
     color: colors.text.secondary,
   },
   pagoDetailValue: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.secondary,
-  },
+  fontSize: 13,
+  fontWeight: '600',
+  color: colors.secondary,
+  flexShrink: 1,
+  textAlign: 'right',
+},
+
   notasContainer: {
     marginTop: spacing.sm,
     padding: spacing.sm,
@@ -511,4 +535,11 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     marginTop: spacing.sm,
   },
+
+  detalleId: {
+  fontSize: 11,
+  color: colors.text.secondary,
+  marginBottom: 2,
+},
+
 });

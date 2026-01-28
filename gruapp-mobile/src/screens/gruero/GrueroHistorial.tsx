@@ -89,6 +89,8 @@ export default function GrueroHistorial() {
     return (
       <TouchableOpacity style={styles.servicioCard}>
         <View style={styles.servicioHeader}>
+        {/* Izquierda: estado + ID */}
+        <View style={{ flexShrink: 1 }}>
           <View
             style={[
               styles.statusBadge,
@@ -116,16 +118,22 @@ export default function GrueroHistorial() {
               {esCompletado ? '✅ Completado' : '❌ Cancelado'}
             </Text>
           </View>
-          {/* NUEVO: Mostrar ID del servicio */}
-          <Text style={{ fontSize: 10, color: colors.text.secondary }}>
+
+          <Text style={styles.servicioId}>
             ID: {item.id}
           </Text>
-          <Text style={styles.fecha}>
+        </View>
+
+        {/* Derecha: fecha (CONTROLADA) */}
+        <View style={styles.fechaContainer}>
+          <Text style={styles.fecha} numberOfLines={1}>
             {formatearFecha(
               item.completadoAt || item.canceladoAt || item.solicitadoAt
             )}
           </Text>
         </View>
+      </View>
+
 
         <View style={styles.clienteInfo}>
           <Ionicons name="person-outline" size={16} color={colors.text.secondary} />
@@ -262,17 +270,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  servicioHeader: {
+    servicioHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: spacing.sm,
   },
-  statusBadge: {
+
+
+    statusBadge: {
+    alignSelf: 'flex-start',
     paddingHorizontal: spacing.sm,
     paddingVertical: 4,
     borderRadius: 6,
   },
+
   statusText: {
     fontSize: 12,
     fontWeight: '600',
@@ -371,4 +383,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: spacing.sm,
   },
+
+  servicioId: {
+  fontSize: 10,
+  color: colors.text.secondary,
+  marginTop: 4,
+},
+
+fecha: {
+  fontSize: 12,
+  color: colors.text.secondary,
+  textAlign: 'right',
+  flexShrink: 1,
+},
+
+
 });

@@ -103,81 +103,98 @@ export class GrueroPagosController {
    * GET /api/gruero/pagos/historial
    * Obtener historial de pagos semanales recibidos
    */
-  static async obtenerHistorial(req: Request, res: Response) {
-    try {
-      const userId = (req.user as any)?.userId;
+    static async obtenerHistorial(req: Request, res: Response) {
+  try {
+    const userId = (req.user as any)?.userId;
 
-      const gruero = await prisma.gruero.findUnique({
-        where: { userId },
-      });
+    const gruero = await prisma.gruero.findUnique({
+      where: { userId },
+    });
 
-      if (!gruero) {
-        return res.status(404).json({
-          success: false,
-          message: 'Gruero no encontrado',
-        });
-      }
-
-      const pagos = await prisma.pago.findMany({
-        where: {
-          grueroId: gruero.id,
-          estado: 'PAGADO',
-        },
-        include: {
-          servicios: {
-            include: {
-              cliente: {
-                include: {
-                  user: {
-                    select: {
-                      nombre: true,
-                      apellido: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-        orderBy: {
-          pagadoAt: 'desc',
-        },
-      });
-
-      return res.json({
-        success: true,
-        data: {
-          pagos: pagos.map((pago) => ({
-            id: pago.id,
-            periodo: pago.periodo,
-            fechaInicio: pago.fechaInicio,
-            fechaFin: pago.fechaFin,
-            totalServicios: pago.totalServicios,
-            montoTotal: pago.montoTotal,
-            metodoPago: pago.metodoPago,
-            numeroComprobante: pago.numeroComprobante,
-            pagadoAt: pago.pagadoAt,
-            servicios: pago.servicios.map((s) => ({
-              id: s.id,
-              fecha: s.completadoAt,
-              cliente: `${s.cliente.user.nombre} ${s.cliente.user.apellido}`,
-              origen: s.origenDireccion,
-              destino: s.destinoDireccion,
-              monto: s.totalGruero,
-            })),
-          })),
-          totalRecibido: pagos.reduce((sum, p) => sum + p.montoTotal, 0),
-        },
-      });
-    } catch (error: any) {
-      console.error('❌ Error obteniendo historial de pagos:', error);
-      return res.status(500).json({
+    if (!gruero) {
+      return res.status(404).json({
         success: false,
-        message: 'Error al obtener historial',
-        error: error.message,
+        message: 'Gruero no encontrado',
       });
     }
+
+    /* ===============================
+       1️⃣ PAGOS PAGADOS (HISTORIAL)
+    =============================== */
+    const pagos = await prisma.pago.findMany({
+      where: {
+        grueroId: gruero.id,
+        estado: 'PAGADO',
+      },
+      include: {
+        servicios: true,
+      },
+      orderBy: {
+        pagadoAt: 'desc',
+      },
+    });
+
+    /* ===============================
+       2️⃣ SERVICIOS PENDIENTES
+    =============================== */
+    const serviciosPendientes = await prisma.servicio.findMany({
+      where: {
+        grueroId: gruero.id,
+        status: 'COMPLETADO',
+        pagado: true,
+        pagoId: null,
+      },
+      orderBy: {
+        completadoAt: 'desc',
+      },
+    });
+
+    const montoPendiente = serviciosPendientes.reduce(
+      (sum, s) => sum + s.totalGruero,
+      0
+    );
+
+    /* ===============================
+       3️⃣ RESPUESTA FINAL
+    =============================== */
+    return res.json({
+      success: true,
+      data: {
+        pendiente: {
+          monto: montoPendiente,
+          servicios: serviciosPendientes.length,
+          detalles: serviciosPendientes.map((s) => ({
+            id: s.id,
+            totalGruero: s.totalGruero,
+            completadoAt: s.completadoAt,
+            origenDireccion: s.origenDireccion,
+            destinoDireccion: s.destinoDireccion,
+          })),
+        },
+
+        historial: pagos.map((pago) => ({
+          id: pago.id,
+          periodo: pago.periodo,
+          fechaInicio: pago.fechaInicio,
+          fechaFin: pago.fechaFin,
+          monto: pago.montoTotal,
+          servicios: pago.totalServicios,
+          estado: pago.estado,
+          metodoPago: pago.metodoPago,
+          numeroComprobante: pago.numeroComprobante,
+          pagadoAt: pago.pagadoAt,
+        })),
+      },
+    });
+  } catch (error: any) {
+    console.error('❌ Error obteniendo historial de pagos:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error al obtener historial',
+      error: error.message,
+    });
   }
+}
 
   /**
    * GET /api/gruero/pagos/resumen

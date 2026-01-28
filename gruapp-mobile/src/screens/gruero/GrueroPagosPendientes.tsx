@@ -187,6 +187,9 @@ export default function GrueroPagosPendientes() {
                             ${servicio.monto.toLocaleString('es-CL')}
                           </Text>
                         </View>
+                        <Text style={styles.detalleId}>
+                          ID: {servicio.id}
+                        </Text>
                         <Text style={styles.detalleCliente}>{servicio.cliente}</Text>
                         <Text style={styles.detalleRuta} numberOfLines={1}>
                           {servicio.origen.substring(0, 40)}...
@@ -381,5 +384,5 @@ const styles = StyleSheet.create({
   servicioItemCliente: { fontSize: 12, fontWeight: '600', color: colors.secondary, marginBottom: 2 },
   servicioItemRuta: { fontSize: 11, color: colors.text.secondary },
   emptyState: { alignItems: 'center', padding: spacing.xl, backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: colors.border },
-  emptyText: { fontSize: 14, color: colors.text.secondary, marginTop: spacing.sm },
+  emptyText: { fontSize: 14, color: colors.text.secondary, marginTop: spacing.sm }, 
 });
