@@ -232,8 +232,20 @@ export class ServicioController {
           const tipos = JSON.parse(gruero.tiposVehiculosAtiende)
           .map((t: string) => t.toUpperCase().replace('/', '_'));
 
-        const tipoServicio = tipoVehiculo.toUpperCase().replace('/', '_');
-return Array.isArray(tipos) && tipos.includes(tipoServicio);
+        const tipoServicio = tipoVehiculo.toUpperCase();
+
+          if (tipoServicio === 'SUV_CAMIONETA') {
+            return tipos.includes('SUV') || tipos.includes('CAMIONETA');
+          }
+
+          console.log('🚗 Comparando:', {
+            tipoServicio,
+            tiposGruero: tipos,
+          });
+
+
+          return tipos.includes(tipoServicio);
+
 
 
         } catch (error) {
