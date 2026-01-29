@@ -120,7 +120,7 @@ export class ServicioController {
           io.to(`gruero-${gruero.userId}`).emit('servicio-pendiente', {
             servicio: {
               ...servicio,
-              distancia: gruero.distancia,
+              distanciaKm: servicio.distanciaKm ?? gruero.distancia,
             },
           });
 
