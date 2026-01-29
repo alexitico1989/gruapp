@@ -128,7 +128,7 @@ export class GrueroPagosController {
       where: {
         grueroId: gruero.id,
         status: 'COMPLETADO',
-        pagado: true,
+        pagado: false,
         pagoId: null,
       },
       orderBy: { completadoAt: 'desc' },
@@ -147,7 +147,7 @@ export class GrueroPagosController {
           monto: montoPendiente,
           servicios: serviciosPendientes.length,
           detalles: serviciosPendientes.map((s) => ({
-            id: s.id,
+            servicioId: s.id,
             totalGruero: s.totalGruero,
             completadoAt: s.completadoAt,
             origenDireccion: s.origenDireccion,
