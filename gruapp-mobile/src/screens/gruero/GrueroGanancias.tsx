@@ -17,7 +17,6 @@ import Toast from 'react-native-toast-message';
 interface ServicioDetalle {
   servicioId: string;
   fecha: string;
-  cliente: string;
   origen: string;
   destino: string;
   monto: number;
@@ -33,15 +32,18 @@ interface Pago {
   metodoPago: string | null;
   numeroComprobante: string | null;
   pagadoAt: string | null;
-  servicios: number;
-  serviciosDetalle: ServicioDetalle[];
+  notasAdmin?: string;
+  detalles: ServicioDetalle[];
 }
 
 interface PagosData {
-  pagos: Pago[];
-  totalRecibido: number;
+  pendiente: {
+    monto: number;
+    servicios: number;
+    detalles: ServicioDetalle[];
+  };
+  historial: Pago[];
 }
-
 
 export default function GrueroPagosPendientes() {
   const [pagosData, setPagosData] = useState<PagosData | null>(null);
@@ -56,7 +58,7 @@ export default function GrueroPagosPendientes() {
   const cargarPagos = async () => {
     try {
       const response = await api.get('/gruero/pagos/historial');
-       console.log('📦 DATA BACKEND:', response.data.data);
+      console.log('📦 DATA BACKEND:', response.data.data);
       if (response.data.success) {
         setPagosData(response.data.data);
       }
@@ -162,6 +164,7 @@ export default function GrueroPagosPendientes() {
                 </Text>
               </View>
             </View>
+
             <View style={styles.pendienteFooter}>
               <Text style={styles.pendienteServicios}>
                 {pagosData.pendiente.servicios} servicio{pagosData.pendiente.servicios !== 1 ? 's' : ''} completado{pagosData.pendiente.servicios !== 1 ? 's' : ''}
@@ -175,24 +178,21 @@ export default function GrueroPagosPendientes() {
               )}
             </View>
 
-            {/* Detalles de Servicios Pendientes */}
-            {mostrarDetalles && pagosData.pendiente.detalles.length > 0 && (
+            {mostrarDetalles && (pagosData.pendiente.detalles || []).length > 0 && (
               <View style={styles.detallesContainer}>
-                {pagosData.pendiente.detalles.map((servicio, index) => (
-                  <View key={servicio.id} style={styles.detalleItem}>
+                {(pagosData.pendiente.detalles || []).map((servicio) => (
+                  <View key={servicio.servicioId} style={styles.detalleItem}>
                     <View style={styles.detalleHeader}>
                       <Text style={styles.detalleFecha}>
-                        {formatearFecha(servicio.completadoAt)}
+                        {formatearFecha(servicio.fecha)}
                       </Text>
                       <Text style={styles.detalleMonto}>
-                        ${servicio.totalGruero.toLocaleString('es-CL')}
+                        ${servicio.monto.toLocaleString('es-CL')}
                       </Text>
                     </View>
-                    <Text style={styles.detalleId}>
-                      ID: {servicio.id}
-                    </Text>
+                    <Text style={styles.detalleId}>ID: {servicio.servicioId}</Text>
                     <Text style={styles.detalleRuta} numberOfLines={1}>
-                      {servicio.origenDireccion.substring(0, 30)}...
+                      {servicio.origen} → {servicio.destino}
                     </Text>
                   </View>
                 ))}
@@ -211,8 +211,8 @@ export default function GrueroPagosPendientes() {
         {/* Historial de Pagos */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Historial de Pagos</Text>
-          {pagosData.historial.length > 0 ? (
-            pagosData.historial.map((pago) => (
+          {(pagosData.historial || []).length > 0 ? (
+            (pagosData.historial || []).map((pago) => (
               <View key={pago.id} style={styles.pagoCard}>
                 <View style={styles.pagoHeader}>
                   <View style={styles.pagoInfo}>
@@ -224,71 +224,71 @@ export default function GrueroPagosPendientes() {
                   <View
                     style={[
                       styles.estadoBadge,
-                      { backgroundColor: getEstadoColor(pago.estado) + '20' },
+                      { backgroundColor: getEstadoColor((pago as any).estado) + '20' },
                     ]}
                   >
                     <Text
                       style={[
                         styles.estadoText,
-                        { color: getEstadoColor(pago.estado) },
+                        { color: getEstadoColor((pago as any).estado) },
                       ]}
                     >
-                      {getEstadoTexto(pago.estado)}
+                      {getEstadoTexto((pago as any).estado)}
                     </Text>
                   </View>
                 </View>
 
                 <View style={styles.pagoDivider} />
 
+                {/* Servicios dentro del pago */}
                 <View style={styles.pagoDetails}>
+                  {(pago.detalles || []).map((s) => (
+                    <View key={s.servicioId} style={styles.servicioDetalle}>
+                      <View style={styles.pagoDetailRow}>
+                        <Text style={styles.pagoDetailLabel}>ID Servicio:</Text>
+                        <Text style={styles.pagoDetailValue}>{s.servicioId}</Text>
+                      </View>
+                      <View style={styles.pagoDetailRow}>
+                        <Text style={styles.pagoDetailLabel}>Origen:</Text>
+                        <Text style={styles.pagoDetailValue}>{s.origen}</Text>
+                      </View>
+                      <View style={styles.pagoDetailRow}>
+                        <Text style={styles.pagoDetailLabel}>Destino:</Text>
+                        <Text style={styles.pagoDetailValue}>{s.destino}</Text>
+                      </View>
+                      <View style={styles.pagoDetailRow}>
+                        <Text style={styles.pagoDetailLabel}>Monto:</Text>
+                        <Text style={styles.pagoDetailValue}>${s.monto.toLocaleString('es-CL')}</Text>
+                      </View>
+                    </View>
+                  ))}
+
                   <View style={styles.pagoDetailRow}>
-                    <Text style={styles.pagoDetailLabel}>Monto:</Text>
-                    <Text style={styles.pagoDetailValue}>
-                      ${pago.monto.toLocaleString('es-CL')}
-                    </Text>
+                    <Text style={styles.pagoDetailLabel}>Monto Total:</Text>
+                    <Text style={styles.pagoDetailValue}>${(pago.montoTotal ?? 0).toLocaleString('es-CL')}</Text>
                   </View>
-                  <View style={styles.pagoDetailRow}>
-                    <Text style={styles.pagoDetailLabel}>Servicios:</Text>
-                    <Text style={styles.pagoDetailValue}>{pago.servicios}</Text>
-                  </View>
-                  
+
                   {pago.metodoPago && (
-                  <View style={styles.pagoDetailRow}>
-                    <Text style={styles.pagoDetailLabel}>Método:</Text>
-                    <Text style={styles.pagoDetailValue}>{pago.metodoPago}</Text>
-                  </View>
-                )}
+                    <View style={styles.pagoDetailRow}>
+                      <Text style={styles.pagoDetailLabel}>Método:</Text>
+                      <Text style={styles.pagoDetailValue}>{pago.metodoPago}</Text>
+                    </View>
+                  )}
 
-                {pago.numeroComprobante && (
-                  <View style={styles.pagoDetailRow}>
-                    <Text style={styles.pagoDetailLabel}>Comprobante:</Text>
-                    <Text style={styles.pagoDetailValue}>
-                      {pago.numeroComprobante}
-                    </Text>
-                  </View>
-                )}
-
-                {/* 👇 ID DEL PAGO (NO CONDICIONAL) */}
-                <View style={styles.pagoDetailRow}>
-                <Text style={styles.pagoDetailLabel}>ID Pago:</Text>
-
-                <Text
-                  style={styles.pagoDetailValue}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                  {pago.id}
-                </Text>
-              </View>
+                  {pago.numeroComprobante && (
+                    <View style={styles.pagoDetailRow}>
+                      <Text style={styles.pagoDetailLabel}>Comprobante:</Text>
+                      <Text style={styles.pagoDetailValue}>{pago.numeroComprobante}</Text>
+                    </View>
+                  )}
 
                   {pago.pagadoAt && (
                     <View style={styles.pagoDetailRow}>
                       <Text style={styles.pagoDetailLabel}>Pagado:</Text>
-                      <Text style={styles.pagoDetailValue}>
-                        {formatearFecha(pago.pagadoAt)}
-                      </Text>
+                      <Text style={styles.pagoDetailValue}>{formatearFecha(pago.pagadoAt)}</Text>
                     </View>
                   )}
+
                   {pago.notasAdmin && (
                     <View style={styles.notasContainer}>
                       <Text style={styles.notasLabel}>Notas:</Text>
@@ -312,234 +312,56 @@ export default function GrueroPagosPendientes() {
   );
 }
 
+// === ESTILOS ===
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: spacing.md,
-    color: colors.text.secondary,
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.xl,
-  },
-  errorText: {
-    fontSize: 16,
-    color: colors.error,
-    marginTop: spacing.md,
-  },
-  header: {
-    backgroundColor: '#fff',
-    padding: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.secondary,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  section: {
-    padding: spacing.md,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.secondary,
-    marginBottom: spacing.sm,
-  },
-  pendienteCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: spacing.lg,
-    borderWidth: 2,
-    borderColor: colors.primary,
-    marginBottom: spacing.md,
-  },
-  pendienteHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  pendienteInfo: {
-    flex: 1,
-  },
-  pendienteLabel: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    fontWeight: '600',
-  },
-  pendienteMonto: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: colors.primary,
-    marginTop: spacing.xs,
-  },
-  pendienteFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: spacing.md,
-  },
-  pendienteServicios: {
-    fontSize: 13,
-    color: colors.text.secondary,
-  },
-  verDetallesText: {
-    fontSize: 13,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  detallesContainer: {
-    marginTop: spacing.md,
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  detalleItem: {
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  detalleHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  detalleFecha: {
-    fontSize: 12,
-    color: colors.text.secondary,
-  },
-  detalleMonto: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: colors.primary,
-  },
-  detalleRuta: {
-    fontSize: 12,
-    color: colors.text.secondary,
-  },
-  infoBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: '#f0f9ff',
-    padding: spacing.md,
-    borderRadius: 8,
-  },
-  infoBoxText: {
-    flex: 1,
-    fontSize: 13,
-    color: colors.text.primary,
-  },
-  pagoCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: spacing.sm,
-  },
-  pagoHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  pagoInfo: {
-    flex: 1,
-  },
-  pagoPeriodo: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.secondary,
-  },
-  pagoFechas: {
-    fontSize: 12,
-    color: colors.text.secondary,
-    marginTop: 2,
-  },
-  estadoBadge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  estadoText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  pagoDivider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginVertical: spacing.sm,
-  },
-  pagoDetails: {
-    gap: spacing.xs,
-  },
-  pagoDetailRow: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  gap: 8,
-},
-
-  pagoDetailLabel: {
-    fontSize: 13,
-    color: colors.text.secondary,
-  },
-  pagoDetailValue: {
-  fontSize: 13,
-  fontWeight: '600',
-  color: colors.secondary,
-  flexShrink: 1,
-  textAlign: 'right',
-},
-
-  notasContainer: {
-    marginTop: spacing.sm,
-    padding: spacing.sm,
-    backgroundColor: '#f9fafb',
-    borderRadius: 6,
-  },
-  notasLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.text.secondary,
-    marginBottom: 4,
-  },
-  notasText: {
-    fontSize: 12,
-    color: colors.text.primary,
-  },
-  emptyState: {
-    alignItems: 'center',
-    padding: spacing.xl,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    marginTop: spacing.sm,
-  },
-
-  detalleId: {
-  fontSize: 11,
-  color: colors.text.secondary,
-  marginBottom: 2,
+  container: { flex: 1, backgroundColor: colors.background },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { marginTop: spacing.md, color: colors.text.secondary },
+  errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xl },
+  errorText: { fontSize: 16, color: colors.error, marginTop: spacing.md },
+  header: { backgroundColor: '#fff', padding: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.border },
+  title: { fontSize: 24, fontWeight: 'bold', color: colors.secondary },
+  scrollView: { flex: 1 },
+  section: { padding: spacing.md },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: colors.secondary, marginBottom: spacing.sm },
+  pendienteCard: { backgroundColor: '#fff', borderRadius: 12, padding: spacing.lg, borderWidth: 2, borderColor: colors.primary, marginBottom: spacing.md },
+  pendienteHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  pendienteInfo: { flex: 1 },
+  pendienteLabel: { fontSize: 14, color: colors.text.secondary, fontWeight: '600' },
+  pendienteMonto: { fontSize: 32, fontWeight: 'bold', color: colors.primary, marginTop: spacing.xs },
+  pendienteFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.md },
+  pendienteServicios: { fontSize: 13, color: colors.text.secondary },
+  verDetallesText: { fontSize: 13, color: colors.primary, fontWeight: '600' },
+  detallesContainer: { marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
+  detalleItem: { paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
+  detalleHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
+  detalleFecha: { fontSize: 12, color: colors.text.secondary },
+  detalleMonto: { fontSize: 14, fontWeight: 'bold', color: colors.primary },
+  detalleRuta: { fontSize: 12, color: colors.text.secondary },
+  detalleId: { fontSize: 11, color: colors.text.secondary, marginBottom: 2 },
+  infoBox: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: '#f0f9ff', padding: spacing.md, borderRadius: 8 },
+  infoBoxText: { flex: 1, fontSize: 13, color: colors.text.primary },
+  pagoCard: { backgroundColor: '#fff', borderRadius: 12, padding: spacing.md, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.sm },
+  pagoHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  pagoInfo: { flex: 1 },
+  pagoPeriodo: { fontSize: 16, fontWeight: 'bold', color: colors.secondary },
+  pagoFechas: { fontSize: 12, color: colors.text.secondary, marginTop: 2 },
+  estadoBadge: { paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: 6 },
+  estadoText: { fontSize: 12, fontWeight: '600' },
+  pagoDivider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.sm },
+  pagoDetails: { gap: spacing.xs },
+  pagoDetailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
+  pagoDetailLabel: { fontSize: 13, color: colors.text.secondary },
+  pagoDetailValue: { fontSize: 13, fontWeight: '600', color: colors.secondary, flexShrink: 1, textAlign: 'right' },
+  notasContainer: { marginTop: spacing.sm, padding: spacing.sm, backgroundColor: '#f9fafb', borderRadius: 6 },
+  notasLabel: { fontSize: 12, fontWeight: '600', color: colors.text.secondary, marginBottom: 4 },
+  notasText: { fontSize: 12, color: colors.text.primary },
+  emptyState: { alignItems: 'center', padding: spacing.xl, backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: colors.border },
+  emptyText: { fontSize: 14, color: colors.text.secondary, marginTop: spacing.sm }, servicioDetalle: { 
+  paddingVertical: spacing.sm, 
+  borderBottomWidth: 1, 
+  borderBottomColor: colors.border,
+  marginBottom: spacing.xs,
 },
 
 });

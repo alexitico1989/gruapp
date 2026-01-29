@@ -29,18 +29,18 @@ interface PagoHistorial {
   periodo: string;
   fechaInicio: string;
   fechaFin: string;
-  totalServicios: number;
-  montoTotal: number;
+  monto: number;
+  servicios: number;
   metodoPago: string | null;
   numeroComprobante: string | null;
   pagadoAt: string | null;
-  servicios: {
-    id: string;
-    fecha: string;
-    cliente: string;
-    origen: string;
-    destino: string;
-    monto: number;
+
+  serviciosDetalle: {
+    servicioId: string;
+    completadoAt: string;
+    origenDireccion: string;
+    destinoDireccion: string;
+    totalGruero: number;
   }[];
 }
 
@@ -81,7 +81,13 @@ export default function GrueroPagosPendientes() {
       // Cargar historial
       const resHistorial = await api.get('/gruero/pagos/historial');
       if (resHistorial.data.success) {
-        setDatosHistorial(resHistorial.data.data);
+        const data = resHistorial.data.data;
+
+      setDatosHistorial({
+        pagos: data.pagos ?? data.historial ?? [],
+        totalRecibido: data.totalRecibido ?? 0,
+      });
+
       }
     } catch (error: any) {
       console.error('Error cargando pagos:', error);
@@ -246,12 +252,12 @@ export default function GrueroPagosPendientes() {
                     <View style={styles.pagoSummaryItem}>
                       <Text style={styles.pagoSummaryLabel}>Monto:</Text>
                       <Text style={styles.pagoSummaryValue}>
-                        ${pago.montoTotal.toLocaleString('es-CL')}
+                        ${(pago.monto ?? 0).toLocaleString('es-CL')}
                       </Text>
                     </View>
                     <View style={styles.pagoSummaryItem}>
                       <Text style={styles.pagoSummaryLabel}>Servicios:</Text>
-                      <Text style={styles.pagoSummaryValue}>{pago.totalServicios}</Text>
+                      <Text style={styles.pagoSummaryValue}>{pago.servicios}</Text>
                     </View>
                   </View>
 
@@ -290,25 +296,29 @@ export default function GrueroPagosPendientes() {
                     )}
 
                     <Text style={styles.serviciosTitle}>
-                      Servicios incluidos ({pago.servicios.length}):
+                      Servicios incluidos ({pago.servicios}):
                     </Text>
-                    {pago.servicios.map((servicio) => (
-                      <View key={servicio.id} style={styles.servicioItem}>
-                        <View style={styles.servicioItemHeader}>
-                          <Text style={styles.servicioItemFecha}>
-                            {formatearFecha(servicio.fecha)}
-                          </Text>
-                          <Text style={styles.servicioItemMonto}>
-                            ${servicio.monto.toLocaleString('es-CL')}
-                          </Text>
-                        </View>
-                        <Text style={styles.servicioItemCliente}>{servicio.cliente}</Text>
-                        <Text style={styles.servicioItemId}>ID: {servicio.id}</Text>
-                        <Text style={styles.servicioItemRuta} numberOfLines={1}>
-                          {servicio.origen.substring(0, 35)}...
+                    {(pago.serviciosDetalle ?? []).map((servicio) => (
+                    <View key={servicio.servicioId} style={styles.servicioItem}>
+                      <View style={styles.servicioItemHeader}>
+                        <Text style={styles.servicioItemFecha}>
+                          {formatearFecha(servicio.completadoAt)}
+                        </Text>
+                        <Text style={styles.servicioItemMonto}>
+                          ${servicio.totalGruero.toLocaleString('es-CL')}
                         </Text>
                       </View>
-                    ))}
+
+                      <Text style={styles.servicioItemId}>
+                        ID Servicio: {servicio.servicioId}
+                      </Text>
+
+                      <Text style={styles.servicioItemRuta} numberOfLines={1}>
+                        {servicio.origenDireccion?.substring(0, 35) ?? 'Dirección no disponible'}...
+                      </Text>
+                    </View>
+                  ))}
+
                   </View>
                 )}
               </View>

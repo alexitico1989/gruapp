@@ -99,11 +99,7 @@ export class GrueroPagosController {
     }
   }
 
-  /**
-   * GET /api/gruero/pagos/historial
-   * Obtener historial de pagos semanales recibidos
-   */
-    static async obtenerHistorial(req: Request, res: Response) {
+  static async obtenerHistorial(req: Request, res: Response) {
   try {
     const userId = (req.user as any)?.userId;
 
@@ -118,25 +114,16 @@ export class GrueroPagosController {
       });
     }
 
-    /* ===============================
-       1️⃣ PAGOS PAGADOS (HISTORIAL)
-    =============================== */
+    // 1️⃣ Obtener pagos pagados
     const pagos = await prisma.pago.findMany({
-      where: {
-        grueroId: gruero.id,
-        estado: 'PAGADO',
-      },
+      where: { grueroId: gruero.id, estado: 'PAGADO' },
       include: {
-        servicios: true,
+        servicios: true, // trae el servicio asociado
       },
-      orderBy: {
-        pagadoAt: 'desc',
-      },
+      orderBy: { pagadoAt: 'desc' },
     });
 
-    /* ===============================
-       2️⃣ SERVICIOS PENDIENTES
-    =============================== */
+    // 2️⃣ Servicios pendientes sin asignar a pago
     const serviciosPendientes = await prisma.servicio.findMany({
       where: {
         grueroId: gruero.id,
@@ -144,9 +131,7 @@ export class GrueroPagosController {
         pagado: true,
         pagoId: null,
       },
-      orderBy: {
-        completadoAt: 'desc',
-      },
+      orderBy: { completadoAt: 'desc' },
     });
 
     const montoPendiente = serviciosPendientes.reduce(
@@ -154,9 +139,7 @@ export class GrueroPagosController {
       0
     );
 
-    /* ===============================
-       3️⃣ RESPUESTA FINAL
-    =============================== */
+    // 3️⃣ Respuesta final
     return res.json({
       success: true,
       data: {
@@ -172,18 +155,38 @@ export class GrueroPagosController {
           })),
         },
 
-        historial: pagos.map((pago) => ({
-          id: pago.id,
-          periodo: pago.periodo,
-          fechaInicio: pago.fechaInicio,
-          fechaFin: pago.fechaFin,
-          monto: pago.montoTotal,
-          servicios: pago.totalServicios,
-          estado: pago.estado,
-          metodoPago: pago.metodoPago,
-          numeroComprobante: pago.numeroComprobante,
-          pagadoAt: pago.pagadoAt,
-        })),
+        historial: pagos.map((pago) => {
+          // Si no hay servicio asociado, fallback con ID ficticio
+          const detalle = pago.servicios[0]
+            ? {
+                servicioId: pago.servicios[0].id,
+                completadoAt: pago.servicios[0].completadoAt,
+                origenDireccion: pago.servicios[0].origenDireccion,
+                destinoDireccion: pago.servicios[0].destinoDireccion,
+                totalGruero: pago.servicios[0].totalGruero,
+              }
+            : {
+                servicioId: 'N/A',
+                completadoAt: null,
+                origenDireccion: '',
+                destinoDireccion: '',
+                totalGruero: 0,
+              };
+
+          return {
+            id: pago.id,
+            periodo: pago.periodo,
+            fechaInicio: pago.fechaInicio,
+            fechaFin: pago.fechaFin,
+            monto: pago.montoTotal,
+            servicios: pago.totalServicios,
+            estado: pago.estado,
+            metodoPago: pago.metodoPago,
+            numeroComprobante: pago.numeroComprobante,
+            pagadoAt: pago.pagadoAt,
+            serviciosDetalle: [detalle], // siempre un array con 1 objeto
+          };
+        }),
       },
     });
   } catch (error: any) {
@@ -195,6 +198,7 @@ export class GrueroPagosController {
     });
   }
 }
+
 
   /**
    * GET /api/gruero/pagos/resumen
