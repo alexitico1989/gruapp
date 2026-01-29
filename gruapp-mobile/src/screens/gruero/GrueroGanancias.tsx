@@ -161,10 +161,8 @@ export default function GrueroPagosPendientes() {
 
             <View style={styles.pendienteFooter}>
               <Text style={styles.pendienteServicios}>
-                {pagosData.pendiente.servicios} servicio
-                {pagosData.pendiente.servicios !== 1 ? 's' : ''} completado
-                {pagosData.pendiente.servicios !== 1 ? 's' : ''}
-              </Text>
+              {`${pagosData.pendiente.servicios} servicio${pagosData.pendiente.servicios !== 1 ? 's' : ''} completado${pagosData.pendiente.servicios !== 1 ? 's' : ''}`}
+            </Text>
               {pagosData.pendiente.servicios > 0 && (
                 <TouchableOpacity onPress={() => setMostrarDetalles(!mostrarDetalles)}>
                   <Text style={styles.verDetallesText}>

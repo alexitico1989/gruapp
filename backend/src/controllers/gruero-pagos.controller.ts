@@ -41,7 +41,7 @@ export class GrueroPagosController {
         where: {
           grueroId: gruero.id,
           status: 'COMPLETADO',
-          pagado: true, // El cliente ya pagó
+          pagado: { not: false },
           pagoId: null, // No está asignado a ningún pago semanal
           completadoAt: {
             gte: inicioSemana,
