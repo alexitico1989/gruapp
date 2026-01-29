@@ -228,8 +228,11 @@ export class ServicioController {
     if (tipoVehiculo) {
       gruerosFiltrados = gruerosDisponibles.filter(gruero => {
         try {
-          const tipos = JSON.parse(gruero.tiposVehiculosAtiende);
-          return Array.isArray(tipos) && tipos.includes(tipoVehiculo);
+          const tipos = JSON.parse(gruero.tiposVehiculosAtiende)
+          .map((t: string) => t.toUpperCase().replace('/', '_'));
+
+        return Array.isArray(tipos) && tipos.includes(tipoVehiculo);
+
         } catch (error) {
           console.error('Error parseando tiposVehiculosAtiende:', error);
           return false;
@@ -444,8 +447,11 @@ export class ServicioController {
       const serviciosCercanos = todosLosServicios
         .filter(servicio => {
           try {
-            const tipos = JSON.parse(gruero.tiposVehiculosAtiende);
-            return Array.isArray(tipos) && tipos.includes(servicio.tipoVehiculo);
+            const tipos = JSON.parse(gruero.tiposVehiculosAtiende)
+            .map((t: string) => t.toUpperCase().replace('/', '_'));
+
+          return Array.isArray(tipos) && tipos.includes(servicio.tipoVehiculo);
+
           } catch (error) {
             console.error('Error parseando tiposVehiculosAtiende:', error);
             return false;
@@ -796,8 +802,11 @@ static async acceptServicio(req: Request, res: Response) {
     // Verificar que el gruero atiende este tipo de vehículo (parsear JSON)
     let atiendeVehiculo = false;
     try {
-      const tipos = JSON.parse(gruero.tiposVehiculosAtiende);
-      atiendeVehiculo = Array.isArray(tipos) && tipos.includes(servicio.tipoVehiculo);
+      const tipos = JSON.parse(gruero.tiposVehiculosAtiende)
+      .map((t: string) => t.toUpperCase().replace('/', '_'));
+
+    atiendeVehiculo = Array.isArray(tipos) && tipos.includes(servicio.tipoVehiculo);
+
     } catch (error) {
       console.error('Error parseando tiposVehiculosAtiende:', error);
     }
