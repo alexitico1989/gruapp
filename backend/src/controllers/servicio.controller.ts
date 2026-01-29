@@ -231,7 +231,9 @@ export class ServicioController {
           const tipos = JSON.parse(gruero.tiposVehiculosAtiende)
           .map((t: string) => t.toUpperCase().replace('/', '_'));
 
-        return Array.isArray(tipos) && tipos.includes(tipoVehiculo);
+        const tipoServicio = tipoVehiculo.toUpperCase().replace('/', '_');
+return Array.isArray(tipos) && tipos.includes(tipoServicio);
+
 
         } catch (error) {
           console.error('Error parseando tiposVehiculosAtiende:', error);
@@ -450,7 +452,12 @@ export class ServicioController {
             const tipos = JSON.parse(gruero.tiposVehiculosAtiende)
             .map((t: string) => t.toUpperCase().replace('/', '_'));
 
-          return Array.isArray(tipos) && tipos.includes(servicio.tipoVehiculo);
+          const tipoServicio = servicio.tipoVehiculo
+  .toUpperCase()
+  .replace('/', '_');
+
+return Array.isArray(tipos) && tipos.includes(tipoServicio);
+
 
           } catch (error) {
             console.error('Error parseando tiposVehiculosAtiende:', error);
@@ -805,7 +812,12 @@ static async acceptServicio(req: Request, res: Response) {
       const tipos = JSON.parse(gruero.tiposVehiculosAtiende)
       .map((t: string) => t.toUpperCase().replace('/', '_'));
 
-    atiendeVehiculo = Array.isArray(tipos) && tipos.includes(servicio.tipoVehiculo);
+    const tipoServicio = servicio.tipoVehiculo
+  .toUpperCase()
+  .replace('/', '_');
+
+atiendeVehiculo = Array.isArray(tipos) && tipos.includes(tipoServicio);
+
 
     } catch (error) {
       console.error('Error parseando tiposVehiculosAtiende:', error);
