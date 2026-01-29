@@ -96,11 +96,12 @@ export class ServicioController {
       });
 
       // Buscar grueros disponibles filtrados por distancia y tipo de vehículo
+      const tipoVehiculoNormalizado = tipoVehiculo.toUpperCase().replace('/', '_');
       const gruerosCercanos = await ServicioController.getGruerosCercanos(
         data.origenLat,
         data.origenLng,
         RADIO_MAXIMO_KM,
-        tipoVehiculo
+        tipoVehiculoNormalizado
       );
 
       console.log(`📍 Grueros cercanos que atienden ${tipoVehiculo} (< ${RADIO_MAXIMO_KM}km):`, gruerosCercanos.length);

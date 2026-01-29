@@ -78,7 +78,7 @@ export default function GrueroDashboard() {
     console.log('📡 Configurando listeners de gruero...');
 
     // ✅ Nuevo servicio disponible
-    socket.on('nuevo-servicio', (data: any) => {
+    socket.on('servicio-pendiente', (data: any) => {
       console.log('Nuevo servicio disponible:', data);
       
       // ✅ NUEVO: Agregar notificación
@@ -150,7 +150,7 @@ export default function GrueroDashboard() {
     });
 
     return () => {
-      socket.off('nuevo-servicio');
+      socket.off('servicio-pendiente');
       socket.off('servicio-cancelado');
       socket.off('cliente:estadoActualizado');
     };
