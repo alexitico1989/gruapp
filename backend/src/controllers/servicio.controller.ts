@@ -107,25 +107,39 @@ export class ServicioController {
       // Emitir notificación SOLO a grueros cercanos
       const io = (req as any).app.get('io');
       if (io && gruerosCercanos.length > 0) {
-        gruerosCercanos.forEach(async (gruero) => {
+        for (const gruero of gruerosCercanos) {
+
+          // 🔔 Evento liviano (compatibilidad)
           io.to(`gruero-${gruero.userId}`).emit('nuevo-servicio', {
             servicioId: servicio.id,
             distancia: gruero.distancia,
             tipoVehiculo,
           });
 
+          // 🔥 EVENTO CLAVE → ESTE ABRE EL MODAL
+          io.to(`gruero-${gruero.userId}`).emit('servicio-pendiente', {
+            servicio: {
+              ...servicio,
+              distancia: gruero.distancia,
+            },
+          });
+
           const notificacion = await NotificacionController.crearNotificacion(
             gruero.userId,
             'NUEVO_SERVICIO',
             'Nuevo servicio disponible',
-            `Servicio de ${tipoVehiculo} disponible a ${gruero.distancia}km de distancia`,
-            { servicioId: servicio.id, distancia: gruero.distancia, tipoVehiculo }
+            `Servicio de ${tipoVehiculo} disponible a ${gruero.distancia.toFixed(1)} km`,
+            {
+              servicioId: servicio.id,
+              distancia: gruero.distancia,
+              tipoVehiculo,
+            }
           );
 
-          if (notificacion && io) {
+          if (notificacion) {
             io.to(`gruero-${gruero.userId}`).emit('nueva-notificacion', notificacion);
           }
-        });
+        }
       }
 
       // 🔔 Enviar notificaciones PUSH
