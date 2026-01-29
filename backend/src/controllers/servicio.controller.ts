@@ -111,10 +111,12 @@ export class ServicioController {
 
           // 🔔 Evento liviano (compatibilidad)
           io.to(`gruero-${gruero.userId}`).emit('nuevo-servicio', {
-            servicioId: servicio.id,
-            distancia: gruero.distancia,
-            tipoVehiculo,
+            servicio: {
+              ...servicio,
+              distanciaKm: servicio.distanciaKm ?? gruero.distancia,
+            },
           });
+
 
           // 🔥 EVENTO CLAVE → ESTE ABRE EL MODAL
           io.to(`gruero-${gruero.userId}`).emit('servicio-pendiente', {
