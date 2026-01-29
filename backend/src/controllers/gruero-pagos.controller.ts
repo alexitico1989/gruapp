@@ -79,7 +79,7 @@ export class GrueroPagosController {
           totalServicios: serviciosPendientes.length,
           totalPendiente,
           servicios: serviciosPendientes.map((s) => ({
-            id: s.id,
+            servicioId: s.id,
             fecha: s.completadoAt,
             cliente: `${s.cliente.user.nombre} ${s.cliente.user.apellido}`,
             origen: s.origenDireccion,
