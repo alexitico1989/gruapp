@@ -51,7 +51,8 @@ export class ServicioController {
       const distanciaKm = RoutingService.metersToKm(route.distance);
 
       // Determinar si el vehículo es pesado
-      const tipoVehiculo = data.tipoVehiculo || 'AUTOMOVIL';
+      const tipoVehiculo = (data.tipoVehiculo || 'AUTOMOVIL').toUpperCase().replace('/', '_');
+
       const esPesado = VEHICULOS_PESADOS.includes(tipoVehiculo);
 
       // Calcular pricing con tarifas diferenciadas
