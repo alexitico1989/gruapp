@@ -235,7 +235,7 @@ export class ServicioController {
         const tipoServicio = tipoVehiculo.toUpperCase();
 
           if (tipoServicio === 'SUV_CAMIONETA') {
-            return tipos.includes('SUV') || tipos.includes('CAMIONETA');
+            return tipos.includes('SUV') || tipos.includes('CAMIONETA') || tipos.includes('SUV_CAMIONETA');
           }
 
           console.log('🚗 Comparando:', {
@@ -469,6 +469,9 @@ export class ServicioController {
   .toUpperCase()
   .replace('/', '_');
 
+if (tipoServicio === 'SUV_CAMIONETA') {
+  return Array.isArray(tipos) && (tipos.includes('SUV') || tipos.includes('CAMIONETA') || tipos.includes('SUV_CAMIONETA'));
+}
 return Array.isArray(tipos) && tipos.includes(tipoServicio);
 
 
@@ -829,7 +832,11 @@ static async acceptServicio(req: Request, res: Response) {
   .toUpperCase()
   .replace('/', '_');
 
-atiendeVehiculo = Array.isArray(tipos) && tipos.includes(tipoServicio);
+if (tipoServicio === 'SUV_CAMIONETA') {
+  atiendeVehiculo = Array.isArray(tipos) && (tipos.includes('SUV') || tipos.includes('CAMIONETA') || tipos.includes('SUV_CAMIONETA'));
+} else {
+  atiendeVehiculo = Array.isArray(tipos) && tipos.includes(tipoServicio);
+}
 
 
     } catch (error) {

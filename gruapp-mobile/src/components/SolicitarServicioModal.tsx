@@ -33,7 +33,7 @@ interface Props {
 const TIPOS_VEHICULO = [
   // Vehículos Livianos
   { value: 'AUTOMOVIL', label: 'Automóvil', pesado: false },
-  { value: 'SUV', label: 'SUV', pesado: false },
+  { value: 'SUV_CAMIONETA', label: 'SUV / Camioneta', pesado: false },
   { value: 'MOTO', label: 'Moto', pesado: false },
   { value: 'FURGON', label: 'Furgón', pesado: false },
   { value: 'CAMION_LIVIANO', label: 'Camión Liviano', pesado: false },

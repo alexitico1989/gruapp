@@ -77,24 +77,26 @@ export default function GrueroDashboard() {
 
     console.log('📡 Configurando listeners de gruero...');
 
-    // ✅ Nuevo servicio disponible
     socket.on('servicio-pendiente', (data: any) => {
-      console.log('Nuevo servicio disponible:', data);
-      
-      // ✅ NUEVO: Agregar notificación
-      agregarNotificacion({
-        tipo: 'NUEVO_SERVICIO',
-        titulo: '🚗 Nuevo Servicio Disponible',
-        mensaje: `${data.servicio.origenDireccion} → ${data.servicio.destinoDireccion}`,
-        servicioId: data.servicio.id,
-      });
-      
-      setServicioDisponible(data.servicio);
-      setMostrarModalServicio(true);
-    });
+  console.log('Nuevo servicio disponible:', data);
+
+  // Agregar notificación siempre
+  agregarNotificacion({
+    tipo: 'NUEVO_SERVICIO',
+    titulo: '🚗 Nuevo Servicio Disponible',
+    mensaje: `${data.servicio.origenDireccion} → ${data.servicio.destinoDireccion}`,
+    servicioId: data.servicio.id,
+  });
+
+  // Mostrar modal para **todos los tipos de vehículo**
+  setServicioDisponible(data.servicio);
+  setMostrarModalServicio(true);
+});
+
+
 
     // ✅ Servicio cancelado
-    socket.on('servicio-cancelado', (data: any) => {
+    socket.on('servicio:canceladoNotificacion', (data: any) => {
       console.log('🚫 Servicio cancelado:', data);
       
       if (data.canceladoPor === 'CLIENTE') {
@@ -151,10 +153,12 @@ export default function GrueroDashboard() {
 
     return () => {
       socket.off('servicio-pendiente');
-      socket.off('servicio-cancelado');
+      socket.off('servicio:canceladoNotificacion');
       socket.off('cliente:estadoActualizado');
     };
   }, [socket, disponible, servicioDisponible]);
+
+  
 
   // 📱 CONFIGURAR NOTIFICACIONES PUSH
   useEffect(() => {
@@ -276,13 +280,12 @@ export default function GrueroDashboard() {
       });
 
       if (socket && user?.id) {
-        socket.emit('gruero:locationUpdated', {
-          grueroId: user.id,
-          ubicacion: {
-            lat: loc.latitude,
-            lng: loc.longitude,
-          },
-        });
+        socket.emit('gruero:updateLocation', {
+      grueroId: user.id,
+      lat: loc.latitude,
+      lng: loc.longitude,
+    });
+
       }
     } catch (error) {
       console.error('Error actualizando ubicación:', error);
@@ -347,8 +350,10 @@ export default function GrueroDashboard() {
         
         if (socket) {
           socket.emit('servicio:aceptado', {
-            servicioId: servicioDisponible.id,
-          });
+          servicioId: servicioDisponible.id,
+          grueroId: user!.id,
+        });
+
         }
 
         setMostrarModalServicio(false);

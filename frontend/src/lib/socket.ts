@@ -79,6 +79,16 @@ class SocketService {
     this.socket?.on('servicio:estado:update', callback);
   }
 
+  // 🔥 NUEVO → Servicio pendiente (abre el modal)
+  onServicioPendiente(callback: (data: any) => void) {
+    this.socket?.on('servicio-pendiente', callback);
+  }
+
+  // 🔔 Nuevo servicio (evento informativo)
+  onNuevoServicio(callback: (data: any) => void) {
+    this.socket?.on('nuevo-servicio', callback);
+  }
+
   // Remover listeners
   offServicioDisponible() {
     this.socket?.off('servicio:disponible');
@@ -91,6 +101,15 @@ class SocketService {
   offServicioEstadoUpdate() {
     this.socket?.off('servicio:estado:update');
   }
+
+  offServicioPendiente() {
+    this.socket?.off('servicio-pendiente');
+  }
+
+  offNuevoServicio() {
+    this.socket?.off('nuevo-servicio');
+  }
+
 }
 
 export const socketService = new SocketService();
