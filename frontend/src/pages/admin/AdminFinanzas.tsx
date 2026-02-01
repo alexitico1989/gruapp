@@ -302,7 +302,7 @@ export default function AdminFinanzas() {
             <span className="text-xl md:text-2xl">💰</span>
           </div>
           <p className="text-xl md:text-3xl font-bold text-gray-900">
-            ${(metricas.ingresosTotal / 1000000).toFixed(1)}M
+            {formatCurrency(metricas.ingresosTotal)}
           </p>
           <p className="text-xs text-gray-500 mt-1">Comisión acumulada</p>
         </div>
@@ -313,7 +313,7 @@ export default function AdminFinanzas() {
             <span className="text-xl md:text-2xl">📈</span>
           </div>
           <p className="text-xl md:text-3xl font-bold text-green-600">
-            ${(metricas.ingresosMesActual / 1000).toFixed(0)}k
+            {formatCurrency(metricas.ingresosMesActual)}
           </p>
           <div className="flex items-center mt-1">
             <span
@@ -344,7 +344,7 @@ export default function AdminFinanzas() {
             <span className="text-xl md:text-2xl">💵</span>
           </div>
           <p className="text-xl md:text-3xl font-bold text-purple-600">
-            ${(metricas.comisionPromedio / 1000).toFixed(1)}k
+            {formatCurrency(metricas.comisionPromedio)}
           </p>
           <p className="text-xs text-gray-500 mt-1">Por servicio</p>
         </div>
@@ -356,7 +356,7 @@ export default function AdminFinanzas() {
           <div>
             <p className="text-xs md:text-sm text-blue-800 font-medium">Proyección Fin de Mes</p>
             <p className="text-2xl md:text-4xl font-bold text-blue-900 mt-2">
-              ${(metricas.proyeccionMensual / 1000).toFixed(0)}k
+              {formatCurrency(metricas.proyeccionMensual)}
             </p>
             <p className="text-xs md:text-sm text-blue-700 mt-1">
               Basado en rendimiento actual
