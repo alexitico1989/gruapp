@@ -8,7 +8,7 @@ import {
   Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, UrlTile } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
@@ -569,7 +569,6 @@ export default function GrueroDashboard() {
         <MapView
           ref={mapRef}
           style={styles.map}
-          provider={PROVIDER_GOOGLE}
           initialRegion={{
             latitude: location?.latitude || -33.4489,
             longitude: location?.longitude || -70.6693,
@@ -579,6 +578,10 @@ export default function GrueroDashboard() {
           showsUserLocation
           showsMyLocationButton
         >
+          <UrlTile
+            urlTemplate="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            maximumZ={19}
+          />
           {location && disponible && (
             <Marker
               coordinate={location}

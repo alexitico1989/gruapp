@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE, MapPressEvent } from 'react-native-maps';
+import MapView, { Marker, Polyline, UrlTile, MapPressEvent } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
@@ -658,7 +658,6 @@ export default function ClienteDashboard() {
         <MapView
           ref={mapRef}
           style={styles.map}
-          provider={PROVIDER_GOOGLE}
           initialRegion={{
             latitude: location?.latitude || -33.4489,
             longitude: location?.longitude || -70.6693,
@@ -669,6 +668,10 @@ export default function ClienteDashboard() {
           showsMyLocationButton
           onPress={handleMapPress}
         >
+          <UrlTile
+            urlTemplate="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            maximumZ={19}
+          />
           {location && (
             <Marker
               coordinate={location}
