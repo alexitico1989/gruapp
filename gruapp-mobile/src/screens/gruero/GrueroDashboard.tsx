@@ -8,12 +8,13 @@ import {
   Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MapView, { Marker, UrlTile } from 'react-native-maps';
+import LeafletMap, { Marker, LeafletMapRef } from '../../components/LeafletMap';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import { useSocket } from '../../contexts/SocketContext';
-import { useNotificacionesStore } from '../../store/notificacionesStore'; // ✅ NUEVO
+import { useNotificacionesStore } from '../../store/notificacionesStore';
+import { usePushNotification } from '../../contexts/PushNotificationContext';
 import api from '../../services/api';
 import { colors, spacing } from '../../theme/colors';
 import ServicioDisponibleModal from '../../components/ServicioDisponibleModal';
@@ -48,8 +49,9 @@ interface Servicio {
 export default function GrueroDashboard() {
   const { user, logout } = useAuthStore();
   const { socket, connected } = useSocket();
-  const agregarNotificacion = useNotificacionesStore((state) => state.agregarNotificacion); // ✅ NUEVO
-  const mapRef = useRef<MapView>(null);
+  const agregarNotificacion = useNotificacionesStore((state) => state.agregarNotificacion);
+  const { pendingNotification, clearPendingNotification } = usePushNotification();
+  const mapRef = useRef<LeafletMapRef>(null);
 
   const [location, setLocation] = useState<{
     latitude: number;
@@ -71,6 +73,42 @@ export default function GrueroDashboard() {
     cargarServicioActivo();
   }, []);
 
+  // 📱 Cuando la app se abre desde una notificación push
+  useEffect(() => {
+    if (!pendingNotification) return;
+
+    console.log('📱 Procesando notificación pendiente:', pendingNotification);
+
+    if (pendingNotification.tipo === 'NUEVO_SERVICIO' && pendingNotification.servicioId) {
+      const fetchServicio = async () => {
+        try {
+          const response = await api.get(`/servicios/${pendingNotification.servicioId}`);
+          if (response.data.success && response.data.data) {
+            const servicio = response.data.data as Servicio;
+            if (servicio.status === 'SOLICITADO') {
+              setServicioDisponible(servicio);
+              setMostrarModalServicio(true);
+            } else {
+              Toast.show({
+                type: 'info',
+                text1: 'Servicio no disponible',
+                text2: 'Este servicio ya fue aceptado por otro gruero',
+                position: 'top',
+                visibilityTime: 3000,
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Error obteniendo servicio desde notificación:', error);
+        }
+      };
+
+      fetchServicio();
+    }
+
+    clearPendingNotification();
+  }, [pendingNotification, clearPendingNotification]);
+
   // ✅ SOCKET LISTENERS CON NOTIFICACIONES
   useEffect(() => {
     if (!socket || !disponible) return;
@@ -78,32 +116,28 @@ export default function GrueroDashboard() {
     console.log('📡 Configurando listeners de gruero...');
 
     socket.on('servicio-pendiente', (data: any) => {
-  console.log('Nuevo servicio disponible:', data);
+      console.log('Nuevo servicio disponible:', data);
 
-  // Agregar notificación siempre
-  agregarNotificacion({
-    tipo: 'NUEVO_SERVICIO',
-    titulo: '🚗 Nuevo Servicio Disponible',
-    mensaje: `${data.servicio.origenDireccion} → ${data.servicio.destinoDireccion}`,
-    servicioId: data.servicio.id,
-  });
+      const servicio = data.servicio as Servicio;
 
-  // Mostrar modal para **todos los tipos de vehículo**
-  setServicioDisponible(data.servicio);
-  setMostrarModalServicio(true);
-});
+      agregarNotificacion({
+        tipo: 'NUEVO_SERVICIO',
+        titulo: 'Nuevo Servicio Disponible',
+        mensaje: `${servicio.origenDireccion} → ${servicio.destinoDireccion}`,
+        servicioId: servicio.id,
+      });
 
+      setServicioDisponible(servicio);
+      setMostrarModalServicio(true);
+    });
 
-
-    // ✅ Servicio cancelado
     socket.on('servicio:canceladoNotificacion', (data: any) => {
-      console.log('🚫 Servicio cancelado:', data);
+      console.log('Servicio cancelado:', data);
       
       if (data.canceladoPor === 'CLIENTE') {
-        // ✅ NUEVO: Agregar notificación
         agregarNotificacion({
           tipo: 'SERVICIO_CANCELADO',
-          titulo: '❌ Servicio Cancelado',
+          titulo: 'Servicio Cancelado',
           mensaje: 'El cliente canceló el servicio',
           servicioId: data.servicioId,
         });
@@ -125,15 +159,13 @@ export default function GrueroDashboard() {
       setServicioActivo(null);
     });
 
-    // ✅ Estado actualizado por cliente
     socket.on('cliente:estadoActualizado', (data: { servicioId: string; status: string }) => {
-      console.log('📢 Estado actualizado por cliente:', data);
+      console.log('Estado actualizado por cliente:', data);
       
       if (data.status === 'COMPLETADO') {
-        // ✅ NUEVO: Agregar notificación
         agregarNotificacion({
           tipo: 'SERVICIO_COMPLETADO',
-          titulo: '✅ Servicio Completado',
+          titulo: 'Servicio Completado',
           mensaje: 'El cliente marcó el servicio como completado',
           servicioId: data.servicioId,
         });
@@ -158,9 +190,7 @@ export default function GrueroDashboard() {
     };
   }, [socket, disponible, servicioDisponible]);
 
-  
-
-  // 📱 CONFIGURAR NOTIFICACIONES PUSH
+  // 📱 CONFIGURAR NOTIFICACIONES PUSH (Expo - backup)
   useEffect(() => {
     const setupNotifications = async () => {
       if (!user?.id) return;
@@ -171,17 +201,11 @@ export default function GrueroDashboard() {
       }
 
       const receivedSubscription = addNotificationReceivedListener(notification => {
-        console.log('Notificación recibida:', notification);
+        console.log('Notificación recibida (foreground):', notification);
       });
 
       const responseSubscription = addNotificationResponseReceivedListener(response => {
-        console.log('Usuario tocó notificación:', response);
-        const data = response.notification.request.content.data;
-        
-        if (data.tipo === 'NUEVO_SERVICIO' && data.servicio) {
-          setServicioDisponible(data.servicio);
-          setMostrarModalServicio(true);
-        }
+        console.log('Usuario tocó notificación (Expo):', response);
       });
 
       return () => {
@@ -281,11 +305,10 @@ export default function GrueroDashboard() {
 
       if (socket && user?.id) {
         socket.emit('gruero:updateLocation', {
-      grueroId: user.id,
-      lat: loc.latitude,
-      lng: loc.longitude,
-    });
-
+          grueroId: user.id,
+          lat: loc.latitude,
+          lng: loc.longitude,
+        });
       }
     } catch (error) {
       console.error('Error actualizando ubicación:', error);
@@ -350,10 +373,9 @@ export default function GrueroDashboard() {
         
         if (socket) {
           socket.emit('servicio:aceptado', {
-          servicioId: servicioDisponible.id,
-          grueroId: user!.id,
-        });
-
+            servicioId: servicioDisponible.id,
+            grueroId: user!.id,
+          });
         }
 
         setMostrarModalServicio(false);
@@ -376,21 +398,19 @@ export default function GrueroDashboard() {
   };
 
   const rechazarServicio = () => {
-  // ✅ Cerrar modal inmediatamente
-  setMostrarModalServicio(false);
-  setServicioDisponible(null);
-  
-  // ✅ Mostrar notificación de rechazo
-  Toast.show({
-    type: 'info',
-    text1: 'Servicio Rechazado',
-    text2: 'Has rechazado el servicio',
-    position: 'top',
-    visibilityTime: 2000,
-  });
-  
-  console.log('❌ Servicio rechazado');
-};
+    setMostrarModalServicio(false);
+    setServicioDisponible(null);
+    
+    Toast.show({
+      type: 'info',
+      text1: 'Servicio Rechazado',
+      text2: 'Has rechazado el servicio',
+      position: 'top',
+      visibilityTime: 2000,
+    });
+    
+    console.log('Servicio rechazado');
+  };
 
   const actualizarEstadoServicio = async (nuevoEstado: string) => {
     if (!servicioActivo) return;
@@ -425,10 +445,9 @@ export default function GrueroDashboard() {
         }
         
         if (nuevoEstado === 'COMPLETADO') {
-          // ✅ NUEVO: Agregar notificación de servicio completado
           agregarNotificacion({
             tipo: 'SERVICIO_COMPLETADO',
-            titulo: '✅ Servicio Completado',
+            titulo: 'Servicio Completado',
             mensaje: `Has completado el servicio. Ganancia: $${servicioActivo.totalGruero.toLocaleString('es-CL')}`,
             servicioId: servicioActivo.id,
           });
@@ -471,7 +490,7 @@ export default function GrueroDashboard() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>Hola, {user?.nombre}!</Text>
@@ -540,7 +559,7 @@ export default function GrueroDashboard() {
                 style={[styles.accionButton, { backgroundColor: '#3b82f6' }]}
                 onPress={() => actualizarEstadoServicio('EN_CAMINO')}
               >
-                <Text style={styles.accionButtonText}>🚗 En Camino</Text>
+                <Text style={styles.accionButtonText}>En Camino</Text>
               </TouchableOpacity>
             )}
             
@@ -549,7 +568,7 @@ export default function GrueroDashboard() {
                 style={[styles.accionButton, { backgroundColor: '#8b5cf6' }]}
                 onPress={() => actualizarEstadoServicio('EN_SITIO')}
               >
-                <Text style={styles.accionButtonText}>📍 En Sitio</Text>
+                <Text style={styles.accionButtonText}>En Sitio</Text>
               </TouchableOpacity>
             )}
             
@@ -558,7 +577,7 @@ export default function GrueroDashboard() {
                 style={[styles.accionButton, { backgroundColor: '#10b981' }]}
                 onPress={() => actualizarEstadoServicio('COMPLETADO')}
               >
-                <Text style={styles.accionButtonText}>✅ Completar</Text>
+                <Text style={styles.accionButtonText}>Completar</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -566,32 +585,26 @@ export default function GrueroDashboard() {
       )}
 
       <View style={styles.mapContainer}>
-        <MapView
+        <LeafletMap
           ref={mapRef}
           style={styles.map}
-          mapType="none"
           initialRegion={{
             latitude: location?.latitude || -33.4489,
             longitude: location?.longitude || -70.6693,
             latitudeDelta: 0.01,
             longitudeDelta: 0.01,
           }}
-          showsUserLocation
-          showsMyLocationButton
         >
-          <UrlTile
-            urlTemplate="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            maximumZ={19}
-            flipY={false}
-          />
           {location && disponible && (
             <Marker
+              key="my-location"
               coordinate={location}
               title="Tu ubicación"
               description="Visible para clientes"
+              pinColor={colors.primary}
             />
           )}
-        </MapView>
+        </LeafletMap>
 
         <TouchableOpacity
           style={styles.centerButton}

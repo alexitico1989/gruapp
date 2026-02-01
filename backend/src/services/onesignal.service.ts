@@ -124,7 +124,7 @@ class OneSignalService {
    * NOTIFICACIONES ESPECÍFICAS POR TIPO DE EVENTO
    */
 
-  // 🆕 Nuevo servicio disponible (para grueros)
+  // Nuevo servicio disponible (para grueros)
   async notifyNuevoServicio(
     grueroUserId: string,
     servicioId: string,
@@ -134,7 +134,7 @@ class OneSignalService {
     return this.sendNotification({
       userId: grueroUserId,
       userType: 'GRUERO',
-      titulo: '🚗 Nuevo servicio disponible',
+      titulo: 'Nuevo servicio disponible',
       mensaje: `Servicio de ${tipoVehiculo} a ${distancia.toFixed(1)}km de distancia`,
       data: {
         tipo: 'NUEVO_SERVICIO',
@@ -145,7 +145,7 @@ class OneSignalService {
     });
   }
 
-  // ✅ Servicio aceptado (para cliente)
+  // Servicio aceptado (para cliente)
   async notifyServicioAceptado(
     clienteUserId: string,
     servicioId: string,
@@ -154,7 +154,7 @@ class OneSignalService {
     return this.sendNotification({
       userId: clienteUserId,
       userType: 'CLIENTE',
-      titulo: '✅ Gruero encontrado',
+      titulo: 'Gruero encontrado',
       mensaje: `${grueroNombre} aceptó tu solicitud`,
       data: {
         tipo: 'SERVICIO_ACEPTADO',
@@ -163,12 +163,12 @@ class OneSignalService {
     });
   }
 
-  // 🚛 Gruero en camino (para cliente)
+  // Gruero en camino (para cliente)
   async notifyEnCamino(clienteUserId: string, servicioId: string) {
     return this.sendNotification({
       userId: clienteUserId,
       userType: 'CLIENTE',
-      titulo: '🚛 Gruero en camino',
+      titulo: 'Gruero en camino',
       mensaje: 'El gruero está en camino a tu ubicación',
       data: {
         tipo: 'EN_CAMINO',
@@ -177,12 +177,12 @@ class OneSignalService {
     });
   }
 
-  // 📍 Gruero llegó (para cliente)
+  // Gruero llegó (para cliente)
   async notifyEnSitio(clienteUserId: string, servicioId: string) {
     return this.sendNotification({
       userId: clienteUserId,
       userType: 'CLIENTE',
-      titulo: '📍 Gruero ha llegado',
+      titulo: 'Gruero ha llegado',
       mensaje: 'El gruero llegó a tu ubicación',
       data: {
         tipo: 'EN_SITIO',
@@ -191,7 +191,7 @@ class OneSignalService {
     });
   }
 
-  // ✅ Servicio completado
+  // Servicio completado
   async notifyServicioCompletado(
     clienteUserId: string,
     servicioId: string
@@ -199,8 +199,8 @@ class OneSignalService {
     return this.sendNotification({
       userId: clienteUserId,
       userType: 'CLIENTE',
-      titulo: '✅ Servicio completado',
-      mensaje: '¡Tu servicio ha sido completado! Por favor califícanos',
+      titulo: 'Servicio completado',
+      mensaje: 'Tu servicio ha sido completado. Por favor califícanos',
       data: {
         tipo: 'COMPLETADO',
         servicioId,
@@ -208,7 +208,7 @@ class OneSignalService {
     });
   }
 
-  // ❌ Servicio cancelado
+  // Servicio cancelado
   async notifyServicioCancelado(
     userId: string,
     userType: 'CLIENTE' | 'GRUERO',
@@ -218,7 +218,7 @@ class OneSignalService {
     return this.sendNotification({
       userId,
       userType,
-      titulo: '❌ Servicio cancelado',
+      titulo: 'Servicio cancelado',
       mensaje: motivo || 'El servicio ha sido cancelado',
       data: {
         tipo: 'CANCELADO',
@@ -228,18 +228,17 @@ class OneSignalService {
     });
   }
 
-  // ⭐ Nueva calificación (para gruero)
+  // Nueva calificación (para gruero)
   async notifyNuevaCalificacion(
     grueroUserId: string,
     servicioId: string,
     calificacion: number
   ) {
-    const estrellas = '⭐'.repeat(calificacion);
     return this.sendNotification({
       userId: grueroUserId,
       userType: 'GRUERO',
-      titulo: '⭐ Nueva calificación',
-      mensaje: `Recibiste ${estrellas} (${calificacion}/5)`,
+      titulo: 'Nueva calificación',
+      mensaje: `Recibiste una calificación de ${calificacion}/5`,
       data: {
         tipo: 'CALIFICACION',
         servicioId,
@@ -248,7 +247,7 @@ class OneSignalService {
     });
   }
 
-  // 💰 Pago recibido (para gruero)
+  // Pago recibido (para gruero)
   async notifyPagoRecibido(
     grueroUserId: string,
     servicioId: string,
@@ -257,7 +256,7 @@ class OneSignalService {
     return this.sendNotification({
       userId: grueroUserId,
       userType: 'GRUERO',
-      titulo: '💰 Pago recibido',
+      titulo: 'Pago recibido',
       mensaje: `Recibiste $${monto.toLocaleString('es-CL')} por tu servicio`,
       data: {
         tipo: 'PAGO_RECIBIDO',
@@ -267,7 +266,7 @@ class OneSignalService {
     });
   }
 
-  // 📢 Notificación administrativa
+  // Notificación administrativa
   async notifyAdministrativa(
     userId: string,
     userType: 'CLIENTE' | 'GRUERO',

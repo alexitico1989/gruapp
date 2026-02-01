@@ -7,19 +7,18 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MapView, { Marker, Polyline, UrlTile, MapPressEvent } from 'react-native-maps';
+import LeafletMap, { Marker, Polyline, LeafletMapRef } from '../../components/LeafletMap';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import { useSocket } from '../../contexts/SocketContext';
-import { useNotificacionesStore } from '../../store/notificacionesStore'; // ✅ NUEVO
+import { useNotificacionesStore } from '../../store/notificacionesStore';
 import { colors, spacing } from '../../theme/colors';
 import SolicitarServicioModal from '../../components/SolicitarServicioModal';
 import ServicioCompletadoModal from '../../components/ServicioCompletadoModal';
 import api from '../../services/api';
 import { RoutingService } from '../../services/routing.service';
 import { GeocodingService } from '../../services/geocoding.service';
-import GruaIcon from '../../components/GruaIcon';
 import Toast from 'react-native-toast-message';
 
 interface Servicio {
@@ -51,8 +50,8 @@ interface Servicio {
 export default function ClienteDashboard() {
   const { user, logout } = useAuthStore();
   const { socket, connected } = useSocket();
-  const agregarNotificacion = useNotificacionesStore((state) => state.agregarNotificacion); // ✅ NUEVO
-  const mapRef = useRef<MapView>(null);
+  const agregarNotificacion = useNotificacionesStore((state) => state.agregarNotificacion);
+  const mapRef = useRef<LeafletMapRef>(null);
 
   const [location, setLocation] = useState<{
     latitude: number;
@@ -99,7 +98,6 @@ export default function ClienteDashboard() {
         });
       }
 
-      // ✅ NUEVO: Agregar notificación
       agregarNotificacion({
         tipo: 'SERVICIO_ACEPTADO',
         titulo: '¡Gruero en Camino!',
@@ -127,7 +125,6 @@ export default function ClienteDashboard() {
       };
 
       if (mensajes[data.status]) {
-        // ✅ NUEVO: Agregar notificación
         agregarNotificacion({
           tipo: 'ESTADO_ACTUALIZADO',
           titulo: mensajes[data.status].text1,
@@ -180,7 +177,6 @@ export default function ClienteDashboard() {
       console.log('Servicio cancelado:', data);
       
       if (data.canceladoPor === 'GRUERO') {
-        // ✅ NUEVO: Agregar notificación
         agregarNotificacion({
           tipo: 'SERVICIO_CANCELADO',
           titulo: 'Servicio Cancelado',
@@ -337,12 +333,7 @@ export default function ClienteDashboard() {
 
         if (mapRef.current && route.coordinates.length > 0) {
           mapRef.current.fitToCoordinates(route.coordinates, {
-            edgePadding: {
-              top: 100,
-              right: 50,
-              bottom: 100,
-              left: 50,
-            },
+            edgePadding: { top: 100, right: 50, bottom: 100, left: 50 },
             animated: true,
           });
         }
@@ -404,7 +395,7 @@ export default function ClienteDashboard() {
     });
   };
 
-  const handleMapPress = async (event: MapPressEvent) => {
+  const handleMapPress = async (event: { nativeEvent: { coordinate: { latitude: number; longitude: number } } }) => {
     if (!modoSeleccionDestino) return;
 
     const { latitude, longitude } = event.nativeEvent.coordinate;
@@ -564,7 +555,7 @@ export default function ClienteDashboard() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
         <View>
@@ -655,35 +646,31 @@ export default function ClienteDashboard() {
 
       {/* Mapa */}
       <View style={styles.mapContainer}>
-        <MapView
+        <LeafletMap
           ref={mapRef}
           style={styles.map}
-          mapType="none"
           initialRegion={{
             latitude: location?.latitude || -33.4489,
             longitude: location?.longitude || -70.6693,
             latitudeDelta: 0.01,
             longitudeDelta: 0.01,
           }}
-          showsUserLocation
-          showsMyLocationButton
           onPress={handleMapPress}
         >
-          <UrlTile
-            urlTemplate="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            maximumZ={19}
-            flipY={false}
-          />
+          {/* Ubicación del usuario */}
           {location && (
             <Marker
+              key="my-location"
               coordinate={location}
               title="Tu ubicación"
               pinColor={colors.primary}
             />
           )}
 
+          {/* Destino seleccionado en el mapa */}
           {destinoSeleccionado && (
             <Marker
+              key="destino-seleccionado"
               coordinate={{
                 latitude: destinoSeleccionado.latitude,
                 longitude: destinoSeleccionado.longitude,
@@ -694,36 +681,35 @@ export default function ClienteDashboard() {
             />
           )}
 
+          {/* Grueros disponibles cercanos (markers custom con GruaIcon) */}
           {(!servicioActivo || servicioActivo.status === 'SOLICITADO') && gruerosDisponibles.map((gruero) => (
             <Marker
-              key={gruero.id}
+              key={`gruero-${gruero.id}`}
               coordinate={{
                 latitude: gruero.ubicacion.lat,
                 longitude: gruero.ubicacion.lng,
               }}
               title={gruero.nombre}
               description={`${gruero.marca} ${gruero.modelo} - ${gruero.patente}`}
-            >
-              <View style={styles.grueroMarker}>
-                <GruaIcon size={18} color="#fff" />
-              </View>
-            </Marker>
+              _customIcon="grua"
+            />
           ))}
 
+          {/* Gruero asignado al servicio activo */}
           {servicioActivo && servicioActivo.status !== 'SOLICITADO' && grueroAsignadoUbicacion && (
             <Marker
+              key="gruero-asignado"
               coordinate={grueroAsignadoUbicacion}
               title={`${servicioActivo.gruero?.user.nombre} ${servicioActivo.gruero?.user.apellido}`}
               description="Tu gruero asignado"
-            >
-              <View style={styles.grueroAsignadoMarker}>
-                <GruaIcon size={20} color="#fff" />
-              </View>
-            </Marker>
+              _customIcon="grua-assigned"
+            />
           )}
 
+          {/* Destino del servicio activo */}
           {servicioActivo && (
             <Marker
+              key="destino-servicio"
               coordinate={{
                 latitude: servicioActivo.destinoLat,
                 longitude: servicioActivo.destinoLng,
@@ -734,15 +720,15 @@ export default function ClienteDashboard() {
             />
           )}
 
+          {/* Ruta origen → destino */}
           {routeCoordinates.length > 0 && (
             <Polyline
               coordinates={routeCoordinates}
               strokeWidth={6}
               strokeColor="#FF7A3D"
-              lineDashPattern={[0]}
             />
           )}
-        </MapView>
+        </LeafletMap>
 
         <TouchableOpacity
           style={styles.centerButton}
@@ -835,277 +821,45 @@ export default function ClienteDashboard() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-  },
-  loadingText: {
-    marginTop: spacing.md,
-    color: colors.text.secondary,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: spacing.md,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  greeting: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: colors.secondary,
-  },
-  connectionStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-    gap: 6,
-  },
-  connectionIndicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  connectionText: {
-    fontSize: 12,
-    color: colors.text.secondary,
-  },
-  logoutButton: {
-    padding: spacing.xs,
-  },
-  seleccionBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: '#f0f9ff',
-    padding: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: '#bfdbfe',
-  },
-  seleccionBannerText: {
-    flex: 1,
-    fontSize: 14,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  servicioActivoContainer: {
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    padding: spacing.md,
-  },
-  servicioActivoHeader: {
-    marginBottom: spacing.sm,
-  },
-  servicioActivoTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.secondary,
-  },
-  grueroInfo: {
-    backgroundColor: '#f0f9ff',
-    padding: spacing.md,
-    borderRadius: 8,
-    marginBottom: spacing.sm,
-  },
-  grueroNombre: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.secondary,
-  },
-  grueroVehiculo: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    marginTop: 4,
-  },
-  phoneButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 8,
-  },
-  phoneText: {
-    fontSize: 14,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  servicioAcciones: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  completarButton: {
-    flex: 1,
-    backgroundColor: colors.success,
-    padding: spacing.md,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  completarButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  cancelarButton: {
-    flex: 1,
-    backgroundColor: colors.error,
-    padding: spacing.md,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  cancelarButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  mapContainer: {
-    flex: 1,
-    position: 'relative',
-  },
-  map: {
-    flex: 1,
-  },
-  grueroMarker: {
-    backgroundColor: '#1e40af',
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  grueroAsignadoMarker: {
-    backgroundColor: '#10b981',
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  centerButton: {
-    position: 'absolute',
-    top: spacing.md,
-    right: spacing.md,
-    backgroundColor: '#fff',
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  confirmacionContainer: {
-    backgroundColor: '#fff',
-    padding: spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  destinoInfo: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-    padding: spacing.md,
-    backgroundColor: '#f0f9ff',
-    borderRadius: 8,
-  },
-  destinoTexto: {
-    flex: 1,
-    fontSize: 14,
-    color: colors.text.primary,
-    lineHeight: 20,
-  },
-  confirmacionBotones: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  cancelarSeleccionButton: {
-    flex: 1,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  cancelarSeleccionText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text.primary,
-  },
-  confirmarButton: {
-    flex: 2,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    padding: spacing.md,
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-  },
-  confirmarButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  bottomContainer: {
-    backgroundColor: '#fff',
-    padding: spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  requestButton: {
-    backgroundColor: colors.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.lg,
-    borderRadius: 12,
-    gap: spacing.sm,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  requestButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  infoContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: spacing.md,
-  },
-  infoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  infoText: {
-    fontSize: 12,
-    color: colors.text.secondary,
-  },
+  container: { flex: 1, backgroundColor: colors.background },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background },
+  loadingText: { marginTop: spacing.md, color: colors.text.secondary },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.md, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: colors.border },
+  greeting: { fontSize: 20, fontWeight: 'bold', color: colors.secondary },
+  connectionStatus: { flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 6 },
+  connectionIndicator: { width: 8, height: 8, borderRadius: 4 },
+  connectionText: { fontSize: 12, color: colors.text.secondary },
+  logoutButton: { padding: spacing.xs },
+  seleccionBanner: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: '#f0f9ff', padding: spacing.md, borderBottomWidth: 1, borderBottomColor: '#bfdbfe' },
+  seleccionBannerText: { flex: 1, fontSize: 14, color: colors.primary, fontWeight: '600' },
+  servicioActivoContainer: { backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: colors.border, padding: spacing.md },
+  servicioActivoHeader: { marginBottom: spacing.sm },
+  servicioActivoTitle: { fontSize: 16, fontWeight: 'bold', color: colors.secondary },
+  grueroInfo: { backgroundColor: '#f0f9ff', padding: spacing.md, borderRadius: 8, marginBottom: spacing.sm },
+  grueroNombre: { fontSize: 16, fontWeight: '600', color: colors.secondary },
+  grueroVehiculo: { fontSize: 14, color: colors.text.secondary, marginTop: 4 },
+  phoneButton: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
+  phoneText: { fontSize: 14, color: colors.primary, fontWeight: '600' },
+  servicioAcciones: { flexDirection: 'row', gap: spacing.sm },
+  completarButton: { flex: 1, backgroundColor: colors.success, padding: spacing.md, borderRadius: 8, alignItems: 'center' },
+  completarButtonText: { color: '#fff', fontWeight: 'bold' },
+  cancelarButton: { flex: 1, backgroundColor: colors.error, padding: spacing.md, borderRadius: 8, alignItems: 'center' },
+  cancelarButtonText: { color: '#fff', fontWeight: 'bold' },
+  mapContainer: { flex: 1, position: 'relative' },
+  map: { flex: 1 },
+  centerButton: { position: 'absolute', top: spacing.md, right: spacing.md, backgroundColor: '#fff', width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 4 },
+  confirmacionContainer: { backgroundColor: '#fff', padding: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border },
+  destinoInfo: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, marginBottom: spacing.md, padding: spacing.md, backgroundColor: '#f0f9ff', borderRadius: 8 },
+  destinoTexto: { flex: 1, fontSize: 14, color: colors.text.primary, lineHeight: 20 },
+  confirmacionBotones: { flexDirection: 'row', gap: spacing.sm },
+  cancelarSeleccionButton: { flex: 1, padding: spacing.md, borderWidth: 1, borderColor: colors.border, borderRadius: 8, alignItems: 'center' },
+  cancelarSeleccionText: { fontSize: 16, fontWeight: '600', color: colors.text.primary },
+  confirmarButton: { flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, padding: spacing.md, backgroundColor: colors.primary, borderRadius: 8 },
+  confirmarButtonText: { fontSize: 16, fontWeight: 'bold', color: '#fff' },
+  bottomContainer: { backgroundColor: '#fff', padding: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border },
+  requestButton: { backgroundColor: colors.primary, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: spacing.lg, borderRadius: 12, gap: spacing.sm, shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 },
+  requestButtonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  infoContainer: { flexDirection: 'row', justifyContent: 'space-around', marginTop: spacing.md },
+  infoItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  infoText: { fontSize: 12, color: colors.text.secondary },
 });

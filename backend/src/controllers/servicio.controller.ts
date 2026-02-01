@@ -923,6 +923,13 @@ if (tipoServicio === 'SUV_CAMIONETA') {
       if (notificacion) {
         io.to(`cliente-${servicioActualizado.cliente.userId}`).emit('nueva-notificacion', notificacion);
       }
+
+      // 🔔 Push notification al cliente
+      await OneSignalService.notifyServicioAceptado(
+        servicioActualizado.cliente.userId,
+        servicioActualizado.id,
+        `${gruero.user.nombre} ${gruero.user.apellido}`
+      );
     }
 
     return res.status(200).json({
@@ -1045,6 +1052,23 @@ if (tipoServicio === 'SUV_CAMIONETA') {
         if (notificacion) {
           io.to(`cliente-${servicioActualizado.cliente.userId}`).emit('nueva-notificacion', notificacion);
         }
+
+        // 🔔 Push notifications según estado
+        const clienteUserId = servicioActualizado.cliente.userId;
+        const svcId = servicioActualizado.id;
+
+        if (status === 'EN_CAMINO') {
+          await OneSignalService.notifyEnCamino(clienteUserId, svcId);
+        }
+        if (status === 'EN_SITIO') {
+          await OneSignalService.notifyEnSitio(clienteUserId, svcId);
+        }
+        if (status === 'COMPLETADO') {
+          await OneSignalService.notifyServicioCompletado(clienteUserId, svcId);
+        }
+        if (status === 'CANCELADO') {
+          await OneSignalService.notifyServicioCancelado(clienteUserId, 'CLIENTE', svcId);
+        }
       }
 
       return res.status(200).json({
@@ -1155,10 +1179,26 @@ if (tipoServicio === 'SUV_CAMIONETA') {
             { servicioId: servicioActualizado.id, grueroId: servicio.grueroId, motivo }
           );
 
-          if (notificacionGruero) {
+         if (notificacionGruero) {
             io.to(`gruero-${servicio.gruero.user.id}`).emit('nueva-notificacion', notificacionGruero);
           }
+
+          // 🔔 Push notification al gruero
+          await OneSignalService.notifyServicioCancelado(
+            servicio.gruero.user.id,
+            'GRUERO',
+            servicioActualizado.id,
+            motivo
+          );
         }
+
+        // 🔔 Push notification al cliente
+        await OneSignalService.notifyServicioCancelado(
+          servicio.cliente.userId,
+          'CLIENTE',
+          servicioActualizado.id,
+          motivo
+        );
       }
 
       return res.status(200).json({

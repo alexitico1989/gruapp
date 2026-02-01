@@ -49,8 +49,6 @@ export default function GrueroNavigator() {
         tabBarStyle: {
           borderTopWidth: 1,
           borderTopColor: colors.border,
-          height: 60,
-          paddingBottom: 8,
           paddingTop: 8,
         },
       }}

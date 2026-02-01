@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface Notificacion {
   id: string;
-  tipo: 'SERVICIO_ACEPTADO' | 'ESTADO_ACTUALIZADO' | 'SERVICIO_CANCELADO' | 'SERVICIO_COMPLETADO' | 'RECLAMO_ACTUALIZADO' | 'GENERAL';
+  tipo: 'NUEVO_SERVICIO' | 'SERVICIO_ACEPTADO' | 'ESTADO_ACTUALIZADO' | 'SERVICIO_CANCELADO' | 'SERVICIO_COMPLETADO' | 'RECLAMO_ACTUALIZADO' | 'GENERAL';
   titulo: string;
   mensaje: string;
   leida: boolean;
