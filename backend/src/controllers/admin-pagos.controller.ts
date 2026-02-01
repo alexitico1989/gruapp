@@ -194,7 +194,7 @@ export class AdminPagosController {
         },
       });
 
-      // Asignar todos los servicios a este pago
+     // Asignar todos los servicios a este pago y marcar como pagados
       await prisma.servicio.updateMany({
         where: {
           id: {
@@ -203,6 +203,7 @@ export class AdminPagosController {
         },
         data: {
           pagoId: pago.id,
+          pagado: true,
         },
       });
 
