@@ -14,6 +14,7 @@ interface Servicio {
   totalGruero: number;
   comisionPlataforma: number;
   status: string;
+  pagado: boolean;
   solicitadoAt: string;
   completadoAt?: string;
   cliente: {
@@ -223,7 +224,7 @@ export default function AdminServicios() {
                 servicios.map((servicio) => (
                   <tr key={servicio.id} className="hover:bg-gray-50">
                     <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-mono text-gray-900">
+                      <div className="text-sm font-mono text-gray-900 truncate max-w-[120px]" title={servicio.id}>
                         #{servicio.id.slice(0, 8)}
                       </div>
                       <div className="text-xs text-gray-500">
@@ -267,6 +268,13 @@ export default function AdminServicios() {
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(servicio.status)}`}>
                         {servicio.status.replace('_', ' ')}
                       </span>
+                      {servicio.status === 'COMPLETADO' && (
+                        <div className="mt-1">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${servicio.pagado ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                            {servicio.pagado ? '💰 Pagado' : '⏳ Sin pagar'}
+                          </span>
+                        </div>
+                      )}
                     </td>
                     <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
@@ -313,12 +321,19 @@ export default function AdminServicios() {
               {/* Header */}
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <p className="text-xs font-mono text-gray-500">#{servicio.id.slice(0, 8)}</p>
+                  <p className="text-xs font-mono text-gray-500" title={servicio.id}>#{servicio.id.slice(0, 8)}</p>
                   <p className="text-xs text-gray-400 mt-0.5">{formatDate(servicio.solicitadoAt)}</p>
                 </div>
-                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(servicio.status)}`}>
-                  {servicio.status.replace('_', ' ')}
-                </span>
+                <div className="flex flex-col items-end gap-1">
+                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(servicio.status)}`}>
+                    {servicio.status.replace('_', ' ')}
+                  </span>
+                  {servicio.status === 'COMPLETADO' && (
+                    <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${servicio.pagado ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                      {servicio.pagado ? '💰 Pagado' : '⏳ Sin pagar'}
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Cliente y Gruero */}

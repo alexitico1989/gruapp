@@ -146,9 +146,6 @@ export default function GrueroPerfil({ navigation }: Props) {
     navigation.navigate('GrueroGanancias');
   };
 
-  const abrirPagos = () => {
-    navigation.navigate('GrueroPagosPendientes');
-  };
 
   // ✅ Abrir modal de editar vehículo
   const editarVehiculo = () => {
@@ -337,16 +334,9 @@ export default function GrueroPerfil({ navigation }: Props) {
           <View style={styles.quickAccessContainer}>
             <TouchableOpacity style={styles.quickAccessCard} onPress={abrirGanancias}>
               <View style={[styles.quickAccessIcon, { backgroundColor: '#dcfce7' }]}>
-                <Ionicons name="cash" size={28} color="#16a34a" />
+                <Ionicons name="trending-up" size={28} color="#16a34a" />
               </View>
               <Text style={styles.quickAccessLabel}>Mis Ganancias</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.quickAccessCard} onPress={abrirPagos}>
-              <View style={[styles.quickAccessIcon, { backgroundColor: '#dbeafe' }]}>
-                <Ionicons name="wallet" size={28} color="#2563eb" />
-              </View>
-              <Text style={styles.quickAccessLabel}>Pagos</Text>
             </TouchableOpacity>
           </View>
         </View>
