@@ -215,7 +215,7 @@ export default function GrueroPagosPendientes() {
             <View style={styles.pagoHeader}>
               <View style={styles.pagoInfo}>
                 <Text style={styles.pagoPeriodo}>Servicio ID:</Text>
-                <Text style={styles.pagoIdNumber}>{s.servicioId}</Text> {/* Estilo pequeño */}
+                <Text style={styles.pagoIdNumber}>{s.servicioId}</Text>
                 <Text style={styles.pagoFechas}>{fechaFormateada}</Text>
               </View>
               <View
@@ -227,11 +227,10 @@ export default function GrueroPagosPendientes() {
                 <Text
                   style={[
                     styles.estadoText,
-                    { color: getEstadoColor(pago.estado) },
+                    { color: getEstadoColor(s.estado) },
                   ]}
                 >
-                  {getEstadoTexto(pago.estado)}
-
+                  {getEstadoTexto(s.estado)}
                 </Text>
               </View>
             </View>

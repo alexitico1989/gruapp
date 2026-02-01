@@ -164,6 +164,7 @@ export class GrueroPagosController {
                 origenDireccion: pago.servicios[0].origenDireccion,
                 destinoDireccion: pago.servicios[0].destinoDireccion,
                 totalGruero: pago.servicios[0].totalGruero,
+                estado: pago.estado,
               }
             : {
                 servicioId: 'N/A',
