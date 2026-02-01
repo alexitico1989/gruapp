@@ -560,7 +560,19 @@ export class AdminController {
 
       const servicios = await prisma.servicio.findMany({
         where,
-        include: {
+        select: {
+          id: true,
+          origenDireccion: true,
+          destinoDireccion: true,
+          tipoVehiculo: true,
+          distanciaKm: true,
+          totalCliente: true,
+          totalGruero: true,
+          comisionPlataforma: true,
+          status: true,
+          pagado: true,
+          solicitadoAt: true,
+          completadoAt: true,
           cliente: {
             include: {
               user: {
