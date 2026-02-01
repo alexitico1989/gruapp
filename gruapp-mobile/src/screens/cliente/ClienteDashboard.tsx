@@ -658,6 +658,7 @@ export default function ClienteDashboard() {
         <MapView
           ref={mapRef}
           style={styles.map}
+          mapType="none"
           initialRegion={{
             latitude: location?.latitude || -33.4489,
             longitude: location?.longitude || -70.6693,
@@ -671,6 +672,7 @@ export default function ClienteDashboard() {
           <UrlTile
             urlTemplate="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             maximumZ={19}
+            flipY={false}
           />
           {location && (
             <Marker
