@@ -247,6 +247,7 @@ export default function AdminPagos() {
                         className="p-3 bg-white rounded-lg border flex justify-between items-center"
                       >
                         <div className="flex-1">
+                          <p className="text-xs font-mono text-gray-400">ID: {servicio.id}</p>
                           <p className="text-sm text-gray-600">
                             {new Date(servicio.fecha).toLocaleDateString('es-CL')}
                           </p>
