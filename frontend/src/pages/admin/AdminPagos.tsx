@@ -139,18 +139,18 @@ export default function AdminPagos() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-6 bg-white rounded-lg shadow p-6">
+      <div className="mb-4 md:mb-6 bg-white rounded-lg shadow p-4 md:p-6">
         <div className="flex justify-between items-start">
           <div>
-            <h2 className="text-2xl font-bold text-gray-800">Pagos Pendientes</h2>
-            <p className="text-gray-600 mt-1">Período: {datos?.periodo}</p>
+            <h2 className="text-xl md:text-2xl font-bold text-gray-800">Pagos Pendientes</h2>
+            <p className="text-gray-500 text-sm mt-0.5">Período: {datos?.periodo}</p>
           </div>
           <div className="text-right">
-            <p className="text-sm text-gray-600">Total a Transferir</p>
-            <p className="text-3xl font-bold text-blue-600">
+            <p className="text-xs text-gray-500">Total a Transferir</p>
+            <p className="text-2xl md:text-3xl font-bold text-blue-600">
               ${datos?.montoTotalGeneral.toLocaleString('es-CL')}
             </p>
-            <p className="text-sm text-gray-600 mt-1">
+            <p className="text-xs text-gray-500 mt-0.5">
               {datos?.totalGrueros} gruero{datos?.totalGrueros !== 1 ? 's' : ''}
             </p>
           </div>
@@ -163,70 +163,61 @@ export default function AdminPagos() {
           {datos.grueros.map((gruero) => (
             <div key={gruero.grueroId} className="bg-white rounded-lg shadow">
               {/* Header del Gruero */}
-              <div className="p-6 border-b">
-                <div className="flex justify-between items-start">
+              <div className="p-4 md:p-6 border-b">
+                <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+                  {/* Info izquierda */}
                   <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                      <h3 className="text-xl font-bold text-gray-800">{gruero.nombre}</h3>
-                      <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-lg md:text-xl font-bold text-gray-800">{gruero.nombre}</h3>
+                      <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
                         {gruero.patente}
                       </span>
                     </div>
-                    <p className="text-gray-600 mt-1">{gruero.email}</p>
-                    <p className="text-gray-600">{gruero.telefono}</p>
-                    
+                    <p className="text-gray-600 text-sm mt-1">{gruero.email}</p>
+                    <p className="text-gray-600 text-sm">{gruero.telefono}</p>
+
                     {/* Datos Bancarios */}
                     {gruero.banco && (
                       <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                        <p className="text-sm font-semibold text-gray-700">Datos Bancarios:</p>
-                        <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
-                          <div>
-                            <span className="text-gray-600">Banco:</span>
-                            <span className="ml-2 font-medium">{gruero.banco}</span>
-                          </div>
-                          <div>
-                            <span className="text-gray-600">Tipo:</span>
-                            <span className="ml-2 font-medium">{gruero.tipoCuenta}</span>
-                          </div>
-                          <div>
-                            <span className="text-gray-600">Cuenta:</span>
-                            <span className="ml-2 font-medium">{gruero.numeroCuenta}</span>
-                          </div>
-                          <div>
-                            <span className="text-gray-600">Titular:</span>
-                            <span className="ml-2 font-medium">{gruero.nombreTitular}</span>
-                          </div>
+                        <p className="text-sm font-semibold text-gray-700 mb-2">Datos Bancarios:</p>
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-sm">
+                          <div><span className="text-gray-500">Banco:</span> <span className="font-medium">{gruero.banco}</span></div>
+                          <div><span className="text-gray-500">Tipo:</span> <span className="font-medium">{gruero.tipoCuenta}</span></div>
+                          <div><span className="text-gray-500">Cuenta:</span> <span className="font-medium">{gruero.numeroCuenta}</span></div>
+                          <div><span className="text-gray-500">Titular:</span> <span className="font-medium">{gruero.nombreTitular}</span></div>
                           {gruero.rutTitular && (
-                            <div>
-                              <span className="text-gray-600">RUT:</span>
-                              <span className="ml-2 font-medium">{gruero.rutTitular}</span>
-                            </div>
+                            <div><span className="text-gray-500">RUT:</span> <span className="font-medium">{gruero.rutTitular}</span></div>
                           )}
                         </div>
                       </div>
                     )}
                   </div>
 
-                  <div className="text-right ml-6">
-                    <p className="text-sm text-gray-600">Monto a Transferir</p>
-                    <p className="text-3xl font-bold text-green-600">
-                      ${gruero.montoTotal.toLocaleString('es-CL')}
-                    </p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {gruero.totalServicios} servicio{gruero.totalServicios !== 1 ? 's' : ''}
-                    </p>
-                    
+                  {/* Monto + Botones (abajo en móvil, derecha en desktop) */}
+                  <div className="flex flex-col items-stretch md:items-end md:text-right gap-2 pt-3 md:pt-0 border-t md:border-t-0 border-gray-100">
+                    <div className="flex justify-between md:justify-end md:flex-col md:items-end gap-2">
+                      <div>
+                        <p className="text-xs text-gray-500">Monto a Transferir</p>
+                        <p className="text-2xl md:text-3xl font-bold text-green-600">
+                          ${gruero.montoTotal.toLocaleString('es-CL')}
+                        </p>
+                      </div>
+                      <p className="text-xs text-gray-500 self-end md:self-auto">
+                        {gruero.totalServicios} servicio{gruero.totalServicios !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+
                     <button
                       onClick={() => abrirModalPago(gruero)}
                       disabled={procesando === gruero.grueroId}
-                      className="mt-4 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                      className="w-full px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
                     >
                       {procesando === gruero.grueroId ? 'Procesando...' : '💰 Marcar como Pagado'}
                     </button>
-                    
+
                     <button
                       onClick={() => toggleGrueroExpandido(gruero.grueroId)}
-                      className="mt-2 w-full px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg text-sm"
+                      className="w-full px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg text-sm border border-blue-100"
                     >
                       {grueroExpandido === gruero.grueroId ? '▲ Ocultar' : '▼ Ver'} Detalles
                     </button>
@@ -236,7 +227,7 @@ export default function AdminPagos() {
 
               {/* Detalles Expandibles */}
               {grueroExpandido === gruero.grueroId && (
-                <div className="p-6 bg-gray-50">
+                <div className="p-4 md:p-6 bg-gray-50">
                   <h4 className="font-bold text-gray-800 mb-3">
                     Servicios Incluidos ({gruero.servicios.length})
                   </h4>
