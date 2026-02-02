@@ -1,3 +1,4 @@
+
 import { body, ValidationChain } from 'express-validator';
 
 /**
@@ -88,10 +89,9 @@ export const registerGrueroValidation: ValidationChain[] = [
   body('telefono')
     .isString()
     .trim()
-    .matches(/^[A-Z]{2,4}\d{2,4}$/)
+    .matches(/^\+?[1-9]\d{1,14}$/)
     .withMessage('Teléfono inválido (formato E.164: +56912345678)'),
   
-  // ✅ CORREGIDO: Acepta RUT con o sin puntos
   body('rut')
     .isString()
     .trim()
@@ -102,12 +102,13 @@ export const registerGrueroValidation: ValidationChain[] = [
     .matches(/^\d{7,8}-[\dkK]$/)
     .withMessage('RUT inválido (formato: 12345678-9 o 12.345.678-9)'),
   
+  // ✅ CORREGIDO: Acepta todos los formatos chilenos de patentes
   body('patente')
     .isString()
     .trim()
     .toUpperCase()
     .matches(/^[A-Z]{2,4}\d{2,4}$/)
-    .withMessage('Patente inválida (formato: ABCD12)'),
+    .withMessage('Patente inválida (formatos: AB1234, ABCD12, ABC123)'),
   
   body('marca')
     .isString()
@@ -125,7 +126,6 @@ export const registerGrueroValidation: ValidationChain[] = [
     .isFloat({ min: 0.5, max: 100 })
     .withMessage('La capacidad debe ser entre 0.5 y 100 toneladas'),
   
-  // ✅ CORREGIDO: Agregados los tipos correctos según schema.prisma
   body('tipoGrua')
     .isIn(['CAMA_BAJA', 'HORQUILLA', 'PLUMA'])
     .withMessage('Tipo de grúa inválido (debe ser: CAMA_BAJA, HORQUILLA o PLUMA)')
