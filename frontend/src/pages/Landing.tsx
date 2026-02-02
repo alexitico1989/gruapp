@@ -3,6 +3,11 @@ import { GiTowTruck } from 'react-icons/gi';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
+// ✅ CAMBIAR ESTOS LINKS cuando los tengas
+const APK_DOWNLOAD_URL = 'https://AQUI_VA_TU_LINK_DEL_APK';
+const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.gruapp.mobile'; // placeholder
+const APP_STORE_URL = 'https://apps.apple.com/cl/app/gruapp'; // placeholder
+
 export default function Landing() {
   return (
     <div className="min-h-screen bg-white">
@@ -13,7 +18,7 @@ export default function Landing() {
         <div className="max-w-[1300px] mx-auto px-4 md:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             
-            {/* MÓVIL: TEXTO PRIMERO */}
+            {/* TEXTO */}
             <div className="lg:pl-4 order-2 lg:order-1">
               <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold text-[#1e3a5f] leading-tight mb-4 lg:mb-6">
                 ¡Tu Asistencia en Ruta es{' '}
@@ -21,25 +26,59 @@ export default function Landing() {
               </h1>
               
               <p className="text-lg sm:text-xl text-gray-600 mb-6 lg:mb-10 leading-relaxed">
-                Solicita grúas 24/7. Llega Rápido, Paga lo Justo.
+                Solicita grúas 24/7. Llega Rápido, Paga lo Justo. Descarga la app y listo.
               </p>
 
-              <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-5 mb-10 lg:mb-16">
-                <Link 
-                  to="/register/cliente"
-                  className="bg-[#ff7a3d] text-white rounded-lg hover:bg-[#ff8c52] transition-all shadow-lg hover:shadow-xl font-semibold px-8 py-3 lg:px-9 lg:py-4 text-base lg:text-lg text-center"
+              {/* BOTONES DE DESCARGA */}
+              <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 mb-6 lg:mb-8">
+                {/* Google Play */}
+                <a
+                  href={PLAY_STORE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 bg-[#1e3a5f] text-white rounded-lg hover:bg-[#2d4a6f] transition-all shadow-lg hover:shadow-xl px-5 py-3"
                 >
-                  Solicitar Grúa ¡Ahora!
-                </Link>
-                <Link 
-                  to="/tarifas"
-                  className="bg-white text-[#1e3a5f] rounded-lg border-2 border-[#1e3a5f] hover:bg-[#1e3a5f] hover:text-white transition-all font-semibold px-8 py-3 lg:px-9 lg:py-4 text-base lg:text-lg text-center"
+                  <svg className="w-7 h-7 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M3.18 23.76c.3.17.68.19 1.02 0l11.45-6.61-3.62-3.62-8.85 10.23zM.53 1.18C.2 1.5 0 2.02 0 2.74v18.52c0 .72.2 1.24.53 1.56l.08.08 10.37-10.37v-.16L.61 1.1l-.08.08zM18.49 10.5l3.08-3.08c.64-.36 1.04-.86 1.04-1.56 0-.7-.4-1.2-1.04-1.56l-14.15-8.17c-.34-.2-.72-.18-1.02 0l11.47 11.47 3.62-3.6z"/>
+                  </svg>
+                  <div className="text-left">
+                    <div className="text-xs opacity-75">Disponible en</div>
+                    <div className="font-semibold text-sm">Google Play</div>
+                  </div>
+                </a>
+
+                {/* App Store */}
+                <a
+                  href={APP_STORE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 bg-[#1e3a5f] text-white rounded-lg hover:bg-[#2d4a6f] transition-all shadow-lg hover:shadow-xl px-5 py-3"
                 >
-                  Conoce Nuestras Tarifas
-                </Link>
+                  <svg className="w-7 h-7 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                  </svg>
+                  <div className="text-left">
+                    <div className="text-xs opacity-75">Disponible en</div>
+                    <div className="font-semibold text-sm">App Store</div>
+                  </div>
+                </a>
               </div>
 
-              {/* 3 ICONOS - RESPONSIVE */}
+              {/* DESCARGA DIRECTA APK */}
+              <div className="mb-8 lg:mb-12">
+                <a
+                  href={APK_DOWNLOAD_URL}
+                  download
+                  className="inline-flex items-center gap-2 text-[#ff7a3d] hover:text-[#ff8c52] transition-colors font-semibold text-sm underline underline-offset-4"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                  </svg>
+                  Descarga directa APK (Android)
+                </a>
+              </div>
+
+              {/* 3 ICONOS */}
               <div className="grid grid-cols-3 gap-4 sm:gap-8 lg:flex lg:items-start lg:gap-12">
                 <div className="text-center">
                   <svg className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 mx-auto mb-2 lg:mb-3 text-[#1e3a5f]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -68,7 +107,7 @@ export default function Landing() {
               </div>
             </div>
 
-            {/* MOCKUP DEL CELULAR - REDUCIDO EN MÓVIL */}
+            {/* MOCKUP DEL CELULAR */}
             <div className="flex justify-center order-1 lg:order-2">
               <div className="relative scale-75 sm:scale-90 lg:scale-100">
                 <div className="absolute bg-gray-200 rounded-full opacity-30 w-24 h-24 -top-4 -left-6"></div>
@@ -124,28 +163,6 @@ export default function Landing() {
               </div>
             </div>
 
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Banner - RESPONSIVE */}
-      <section className="bg-gray-50 py-12 md:py-16">
-        <div className="max-w-[1300px] mx-auto px-4 md:px-8">
-          <div className="bg-gray-100 rounded-2xl px-6 py-8 md:px-12 md:py-10 flex flex-col md:flex-row items-center justify-between md:justify-end gap-6 md:gap-10 shadow-sm">
-            <div className="text-center md:text-right">
-              <h2 className="text-[#1e3a5f] font-bold text-3xl md:text-4xl mb-2">
-                ¿Eres Gruero?
-              </h2>
-              <p className="text-[#1e3a5f] font-medium text-xl md:text-2xl">
-                ¡Únete y Gana Más!
-              </p>
-            </div>
-            <Link
-              to="/register/gruero"
-              className="bg-[#ff7a3d] text-white rounded-lg hover:bg-[#ff8c52] transition-all shadow-lg hover:shadow-xl font-semibold px-8 py-3 md:px-9 md:py-4 text-base md:text-lg whitespace-nowrap w-full md:w-auto text-center"
-            >
-              Registra tu Grúa
-            </Link>
           </div>
         </div>
       </section>

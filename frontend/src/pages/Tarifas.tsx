@@ -1,20 +1,20 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+
+// ✅ CAMBIAR ESTE LINK cuando tengas la URL estable del APK
+const APK_DOWNLOAD_URL = 'https://AQUI_VA_TU_LINK_DEL_APK';
 
 export default function Tarifas() {
   const [kilometros, setKilometros] = useState(10);
   const [tipoVehiculo, setTipoVehiculo] = useState<'liviano' | 'pesado'>('liviano');
   
-  // Tarifas según tipo de vehículo
   const tarifaBaseLiviano = 25000;
   const precioPorKmLiviano = 1350;
   
   const tarifaBasePesado = 80000;
   const precioPorKmPesado = 1850;
   
-  // Calcular según tipo seleccionado
   const tarifaBase = tipoVehiculo === 'liviano' ? tarifaBaseLiviano : tarifaBasePesado;
   const precioPorKm = tipoVehiculo === 'liviano' ? precioPorKmLiviano : precioPorKmPesado;
   const total = tarifaBase + (kilometros * precioPorKm);
@@ -45,7 +45,6 @@ export default function Tarifas() {
               <h3 className="text-2xl md:text-3xl font-bold text-[#1e3a5f] mb-6 md:mb-8">Calculadora de Tarifa</h3>
               
               <div className="space-y-6">
-                {/* Selector de Tipo de Vehículo */}
                 <div>
                   <label className="block text-base md:text-lg font-semibold text-[#1e3a5f] mb-4">
                     Tipo de Vehículo
@@ -213,7 +212,6 @@ export default function Tarifas() {
                   </div>
                   <div className="grid grid-cols-3 gap-2 p-3 text-xs md:text-sm">
                     <div className="flex items-center gap-2">
-
                       <span className="font-medium">Livianos</span>
                     </div>
                     <div className="text-center font-bold text-[#ff7a3d]">${tarifaBaseLiviano.toLocaleString('es-CL')}</div>
@@ -221,7 +219,6 @@ export default function Tarifas() {
                   </div>
                   <div className="grid grid-cols-3 gap-2 p-3 text-xs md:text-sm bg-orange-50">
                     <div className="flex items-center gap-2">
-        
                       <span className="font-medium">Pesados</span>
                     </div>
                     <div className="text-center font-bold text-[#ff7a3d]">${tarifaBasePesado.toLocaleString('es-CL')}</div>
@@ -291,21 +288,25 @@ export default function Tarifas() {
         </div>
       </section>
 
-      {/* CTA Final */}
+      {/* CTA Final - Descarga App */}
       <section className="py-12 md:py-16">
         <div className="max-w-[1300px] mx-auto px-4 md:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-[#1e3a5f] mb-4 md:mb-6">
             ¿Listo para solicitar tu grúa?
           </h2>
           <p className="text-lg md:text-xl text-gray-600 mb-6 md:mb-8 max-w-2xl mx-auto">
-            Regístrate en menos de 2 minutos y solicita tu servicio de inmediato.
+            Descarga la app y solicita tu servicio en menos de 2 minutos.
           </p>
-          <Link
-            to="/register/cliente"
-            className="inline-block bg-[#ff7a3d] text-white rounded-lg hover:bg-[#ff8c52] transition-all shadow-lg hover:shadow-xl font-semibold px-10 py-3 md:px-12 md:py-4 text-base md:text-lg"
+          <a
+            href={APK_DOWNLOAD_URL}
+            download
+            className="inline-flex items-center gap-2 bg-[#ff7a3d] text-white rounded-lg hover:bg-[#ff8c52] transition-all shadow-lg hover:shadow-xl font-semibold px-10 py-3 md:px-12 md:py-4 text-base md:text-lg"
           >
-            Solicitar Grúa Ahora
-          </Link>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            Descarga la App
+          </a>
         </div>
       </section>
 

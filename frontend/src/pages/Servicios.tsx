@@ -1,7 +1,9 @@
 import { GiTowTruck } from 'react-icons/gi';
-import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+
+// ✅ CAMBIAR ESTE LINK cuando tengas la URL estable del APK
+const APK_DOWNLOAD_URL = 'https://AQUI_VA_TU_LINK_DEL_APK';
 
 export default function Servicios() {
   return (
@@ -164,21 +166,25 @@ export default function Servicios() {
         </div>
       </section>
 
-      {/* CTA */}
+      {/* CTA - Descarga App */}
       <section className="bg-gray-50 py-12 md:py-16">
         <div className="max-w-[1300px] mx-auto px-4 md:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-[#1e3a5f] mb-4 md:mb-6">
             ¿Necesitas una grúa ahora?
           </h2>
           <p className="text-lg md:text-xl text-gray-600 mb-6 md:mb-8 max-w-2xl mx-auto">
-            Solicita tu servicio en menos de 2 minutos y recibe asistencia inmediata las 24 horas del día.
+            Descarga la app y solicita tu servicio en menos de 2 minutos. Disponible las 24 horas del día.
           </p>
-          <Link
-            to="/register/cliente"
-            className="inline-block bg-[#ff7a3d] text-white rounded-lg hover:bg-[#ff8c52] transition-all shadow-lg hover:shadow-xl font-semibold px-10 py-3 md:px-12 md:py-4 text-base md:text-lg"
+          <a
+            href={APK_DOWNLOAD_URL}
+            download
+            className="inline-flex items-center gap-2 bg-[#ff7a3d] text-white rounded-lg hover:bg-[#ff8c52] transition-all shadow-lg hover:shadow-xl font-semibold px-10 py-3 md:px-12 md:py-4 text-base md:text-lg"
           >
-            Solicitar Grúa Ahora
-          </Link>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            Descarga la App
+          </a>
         </div>
       </section>
 
