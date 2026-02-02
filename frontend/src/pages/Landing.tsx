@@ -4,7 +4,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 
 // ✅ CAMBIAR ESTOS LINKS cuando los tengas
-const APK_DOWNLOAD_URL = 'https://AQUI_VA_TU_LINK_DEL_APK';
+const APK_DOWNLOAD_URL = 'https://github.com/alexitico1989/gruapp/releases/download/v1.0.0/gruapp.apk';
 const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.gruapp.mobile'; // placeholder
 const APP_STORE_URL = 'https://apps.apple.com/cl/app/gruapp'; // placeholder
 

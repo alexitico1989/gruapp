@@ -3,7 +3,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 
 // ✅ CAMBIAR ESTE LINK cuando tengas la URL estable del APK
-const APK_DOWNLOAD_URL = 'https://AQUI_VA_TU_LINK_DEL_APK';
+const APK_DOWNLOAD_URL = 'https://github.com/alexitico1989/gruapp/releases/download/v1.0.0/gruapp.apk';
 
 export default function Servicios() {
   return (
