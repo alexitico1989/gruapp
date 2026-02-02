@@ -88,7 +88,7 @@ export const registerGrueroValidation: ValidationChain[] = [
   body('telefono')
     .isString()
     .trim()
-    .matches(/^\+?[1-9]\d{1,14}$/)
+    .matches(/^[A-Z]{2,4}\d{2,4}$/)
     .withMessage('Teléfono inválido (formato E.164: +56912345678)'),
   
   // ✅ CORREGIDO: Acepta RUT con o sin puntos
