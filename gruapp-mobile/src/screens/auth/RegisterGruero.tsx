@@ -124,10 +124,10 @@ export default function RegisterGrueroScreen() {
     if (!formData.patente) {
       newErrors.patente = 'La patente es requerida';
       valid = false;
-    } else if (!/^[A-Z]{4}\d{2}$/i.test(formData.patente)) {
-      newErrors.patente = 'Formato: ABCD12';
-      valid = false;
-    }
+    } else if (!/^[A-Z]{2,4}\d{2,4}$/i.test(formData.patente)) {
+  newErrors.patente = 'Formato: AB1234, ABCD12 o ABC123';
+  valid = false;
+}
 
     // Validar marca
     if (!formData.marca.trim()) {
