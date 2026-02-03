@@ -5,6 +5,7 @@ import { useAuthStore } from './store/authStore';
 import { initOneSignal } from './lib/onesignal';
 
 // Pages - Recuperación de Contraseña (NUEVAS)
+import EliminarCuenta from './pages/eliminar-cuenta';
 import ForgotPassword from './pages/ForgotPassword';
 import VerifyCode from './pages/VerifyCode';
 import ResetPassword from './pages/ResetPassword';
@@ -127,6 +128,7 @@ function App() {
 
         {/* Páginas Públicas */}
         <Route path="/servicios" element={<Servicios />} />
+        <Route path="/eliminar-cuenta" element={<EliminarCuenta />} />
         <Route path="/conductores" element={<Conductores />} />
         <Route path="/tarifas" element={<Tarifas />} />
         <Route path="/terminos" element={<Terminos />} />
