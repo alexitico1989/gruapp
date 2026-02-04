@@ -38,7 +38,7 @@ export const config = {
   },
   
   // Gruero search radius (en km)
-  grueroSearchRadius: 10,
+  grueroSearchRadius: 30,
   
   // Socket.io
   socketPath: '/socket.io',
